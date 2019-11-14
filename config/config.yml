@@ -1,0 +1,13 @@
+cmd:
+    neo4j-url: bolt://localhost:7687
+    mongo-url: localhost:27017
+    mongo-dbs:
+        - "imports"
+        - "datasets"
+        - "filters"
+        - "codelists"
+        - "test"
+    hierarchies:
+        - "admin-geography.cypher"
+    codelists:
+        - "suicides.yaml"
