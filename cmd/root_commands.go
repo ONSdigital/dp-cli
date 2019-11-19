@@ -4,6 +4,7 @@ import (
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
+	"dp-utils/repocreation"
 	"dp-utils/zebedee"
 	"math/rand"
 	"os"
@@ -14,11 +15,12 @@ import (
 )
 
 var (
-	Root     *cobra.Command
-	Version  *cobra.Command
-	Clean    *cobra.Command
-	Import   *cobra.Command
-	Generate *cobra.Command
+	Root       *cobra.Command
+	Version    *cobra.Command
+	Clean      *cobra.Command
+	Import     *cobra.Command
+	Generate   *cobra.Command
+	CreateRepo *cobra.Command
 
 	r                    *rand.Rand
 	goPath               string
@@ -62,11 +64,18 @@ func Load(cfg *config.Config) *cobra.Command {
 	}
 	Import.AddCommand(initCustomiseMyData(cfg))
 
+	CreateRepo = &cobra.Command{
+		Use:   "create-repo",
+		Short: "Creates a new repository with the typical Digital Publishing configurations ",
+	}
+	CreateRepo.AddCommand(generateRepository())
+
 	Root = &cobra.Command{
 		Use:   "dp-utils",
 		Short: "dp-utils provides util functions for developers in ONS Digital Publishing",
 	}
-	Root.AddCommand(Version, Clean, Import)
+	Root.AddCommand(Version, Clean, Import, CreateRepo)
+
 	return Root
 }
 
@@ -123,6 +132,23 @@ func initCustomiseMyData(cfg *config.Config) *cobra.Command {
 			}
 
 			err = customisemydata.ImportCodeLists(codeListScriptsPath, cfg)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+}
+
+func generateRepository() *cobra.Command {
+	return &cobra.Command{
+		Use:   "github",
+		Short: "Creates a github hosted repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+
+			err = repocreation.GenerateGithubRepository()
 			if err != nil {
 				return err
 			}
