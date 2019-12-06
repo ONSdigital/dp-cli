@@ -15,18 +15,18 @@ import (
 const (
 	org = "ONSdigital"
 	// Team: "DigitalPublishing", slug: "digitalpublishing", id: 779417
-	dpTeamSlug = "DigitalPublishing"
-	teamID = int64(779417)
+	dpTeamSlug    = "DigitalPublishing"
+	teamID        = int64(779417)
 	defaultBranch = "develop"
-	masterBranch = "master"
+	masterBranch  = "master"
 )
 
 // GenerateGithubRepository is the entry point to generating the repository
-func GenerateGithubRepository() error {
+func GenerateGithubRepository(name string) error {
 	fmt.Println("This script will create a new ONS Digital Publishing repository." +
 		"In order to create and configure a new repository please answer the prompts.")
 
-	accessToken, userHandle, repoName, repoDescription := getConfigurationsForNewRepo()
+	accessToken, userHandle, repoName, repoDescription := getConfigurationsForNewRepo(name)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -73,7 +73,7 @@ func GenerateGithubRepository() error {
 	}
 
 	err = setTeamsAndCollaborators(client, ctx, repoName, userHandle)
-	if err != nil{
+	if err != nil {
 		log.ErrorCtx(ctx, errors.Wrap(err, "Unable to set team and collaborators"), nil)
 		return err
 	}
@@ -84,7 +84,7 @@ func GenerateGithubRepository() error {
 }
 
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
-func setTeamsAndCollaborators(client *github.Client, ctx context.Context, repoName string, userHandle string) error{
+func setTeamsAndCollaborators(client *github.Client, ctx context.Context, repoName string, userHandle string) error {
 	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: "admin"}
 	resp, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
 	if err != nil {
@@ -186,10 +186,12 @@ func createRepo(client *github.Client, ctx context.Context, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo() (accessToken, userHandle, repoName, repoDescription string) {
+func getConfigurationsForNewRepo(name string) (accessToken, userHandle, repoName, repoDescription string) {
 	accessToken = promptForInput("Please provide your user access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	userHandle = promptForInput("Please provide your github handle/username")
-	repoName = promptForInput("Please provide the full name for the new repository")
+	if name == "dp-unnamed-application" || len(name) < 1 {
+		repoName = promptForInput("Please provide the full name for the new repository")
+	}
 	repoDescription = promptForInput("Please provide a description for the repository")
 	return accessToken, userHandle, repoName, repoDescription
 }

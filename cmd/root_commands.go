@@ -7,22 +7,22 @@ import (
 	"dp-utils/out"
 	"dp-utils/repocreation"
 	"dp-utils/zebedee"
-	"errors"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	Root        *cobra.Command
-	Version     *cobra.Command
-	Clean       *cobra.Command
-	Import      *cobra.Command
-	Generate    *cobra.Command
-	CreateRepo  *cobra.Command
+	Root       *cobra.Command
+	Version    *cobra.Command
+	Clean      *cobra.Command
+	Import     *cobra.Command
+	Generate   *cobra.Command
+	CreateRepo *cobra.Command
 
 	r                    *rand.Rand
 	goPath               string
@@ -70,18 +70,23 @@ func Load(cfg *config.Config) *cobra.Command {
 		Use:   "create-repo",
 		Short: "Creates a new repository with the typical Digital Publishing configurations ",
 	}
-	CreateRepo.AddCommand(generateRepository())
+	createGithubRepo := generateRepository()
+	createGithubRepo.Flags().String("name", "dp-unnamed-application", "The name of the application, if "+
+		"Digital specific application it should be prepended with 'dp-'")
+	CreateRepo.AddCommand(createGithubRepo)
 
 	Root = &cobra.Command{
 		Use:   "dp-utils",
 		Short: "dp-utils provides util functions for developers in ONS Digital Publishing",
 	}
 	GenerateApp := generateApplication()
-	GenerateApp.Flags().String("name", "dp-unnamed-application", "The name of the application, if Digital specific application it should be prepended with 'dp-'")
-	GenerateApp.Flags().String("go-version", "1.12", "The version of Go the application should use")
-	GenerateApp.Flags().String("license", "mit", "The license type to use for applications, typically MIT")
-	GenerateApp.Flags().String("project-location", "", "Location to generate project in")
-	GenerateApp.Flags().String("type", "GenericProgram", "Type of application to generate, values can "+
+	GenerateApp.Flags().String("name", "unset", "The name of the application, if "+
+		"Digital specific application it should be prepended with 'dp-'")
+	GenerateApp.Flags().String("go-version", "unset", "The version of Go the application should use")
+	GenerateApp.Flags().String("project-location", "unset", "Location to generate project in")
+	GenerateApp.Flags().String("create-repository", "n", "Should a repository be created for the "+
+		"project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
+	GenerateApp.Flags().String("type", "unset", "Type of application to generate, values can "+
 		"be: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
 	Root.AddCommand(Version, Clean, Import, CreateRepo, GenerateApp)
 
@@ -156,8 +161,8 @@ func generateRepository() *cobra.Command {
 		Short: "Creates a github hosted repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-
-			err = repocreation.GenerateGithubRepository()
+			nameOfApp, _ := cmd.Flags().GetString("name")
+			err = repocreation.GenerateGithubRepository(nameOfApp)
 			if err != nil {
 				return err
 			}
@@ -173,20 +178,22 @@ func generateApplication() *cobra.Command {
 		Short: "Creates a github hosted repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+
 			nameOfApp, _ := cmd.Flags().GetString("name")
 			goVer, _ := cmd.Flags().GetString("go")
-			license, _ := cmd.Flags().GetString("license")
 			projectLocation, _ := cmd.Flags().GetString("project-location")
 			projType, _ := cmd.Flags().GetString("type")
+			createRepository, _ := cmd.Flags().GetString("create-repository")
 
-			if len(projectLocation) < 1 {
-				err = errors.New("option --project-location is a mandatory field")
-				return err
-			}
-			err = appgen.GenerateApp(nameOfApp, projType, projectLocation, goVer, license)
+			err = appgen.GenerateApp(nameOfApp, projType, projectLocation, goVer)
 			if err != nil {
 				return err
 			}
+			createRepository = strings.ToLower(strings.TrimSpace(createRepository))
+			if createRepository == "y" || createRepository == "yes" {
+				repocreation.GenerateGithubRepository(nameOfApp)
+			}
+
 			return nil
 		},
 	}

@@ -23,10 +23,11 @@ type application struct {
 	pathToRepo   string
 	name         string
 	license      string
+	port         string
 	progType     ProgramType
 }
 
-type ciFileGenerationVars struct {
+type fileGenerationVars struct {
 	filePath      string
 	fileExtension string
 }
@@ -41,30 +42,31 @@ const (
 	EventDriven     ProgramType = "event-driven"
 )
 
-func GenerateApp(appName, projectType, projectLocation, goVer, license string) error {
+func GenerateApp(appName, projectType, projectLocation, goVer string) error {
+	appName, projectType, projectLocation, goVer = validateArguments(appName, projectType, projectLocation, goVer)
 	newApp := application{
 		pathToRepo:   projectLocation,
 		progType:     ProgramType(projectType),
 		name:         appName,
-		license:      license,
 		templateVars: populateTemplateModel(appName, goVer),
 	}
 
 	// If path has files in then purge them... but check with user first (prompt are you sure)
-	if _, err := os.Stat(newApp.pathToRepo); !os.IsNotExist(err) {
+	isEmpty, err := IsEmptyDir(newApp.pathToRepo)
+	if err != nil {
+		return err
+	}
 
+	if !isEmpty {
 		//prompt user
 		maxUserInputAttempts := 3
 		deleteContents := promptForConfirmation("The directory "+newApp.pathToRepo+" was not empty would you "+
-			"like to purge its contents and continue?", maxUserInputAttempts)
+			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
 
-		if !deleteContents {
-			log.Info("operation canceled per user request", nil)
-			return nil // Cancel doing anything
+		if deleteContents {
+			os.RemoveAll(newApp.pathToRepo)
+			os.MkdirAll(newApp.pathToRepo, os.ModePerm)
 		}
-
-		os.RemoveAll(newApp.pathToRepo)
-		os.MkdirAll(newApp.pathToRepo, os.ModePerm)
 	}
 
 	initGoModules(newApp.pathToRepo, newApp.name)
@@ -101,6 +103,61 @@ func GenerateApp(appName, projectType, projectLocation, goVer, license string) e
 	//finaliseModules(pathToRepo)
 	log.Info("Jobs d'ne. Project can be found at "+newApp.pathToRepo, nil)
 	return nil
+}
+
+func validateArguments(unvalidatedName, unvalidatedType, unvalidatedProjectLocation, unvalidatedGoVersion string) (string, string, string, string) {
+	var validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion string
+	validTypes := []string{
+		"generic-program", "base-application", "api", "controller", "event-driven",
+	}
+	if unvalidatedName == "unset" {
+		validatedAppName = promptForInput("Please specify the name of the application, if this is a " +
+			"Digital publishing specific application it should be prepended with 'dp-'")
+	} else {
+		validatedAppName = unvalidatedName
+	}
+	typeInputValid := false
+	for !typeInputValid {
+		if !stringInSlice(unvalidatedType, validTypes) {
+			typeInputValid = false
+			unvalidatedType = promptForInput("Please specify the project type. This can have one of the " +
+				"following values: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
+		} else {
+			typeInputValid = true
+			validatedProjectType = unvalidatedType
+		}
+	}
+
+	if unvalidatedProjectLocation == "unset" {
+		validatedProjectLocation = promptForInput("Please specify a directory for the project to be created in")
+	} else {
+		validatedProjectLocation = unvalidatedProjectLocation
+	}
+	if validatedProjectLocation[len(validatedProjectLocation)-1:] != "/" {
+		validatedProjectLocation = validatedProjectLocation + "/"
+	}
+
+	if unvalidatedGoVersion == "unset" {
+		validatedGoVersion = promptForInput("Please specify the version of GO to use")
+	} else {
+		validatedGoVersion = unvalidatedGoVersion
+	}
+
+	return validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion
+}
+func IsEmptyDir(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+
 }
 
 func populateTemplateModel(name, goVer string) templateVars {
@@ -142,6 +199,22 @@ func initGoModules(pathToRepo, name string) {
 	if err != nil {
 		log.Error(err, nil)
 	}
+}
+
+func promptForInput(prompt string) string {
+	fmt.Println(prompt)
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSuffix(input, "\n")
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
 
 func (a application) generateGenericContent() error {
@@ -255,7 +328,7 @@ func (a application) generateEventDrivenContent() error {
 }
 
 func (a application) generateReadMe() error {
-	fileToGen := ciFileGenerationVars{
+	fileToGen := fileGenerationVars{
 		filePath:      "readme",
 		fileExtension: ".md",
 	}
@@ -299,7 +372,7 @@ func (a application) generatePullRequestTemplate() error {
 }
 
 func (a application) generateContinuousIntegration() error {
-	tmplFilesToGen := []ciFileGenerationVars{
+	tmplFilesToGen := []fileGenerationVars{
 		{
 			filePath:      "ci/build",
 			fileExtension: ".yml",
@@ -356,7 +429,7 @@ func (a application) generateSwaggerSpec() error {
 }
 
 func (a application) generateMappers() error {
-	tmplFilesToGen := []ciFileGenerationVars{
+	tmplFilesToGen := []fileGenerationVars{
 		{
 			filePath:      "mapper/mapper",
 			fileExtension: ".go",
@@ -376,7 +449,7 @@ func (a application) generateMappers() error {
 	return nil
 }
 
-func (a application) generateFileFromTemplate(fileToGen ciFileGenerationVars) error {
+func (a application) generateFileFromTemplate(fileToGen fileGenerationVars) error {
 	f, err := os.Create(a.pathToRepo + fileToGen.filePath + fileToGen.fileExtension)
 	if err != nil {
 		return err
@@ -395,7 +468,7 @@ func (a application) generateFileFromTemplate(fileToGen ciFileGenerationVars) er
 }
 
 func (a application) generateRoutes() error {
-	tmplFilesToGen := []ciFileGenerationVars{
+	tmplFilesToGen := []fileGenerationVars{
 		{
 			filePath:      "routes/routes",
 			fileExtension: ".go",
@@ -416,7 +489,7 @@ func (a application) generateRoutes() error {
 }
 
 func (a application) generateHandlers() error {
-	tmplFilesToGen := []ciFileGenerationVars{
+	tmplFilesToGen := []fileGenerationVars{
 		{
 			filePath:      "handlers/handlers",
 			fileExtension: ".go",
