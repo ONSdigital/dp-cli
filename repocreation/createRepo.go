@@ -50,13 +50,13 @@ func GenerateGithubRepository() error {
 
 	err := createRepo(client, ctx, repo)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Unable to create repository"), nil)
+		log.ErrorCtx(ctx, errors.Wrap(err, "unable to create repository"), nil)
 		return err
 	}
 
 	err = createDevelopBranch(client, ctx, repoName)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Unable to create develop branch"), nil)
+		log.ErrorCtx(ctx, errors.Wrap(err, "unable to create develop branch"), nil)
 		return err
 	}
 
@@ -68,7 +68,7 @@ func GenerateGithubRepository() error {
 
 	err = setBranchProtections(client, ctx, repoName)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Unable to set all branch protections, please review and correct these manually"), nil)
+		log.ErrorCtx(ctx, errors.Wrap(err, "unable to set all branch protections, please review and correct these manually"), nil)
 		return err
 	}
 
@@ -79,7 +79,7 @@ func GenerateGithubRepository() error {
 	}
 
 	// Notify user of completion and get them to turn off actions
-	log.Info("Repository has successfully been create please Disable Actions for this repository", nil)
+	log.Info("repository has successfully been create please disable actions for this repository", nil)
 	return nil
 }
 
@@ -88,12 +88,12 @@ func setTeamsAndCollaborators(client *github.Client, ctx context.Context, repoNa
 	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: "admin"}
 	resp, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Unable to add collaborators"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "unable to add collaborators"), log.Data{"resp": resp})
 	}
 
 	resp, err = client.Repositories.RemoveCollaborator(ctx, org, repoName, userHandle)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Unable to remove self as a collaborator"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "unable to remove self as a collaborator"), log.Data{"resp": resp})
 	}
 	return err
 }
@@ -129,19 +129,19 @@ func setBranchProtections(client *github.Client, ctx context.Context, repoName s
 	}
 	_, resp, err := client.Repositories.UpdateBranchProtection(ctx, org, repoName, "master", &protectionRequest)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Update branch protection failed for master"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "update branch protection failed for master"), log.Data{"resp": resp})
 	}
 	_, resp, err = client.Repositories.UpdateBranchProtection(ctx, org, repoName, "develop", &protectionRequest)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Update branch protection failed for develop"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "update branch protection failed for develop"), log.Data{"resp": resp})
 	}
 	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "master")
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Adding protection, require signatures failed on branch master"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "adding protection, require signatures failed on branch master"), log.Data{"resp": resp})
 	}
 	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "develop")
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Adding protection, require signatures failed on branch develop"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "adding protection, require signatures failed on branch develop"), log.Data{"resp": resp})
 	}
 	return err
 }
@@ -151,7 +151,7 @@ func setDevelopAsDefaultBranch(client *github.Client, ctx context.Context, repoN
 	repo.AutoInit = nil
 	_, resp, err := client.Repositories.Edit(ctx, org, repoName, repo)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Failed to set develop as the default branch"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "failed to set develop as the default branch"), log.Data{"resp": resp})
 	}
 	return err
 }
@@ -160,7 +160,7 @@ func setDevelopAsDefaultBranch(client *github.Client, ctx context.Context, repoN
 func createDevelopBranch(client *github.Client, ctx context.Context, repoName string) error {
 	ref, resp, err := client.Git.GetRef(ctx, org, repoName, "heads/master")
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Get Reference to master commit failed"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "get reference to master commit failed"), log.Data{"resp": resp})
 		return err
 	}
 	developBranch := "heads/develop"
@@ -168,7 +168,7 @@ func createDevelopBranch(client *github.Client, ctx context.Context, repoName st
 
 	_, resp, err = client.Git.CreateRef(ctx, org, repoName, ref)
 	if err != nil {
-		log.ErrorCtx(ctx, errors.Wrap(err, "Create Reference to new develop branch failed"), log.Data{"resp": resp})
+		log.ErrorCtx(ctx, errors.Wrap(err, "create reference to new develop branch failed"), log.Data{"resp": resp})
 		return err
 	}
 	return nil

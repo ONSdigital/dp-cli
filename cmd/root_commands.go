@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	appgen "dp-utils/app-generation"
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
 	"dp-utils/repocreation"
 	"dp-utils/zebedee"
+	"errors"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -15,12 +17,12 @@ import (
 )
 
 var (
-	Root       *cobra.Command
-	Version    *cobra.Command
-	Clean      *cobra.Command
-	Import     *cobra.Command
-	Generate   *cobra.Command
-	CreateRepo *cobra.Command
+	Root        *cobra.Command
+	Version     *cobra.Command
+	Clean       *cobra.Command
+	Import      *cobra.Command
+	Generate    *cobra.Command
+	CreateRepo  *cobra.Command
 
 	r                    *rand.Rand
 	goPath               string
@@ -74,7 +76,14 @@ func Load(cfg *config.Config) *cobra.Command {
 		Use:   "dp-utils",
 		Short: "dp-utils provides util functions for developers in ONS Digital Publishing",
 	}
-	Root.AddCommand(Version, Clean, Import, CreateRepo)
+	GenerateApp := generateApplication()
+	GenerateApp.Flags().String("name", "dp-unnamed-application", "The name of the application, if Digital specific application it should be prepended with 'dp-'")
+	GenerateApp.Flags().String("go-version", "1.12", "The version of Go the application should use")
+	GenerateApp.Flags().String("license", "mit", "The license type to use for applications, typically MIT")
+	GenerateApp.Flags().String("project-location", "", "Location to generate project in")
+	GenerateApp.Flags().String("type", "GenericProgram", "Type of application to generate, values can "+
+		"be: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
+	Root.AddCommand(Version, Clean, Import, CreateRepo, GenerateApp)
 
 	return Root
 }
@@ -153,6 +162,31 @@ func generateRepository() *cobra.Command {
 				return err
 			}
 
+			return nil
+		},
+	}
+}
+
+func generateApplication() *cobra.Command {
+	return &cobra.Command{
+		Use:   "generate-application",
+		Short: "Creates a github hosted repository",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+			nameOfApp, _ := cmd.Flags().GetString("name")
+			goVer, _ := cmd.Flags().GetString("go")
+			license, _ := cmd.Flags().GetString("license")
+			projectLocation, _ := cmd.Flags().GetString("project-location")
+			projType, _ := cmd.Flags().GetString("type")
+
+			if len(projectLocation) < 1 {
+				err = errors.New("option --project-location is a mandatory field")
+				return err
+			}
+			err = appgen.GenerateApp(nameOfApp, projType, projectLocation, goVer, license)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}

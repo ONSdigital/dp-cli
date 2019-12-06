@@ -6,6 +6,7 @@ require (
 	github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58
 	github.com/fatih/color v1.7.0
 	github.com/google/go-github/v28 v28.1.1
+	github.com/gorilla/mux v1.7.3
 	github.com/johnnadratowski/golang-neo4j-bolt-driver v0.0.0-20181101021923-6b24c0085aae
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect

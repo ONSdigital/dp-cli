@@ -1,0 +1,17 @@
+package routes
+
+import (
+	"context"
+	"os"
+
+	"github.com/ONSdigital/{{.Name}}/config"
+	"github.com/ONSdigital/go-ns/handlers/healthcheck"
+	"github.com/ONSdigital/go-ns/log"
+	"github.com/gorilla/mux"
+)
+
+// Init initialises routes for the service
+func Init(r *mux.Router, cfg *config.Config) {
+	r.StrictSlash(true).Path("/healthcheck").HandlerFunc(healthcheck.Handler)
+	r.StrictSlash(true).Path("/hello-world").HandlerFunc(helloworld.Handler)
+}
