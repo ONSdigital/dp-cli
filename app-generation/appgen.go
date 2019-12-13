@@ -340,19 +340,11 @@ func (a application) generateReadMe() error {
 }
 
 func (a application) generateContributionGuidelines() error {
-	from, err := os.Open("./app-generation/content/static/contributing.md")
-	if err != nil {
-		return err
+	fileToGen := fileGenerationVars{
+		filePath:      "contributing",
+		fileExtension: ".md",
 	}
-	defer from.Close()
-
-	to, err := os.OpenFile(a.pathToRepo+"contributing.md", os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer to.Close()
-
-	_, err = io.Copy(to, from)
+	err := a.generateFileFromTemplate(fileToGen)
 	if err != nil {
 		return err
 	}
@@ -360,14 +352,50 @@ func (a application) generateContributionGuidelines() error {
 }
 
 func (a application) generateLicense() error {
+	fileToGen := fileGenerationVars{
+		filePath:      "license",
+		fileExtension: ".md",
+	}
+	err := a.generateFileFromTemplate(fileToGen)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (a application) generateGitIgnore() error {
+	fileToGen := fileGenerationVars{
+		filePath:      ".gitignore",
+		fileExtension: ".md",
+	}
+	err := a.generateFileFromTemplate(fileToGen)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (a application) generatePullRequestTemplate() error {
+	fileToGen := fileGenerationVars{
+		filePath:      ".github/PULL_REQUEST_TEMPLATE",
+		fileExtension: ".md",
+	}
+	err := a.generateFileFromTemplate(fileToGen)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a application) generateIssuesFile() error {
+	fileToGen := fileGenerationVars{
+		filePath:      ".github/ISSUES_TEMPLATE",
+		fileExtension: ".md",
+	}
+	err := a.generateFileFromTemplate(fileToGen)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
