@@ -5,7 +5,7 @@ import (
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
-	"dp-utils/repocreation"
+	repository "dp-utils/repositorycreation"
 	"dp-utils/zebedee"
 	"math/rand"
 	"os"
@@ -162,7 +162,7 @@ func generateRepository() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			nameOfApp, _ := cmd.Flags().GetString("name")
-			err = repocreation.GenerateGithubRepository(nameOfApp)
+			err = repository.GenerateGithub(nameOfApp)
 			if err != nil {
 				return err
 			}
@@ -191,7 +191,7 @@ func generateApplication() *cobra.Command {
 			}
 			createRepository = strings.ToLower(strings.TrimSpace(createRepository))
 			if createRepository == "y" || createRepository == "yes" {
-				repocreation.GenerateGithubRepository(nameOfApp)
+				repository.GenerateGithub(nameOfApp)
 			}
 
 			return nil

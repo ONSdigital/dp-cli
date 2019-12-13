@@ -18,6 +18,7 @@ type templateVars struct {
 	Year      int
 	GoVersion string
 }
+
 type application struct {
 	templateVars templateVars
 	pathToRepo   string
@@ -238,6 +239,11 @@ func (a application) generateGenericContent() error {
 	if err != nil {
 		return err
 	}
+	err = a.generateIssuesFile()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -366,7 +372,7 @@ func (a application) generateLicense() error {
 func (a application) generateGitIgnore() error {
 	fileToGen := fileGenerationVars{
 		filePath:      ".gitignore",
-		fileExtension: ".md",
+		fileExtension: "",
 	}
 	err := a.generateFileFromTemplate(fileToGen)
 	if err != nil {
@@ -380,6 +386,7 @@ func (a application) generatePullRequestTemplate() error {
 		filePath:      ".github/PULL_REQUEST_TEMPLATE",
 		fileExtension: ".md",
 	}
+	os.MkdirAll(a.pathToRepo+".github", os.ModePerm)
 	err := a.generateFileFromTemplate(fileToGen)
 	if err != nil {
 		return err
