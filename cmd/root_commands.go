@@ -4,7 +4,7 @@ import (
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
-	"dp-utils/repocreation"
+	repository "dp-utils/repositorycreation"
 	"dp-utils/zebedee"
 	"math/rand"
 	"os"
@@ -148,7 +148,7 @@ func generateRepository() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-			err = repocreation.GenerateGithubRepository()
+			err = repository.GenerateGithub()
 			if err != nil {
 				return err
 			}
