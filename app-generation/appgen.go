@@ -280,11 +280,11 @@ func offerPurgeProjDestination(ctx context.Context, projectLoc, appName string) 
 			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
 
 		if deleteContents {
-			err := os.RemoveAll(projectLoc)
+			err := os.RemoveAll(projectLoc+appName)
 			if err != nil {
 				return err
 			}
-			err = os.MkdirAll(projectLoc, os.ModePerm)
+			err = os.MkdirAll(projectLoc+appName, os.ModePerm)
 			if err != nil {
 				return err
 			}
@@ -375,7 +375,7 @@ func initGoModules(ctx context.Context, pathToRepo, name string) {
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error  initialising go modules", log.Error(err))
+		log.Event(ctx, "error initialising go modules", log.Error(err))
 	}
 }
 

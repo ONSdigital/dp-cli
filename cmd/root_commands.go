@@ -210,7 +210,7 @@ func generateApplication() *cobra.Command {
 				}
 				cloneUrl, err = repository.GenerateGithub(nameOfApp, projectgeneration.ProgramType(projType))
 				fmt.Println("cloneUrl is: " + cloneUrl)
-				repository.CloneRepository(ctx, cloneUrl, projectLocation)
+				repository.CloneRepository(ctx, cloneUrl, projectLocation, nameOfApp)
 			}
 
 			err = projectgeneration.GenerateProject(nameOfApp, projType, projectLocation, goVer, createRepository)
@@ -219,7 +219,7 @@ func generateApplication() *cobra.Command {
 			}
 
 			if createRepository {
-				repository.PushToRepo(ctx, cloneUrl, projectLocation, nameOfApp)
+				repository.PushToRepo(ctx, projectLocation, nameOfApp)
 			}
 			return nil
 		},
