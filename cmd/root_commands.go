@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
-	appgen "dp-utils/app-generation"
+	projectgeneration "dp-utils/app-generation"
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
 	repository "dp-utils/repositorycreation"
 	"dp-utils/zebedee"
+	"fmt"
+	"github.com/ONSdigital/log.go/log"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -163,7 +165,7 @@ func generateRepository() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			nameOfApp, _ := cmd.Flags().GetString("name")
-			err = repository.GenerateGithub(nameOfApp)
+			_, err = repository.GenerateGithub(nameOfApp, "")
 			if err != nil {
 				return err
 			}
@@ -180,8 +182,8 @@ func generateApplication() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			var err error
+			var cloneUrl string
 			var createRepository bool
-
 			nameOfApp, _ := cmd.Flags().GetString("name")
 			goVer, _ := cmd.Flags().GetString("go")
 			projectLocation, _ := cmd.Flags().GetString("project-location")
@@ -191,17 +193,35 @@ func generateApplication() *cobra.Command {
 			// Can't create repo unless project type has been provided in a flag, so prompt user for it
 			if createRepositoryInput == "y" || createRepositoryInput == "yes" {
 				createRepository = true
-				// TODO ValidateProjectType need to be public anymore?
-				appgen.ValidateProjectType(ctx, projType)
+				projType, err = projectgeneration.ValidateProjectType(ctx, projType)
+				if err != nil {
+					log.Event(ctx, "error unable to validate project type", log.Error(err))
+					return err
+				}
+				nameOfApp, err = projectgeneration.ValidateAppName(ctx, nameOfApp)
+				if err != nil {
+					log.Event(ctx, "error unable to validate name of application", log.Error(err))
+					return err
+				}
+				projectLocation, err = projectgeneration.ValidateProjectLocation(ctx, projectLocation)
+				if err != nil {
+					log.Event(ctx, "error unable to validate project location", log.Error(err))
+					return err
+				}
+				cloneUrl, err = repository.GenerateGithub(nameOfApp, projectgeneration.ProgramType(projType))
+				fmt.Println("cloneUrl is: " + cloneUrl)
+				repository.CloneRepository(ctx, cloneUrl, projectLocation)
 			}
 
-			err = appgen.GenerateProject(nameOfApp, projType, projectLocation, goVer)
+			err = projectgeneration.GenerateProject(nameOfApp, projType, projectLocation, goVer)
 			if err != nil {
 				return err
 			}
+
 			if createRepository {
-				repository.GenerateGithub(nameOfApp)
+				repository.PushToRepo(ctx, cloneUrl, projectLocation)
 			}
+
 
 			return nil
 		},

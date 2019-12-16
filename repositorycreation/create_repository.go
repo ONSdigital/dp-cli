@@ -3,6 +3,7 @@ package repository
 import (
 	"bufio"
 	"context"
+	projectgeneration "dp-utils/app-generation"
 	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
@@ -19,11 +20,11 @@ const (
 )
 
 // GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name string) error {
+func GenerateGithub(name string, projectType projectgeneration.ProgramType) (cloneUrl string, err error) {
 	fmt.Println("This script will create a new ONS Digital Publishing repository." +
 		"In order to create and configure a new repository please answer the prompts.")
 
-	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name)
+	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, projectType)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -35,7 +36,7 @@ func GenerateGithub(name string) error {
 	hasAccess, err := checkAccess(ctx, client)
 	if !hasAccess {
 		log.Event(ctx, "user does not have access", log.Error(err))
-		return err
+		return cloneUrl, err
 	}
 
 	repo := &github.Repository{
@@ -52,36 +53,42 @@ func GenerateGithub(name string) error {
 	err = createRepo(ctx, client, repo)
 	if err != nil {
 		log.Event(ctx, "unable to create repository", log.Error(err))
-		return err
+		return cloneUrl, err
 	}
 
 	err = createDevelopBranch(ctx, client, repoName)
 	if err != nil {
 		log.Event(ctx, "unable to create develop branch", log.Error(err))
-		return err
+		return cloneUrl, err
 	}
 
 	err = setDevelopAsDefaultBranch(ctx, client, repoName, repo)
 	if err != nil {
 		log.Event(ctx, "failed to set default branch to develop", log.Error(err))
-		return err
+		return cloneUrl, err
 	}
 
 	err = setBranchProtections(ctx, client, repoName)
 	if err != nil {
 		log.Event(ctx, "unable to set all branch protections, please review and correct these manually", log.Error(err))
-		return err
+		return cloneUrl, err
 	}
 
 	err = setTeamsAndCollaborators(ctx, client, repoName, userHandle)
 	if err != nil {
 		log.Event(ctx, "unable to set team and collaborators", log.Error(err))
-		return err
+		return cloneUrl, err
 	}
-
+	repositoryObj, _, err := client.Repositories.Get(ctx, org, repoName)
+	if err != nil {
+		log.Event(ctx, "unable to locate the the attempted newly created repository", log.Error(err))
+		return cloneUrl, err
+	}
+	cloneUrl = repositoryObj.GetCloneURL()
+	fmt.Println("cloneUrl is: " + cloneUrl)
 	// Notify user of completion and get them to turn off actions
 	log.Event(ctx, "repository has successfully been create please Disable Actions for this repository")
-	return nil
+	return cloneUrl, nil
 }
 
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
@@ -187,16 +194,19 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name string) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name string, projType projectgeneration.ProgramType) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
+	defaultBranch = "develop"
 	accessToken = promptForInput("Please provide your user access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	userHandle = promptForInput("Please provide your github handle/username")
-	if name == ""{
-		repoName = promptForInput("Please provide the full name for the new repository")
-	} else{
+	if name == "" || name == "unset" {
+		repoName = promptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name')")
+	} else {
 		repoName = name
 	}
 	repoDescription = promptForInput("Please provide a description for the repository")
-	defaultBranch = promptForInput("Please pick a default branch, either: 'develop' or 'master'")
+	if projType == "generic-program" {
+		defaultBranch = "master"
+	}
 	return accessToken, userHandle, repoName, repoDescription, defaultBranch
 }
 

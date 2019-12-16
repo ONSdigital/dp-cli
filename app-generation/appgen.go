@@ -1,8 +1,5 @@
-package appgen
+package projectgeneration
 
-// TODO add annotations on functions
-// TODO process input from user on if lib or not
-// TODO enable cloning and pushing to repo
 import (
 	"bufio"
 	"context"
@@ -15,6 +12,12 @@ import (
 	"text/template"
 	"time"
 )
+
+// TODO add annotations on functions
+// TODO process input from user on if lib or not
+// TODO enable cloning and pushing to repo
+// TODO rename file
+// TODO validateArguments better
 
 type templateVars struct {
 	Name      string
@@ -224,27 +227,15 @@ func GenerateProject(appName, projectType, projectLocation, goVer string) error 
 func validateArguments(ctx context.Context, unvalidatedName, unvalidatedType, unvalidatedProjectLocation, unvalidatedGoVersion string) (string, string, string, string, error) {
 	var validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion string
 	var err error
-	if unvalidatedName == "unset" {
-		validatedAppName, err = promptForInput(ctx, "Please specify the name of the application, if this is a "+
-			"Digital publishing specific application it should be prepended with 'dp-'")
-		if err != nil {
-			return "", "", "", "", err
-		}
-	} else {
-		validatedAppName = unvalidatedName
-	}
+	validatedAppName, err = ValidateAppName(ctx, unvalidatedName)
 	validatedProjectType, err = ValidateProjectType(ctx, unvalidatedType)
-
-	if unvalidatedProjectLocation == "unset" {
-		validatedProjectLocation, err = promptForInput(ctx, "Please specify a directory for the project to be created in")
-		if err != nil {
-			return "", "", "", "", err
-		}
-	} else {
-		validatedProjectLocation = unvalidatedProjectLocation
+	if err != nil {
+		return "", "", "", "", err
 	}
-	if validatedProjectLocation[len(validatedProjectLocation)-1:] != "/" {
-		validatedProjectLocation = validatedProjectLocation + "/"
+
+	validatedProjectLocation, err = ValidateProjectLocation(ctx, unvalidatedProjectLocation)
+	if err != nil {
+		return "", "", "", "", err
 	}
 
 	if unvalidatedGoVersion == "unset" && validatedProjectType != "generic-program" {
@@ -257,6 +248,34 @@ func validateArguments(ctx context.Context, unvalidatedName, unvalidatedType, un
 	}
 
 	return validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion, nil
+}
+
+func ValidateAppName(ctx context.Context, unvalidatedAppName string) (validatedAppName string, err error) {
+	if unvalidatedAppName == "unset" {
+		validatedAppName, err = promptForInput(ctx, "Please specify the name of the application, if this is a "+
+			"Digital publishing specific application it should be prepended with 'dp-'")
+		if err != nil {
+			return validatedAppName, err
+		}
+	} else {
+		validatedAppName = unvalidatedAppName
+	}
+	return validatedAppName, err
+}
+
+func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation string) (validatedProjectLocation string, err error) {
+	if unvalidatedProjectLocation == "unset" {
+		validatedProjectLocation, err = promptForInput(ctx, "Please specify a directory for the project to be created in")
+		if err != nil {
+			return validatedProjectLocation, err
+		}
+	} else {
+		validatedProjectLocation = unvalidatedProjectLocation
+	}
+	if validatedProjectLocation[len(validatedProjectLocation)-1:] != "/" {
+		validatedProjectLocation = validatedProjectLocation + "/"
+	}
+	return validatedProjectLocation, err
 }
 
 func ValidateProjectType(ctx context.Context, unvalidatedType string) (validatedProjectType string, err error) {

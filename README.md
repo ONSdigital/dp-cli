@@ -66,6 +66,7 @@ Use "dp-utils [command] --help" for more information about a command.
 ```
 
 #### Create a repository on github
+// TODO prerequisite - user access token
 ```shell script
 ./dp-utils create-repo github
 ```
