@@ -219,7 +219,7 @@ func generateApplication() *cobra.Command {
 			}
 
 			if createRepository {
-				repository.PushToRepo(ctx, cloneUrl, projectLocation, nameOfApp)
+				repository.PushToRepo(ctx, projectLocation, nameOfApp)
 			}
 			return nil
 		},

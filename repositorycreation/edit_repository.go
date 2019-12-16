@@ -18,13 +18,24 @@ func CloneRepository(ctx context.Context, cloneUrl, projectLocation string) {
 	}
 }
 
-func PushToRepo(ctx context.Context, cloneUrl, projectLocation, appName string) {
+func PushToRepo(ctx context.Context, projectLocation, appName string) {
+	createNewBranch(ctx,projectLocation, appName)
 	commitProject(ctx, projectLocation, appName)
-	cmd := exec.Command("git", "push", cloneUrl)
+	cmd := exec.Command("git", "push", "-u", "origin", "feature/boilerplate-generation")
 	cmd.Dir = projectLocation+appName
 	err := cmd.Run()
 	if err != nil {
 		log.Event(ctx, "error during push", log.Error(err))
+	}
+}
+
+func createNewBranch(ctx context.Context, projectLocation, appNme string)  {
+	stageAllFiles(ctx, projectLocation, appNme)
+	cmd := exec.Command("git", "checkout", "-b", "feature/boilerplate-generation")
+	cmd.Dir = projectLocation + appNme
+	err := cmd.Run()
+	if err != nil {
+		log.Event(ctx, "error committing", log.Error(err))
 	}
 }
 
