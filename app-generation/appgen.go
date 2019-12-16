@@ -157,7 +157,7 @@ func GenerateProject(appName, projectType, projectLocation, goVer string, reposi
 		return err
 	}
 	newApp := application{
-		pathToRepo:   projectLocation,
+		pathToRepo:   projectLocation+appName+"/",
 		progType:     ProgramType(projectType),
 		name:         appName,
 		templateVars: populateTemplateModel(appName, goVer),
@@ -208,7 +208,7 @@ func validateArguments(ctx context.Context, repositoryCreated bool, unvalidatedN
 		return "", "", "", "", err
 	}
 	offerPurge := !repositoryCreated
-	validatedProjectLocation, err = ValidateProjectLocation(ctx, unvalidatedProjectLocation, offerPurge)
+	validatedProjectLocation, err = ValidateProjectLocation(ctx, unvalidatedProjectLocation, validatedAppName, offerPurge)
 	if err != nil {
 		return "", "", "", "", err
 	}
@@ -238,7 +238,7 @@ func ValidateAppName(ctx context.Context, unvalidatedAppName string) (validatedA
 	return validatedAppName, err
 }
 
-func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation string, offerPurge bool) (validatedProjectLocation string, err error) {
+func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation, appName string, offerPurge bool) (validatedProjectLocation string, err error) {
 	if unvalidatedProjectLocation == "unset" {
 		validatedProjectLocation, err = promptForInput(ctx, "Please specify a directory for the project to be created in")
 		if err != nil {
@@ -251,7 +251,7 @@ func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation str
 		validatedProjectLocation = validatedProjectLocation + "/"
 	}
 	if offerPurge {
-		err = offerPurgeProjDestination(ctx, validatedProjectLocation)
+		err = offerPurgeProjDestination(ctx, validatedProjectLocation, appName)
 		if err != nil {
 			return validatedProjectLocation, err
 		}
@@ -259,9 +259,16 @@ func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation str
 	return validatedProjectLocation, err
 }
 
-func offerPurgeProjDestination(ctx context.Context, projectLoc string) error {
+func offerPurgeProjDestination(ctx context.Context, projectLoc, appName string) error {
+	fmt.Println("offerPurgeProjDestination was hit")
+	if _, err := os.Stat(projectLoc+appName); os.IsNotExist(err) {
+		err = os.MkdirAll(projectLoc+appName, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
 	// If path has files in then purge them... but check with user first (prompt are you sure)
-	isEmpty, err := IsEmptyDir(projectLoc)
+	isEmpty, err := IsEmptyDir(projectLoc+appName)
 	if err != nil {
 		return err
 	}
@@ -269,7 +276,7 @@ func offerPurgeProjDestination(ctx context.Context, projectLoc string) error {
 	if !isEmpty {
 		//prompt user
 		maxUserInputAttempts := 3
-		deleteContents := promptForConfirmation(ctx, "The directory "+projectLoc+" was not empty would you "+
+		deleteContents := promptForConfirmation(ctx, "The directory "+projectLoc+appName+" was not empty would you "+
 			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
 
 		if deleteContents {

@@ -203,7 +203,7 @@ func generateApplication() *cobra.Command {
 					log.Event(ctx, "error unable to validate name of application", log.Error(err))
 					return err
 				}
-				projectLocation, err = projectgeneration.ValidateProjectLocation(ctx, projectLocation, createRepository)
+				projectLocation, err = projectgeneration.ValidateProjectLocation(ctx, projectLocation, nameOfApp, createRepository)
 				if err != nil {
 					log.Event(ctx, "error unable to validate project location", log.Error(err))
 					return err
@@ -219,10 +219,8 @@ func generateApplication() *cobra.Command {
 			}
 
 			if createRepository {
-				repository.PushToRepo(ctx, cloneUrl, projectLocation)
+				repository.PushToRepo(ctx, cloneUrl, projectLocation, nameOfApp)
 			}
-
-
 			return nil
 		},
 	}
