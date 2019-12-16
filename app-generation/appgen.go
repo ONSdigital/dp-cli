@@ -1,10 +1,13 @@
 package appgen
 
+// TODO add annotations on functions
+// TODO process input from user on if lib or not
+// TODO enable cloning and pushing to repo
 import (
 	"bufio"
-	"errors"
+	"context"
 	"fmt"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"io"
 	"os"
 	"os/exec"
@@ -28,12 +31,111 @@ type application struct {
 	progType     ProgramType
 }
 
-type fileGenerationVars struct {
-	filePath      string
-	fileExtension string
+type fileGen struct {
+	path      string
+	extension string
 }
 
 type ProgramType string
+
+var genericFiles = []fileGen{
+	{
+		path:      "readme",
+		extension: ".md",
+	},
+	{
+		path:      "contributing",
+		extension: ".md",
+	},
+	{
+		path:      "license",
+		extension: ".md",
+	},
+	{
+		path:      ".gitignore",
+		extension: "",
+	},
+	{
+		path:      ".github/PULL_REQUEST_TEMPLATE",
+		extension: ".md",
+	},
+	{
+		path:      ".github/ISSUES_TEMPLATE",
+		extension: ".md",
+	},
+}
+
+var applicationFiles = []fileGen{
+	{
+		path:      "ci/build",
+		extension: ".yml",
+	},
+	{
+		path:      "ci/unit",
+		extension: ".yml",
+	},
+	{
+		path:      "ci/scripts/build",
+		extension: ".sh",
+	},
+	{
+		path:      "ci/scripts/unit",
+		extension: ".sh",
+	},
+
+	// TODO Make file
+	// TODO concourse.docker
+	// TODO {appname}.Nomad
+	// TODO Config
+	// TODO Main
+}
+
+var controllerFiles = []fileGen{
+	{
+		path:      "handlers/handlers",
+		extension: ".go",
+	},
+	{
+		path:      "handlers/handlers_test",
+		extension: ".go",
+	},
+	{
+		path:      "routes/routes",
+		extension: ".go",
+	},
+	{
+		path:      "routes/routes_test",
+		extension: ".go",
+	},
+	{
+		path:      "mapper/mapper",
+		extension: ".go",
+	},
+	{
+		path:      "mapper/mapper_test",
+		extension: ".go",
+	},
+}
+
+var apiFiles = []fileGen{
+	{
+		// TODO Swagger spec
+		// TODO api/Api.go
+		// TODO api/Api_test.go
+		// TODO api/Hello.go
+		// TODO api/hello_test.go
+	},
+}
+
+var eventFiles = []fileGen{
+	{
+		// Todo event/
+		// TODO Event
+		// TODO Consumer
+		// TODO Consumer_test
+		// TODO handler
+	},
+}
 
 const (
 	GenericProgram  ProgramType = "generic-program"
@@ -43,8 +145,14 @@ const (
 	EventDriven     ProgramType = "event-driven"
 )
 
-func GenerateApp(appName, projectType, projectLocation, goVer string) error {
-	appName, projectType, projectLocation, goVer = validateArguments(appName, projectType, projectLocation, goVer)
+func GenerateProject(appName, projectType, projectLocation, goVer string) error {
+	ctx := context.Background()
+	var err error
+	appName, projectType, projectLocation, goVer, err = validateArguments(ctx, appName, projectType, projectLocation, goVer)
+	if err != nil {
+		log.Event(ctx, "error validating arguments for command", log.Error(err))
+		return err
+	}
 	newApp := application{
 		pathToRepo:   projectLocation,
 		progType:     ProgramType(projectType),
@@ -61,16 +169,23 @@ func GenerateApp(appName, projectType, projectLocation, goVer string) error {
 	if !isEmpty {
 		//prompt user
 		maxUserInputAttempts := 3
-		deleteContents := promptForConfirmation("The directory "+newApp.pathToRepo+" was not empty would you "+
+		deleteContents := promptForConfirmation(ctx, "The directory "+newApp.pathToRepo+" was not empty would you "+
 			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
 
 		if deleteContents {
-			os.RemoveAll(newApp.pathToRepo)
-			os.MkdirAll(newApp.pathToRepo, os.ModePerm)
+			err := os.RemoveAll(newApp.pathToRepo)
+			if err != nil {
+				return err
+			}
+			err = os.MkdirAll(newApp.pathToRepo, os.ModePerm)
+			if err != nil {
+				return err
+			}
 		}
+		fmt.Println("Path to generate files created")
 	}
 
-	initGoModules(newApp.pathToRepo, newApp.name)
+	initGoModules(ctx, newApp.pathToRepo, newApp.name)
 
 	switch newApp.progType {
 	case GenericProgram:
@@ -99,38 +214,32 @@ func GenerateApp(appName, projectType, projectLocation, goVer string) error {
 			return err
 		}
 	default:
-		log.Error(errors.New("unable to generate program due to unknown program type given"), nil)
+		log.Event(ctx, "unable to generate program due to unknown program type given", log.Error(err))
 	}
-	//finaliseModules(pathToRepo)
-	log.Info("Jobs d'ne. Project can be found at "+newApp.pathToRepo, nil)
+	finaliseModules(ctx, newApp.pathToRepo)
+	log.Event(ctx, "Project creation complete. Project can be found at "+newApp.pathToRepo)
 	return nil
 }
 
-func validateArguments(unvalidatedName, unvalidatedType, unvalidatedProjectLocation, unvalidatedGoVersion string) (string, string, string, string) {
+func validateArguments(ctx context.Context, unvalidatedName, unvalidatedType, unvalidatedProjectLocation, unvalidatedGoVersion string) (string, string, string, string, error) {
 	var validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion string
-	validTypes := []string{
-		"generic-program", "base-application", "api", "controller", "event-driven",
-	}
+	var err error
 	if unvalidatedName == "unset" {
-		validatedAppName = promptForInput("Please specify the name of the application, if this is a " +
+		validatedAppName, err = promptForInput(ctx, "Please specify the name of the application, if this is a "+
 			"Digital publishing specific application it should be prepended with 'dp-'")
+		if err != nil {
+			return "", "", "", "", err
+		}
 	} else {
 		validatedAppName = unvalidatedName
 	}
-	typeInputValid := false
-	for !typeInputValid {
-		if !stringInSlice(unvalidatedType, validTypes) {
-			typeInputValid = false
-			unvalidatedType = promptForInput("Please specify the project type. This can have one of the " +
-				"following values: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
-		} else {
-			typeInputValid = true
-			validatedProjectType = unvalidatedType
-		}
-	}
+	validatedProjectType, err = ValidateProjectType(ctx, unvalidatedType)
 
 	if unvalidatedProjectLocation == "unset" {
-		validatedProjectLocation = promptForInput("Please specify a directory for the project to be created in")
+		validatedProjectLocation, err = promptForInput(ctx, "Please specify a directory for the project to be created in")
+		if err != nil {
+			return "", "", "", "", err
+		}
 	} else {
 		validatedProjectLocation = unvalidatedProjectLocation
 	}
@@ -138,27 +247,59 @@ func validateArguments(unvalidatedName, unvalidatedType, unvalidatedProjectLocat
 		validatedProjectLocation = validatedProjectLocation + "/"
 	}
 
-	if unvalidatedGoVersion == "unset" {
-		validatedGoVersion = promptForInput("Please specify the version of GO to use")
+	if unvalidatedGoVersion == "unset" && validatedProjectType != "generic-program" {
+		validatedGoVersion, err = promptForInput(ctx, "Please specify the version of GO to use")
+		if err != nil {
+			return "", "", "", "", err
+		}
 	} else {
 		validatedGoVersion = unvalidatedGoVersion
 	}
 
-	return validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion
+	return validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion, nil
 }
-func IsEmptyDir(name string) (bool, error) {
+
+func ValidateProjectType(ctx context.Context, unvalidatedType string) (validatedProjectType string, err error) {
+	typeInputValid := false
+	validTypes := []string{
+		"generic-program", "base-application", "api", "controller", "event-driven",
+	}
+	for !typeInputValid {
+		if !stringInSlice(unvalidatedType, validTypes) {
+			typeInputValid = false
+			unvalidatedType, err = promptForInput(ctx, "Please specify the project type. This can have one of the "+
+				"following values: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
+			if err != nil {
+				return validatedProjectType, err
+			}
+		} else {
+			typeInputValid = true
+			validatedProjectType = unvalidatedType
+		}
+	}
+	return validatedProjectType, err
+}
+
+func IsEmptyDir(name string) (isEmptyDir bool, err error) {
 	f, err := os.Open(name)
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+
+	defer func() {
+		// Note 'cerr' used to check that no other error happened prior to closing and that original error is not disguised
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	_, err = f.Readdir(1)
 	if err == io.EOF {
 		return true, nil
 	}
-	return false, err
 
+	return false, err
 }
 
 func populateTemplateModel(name, goVer string) templateVars {
@@ -171,7 +312,7 @@ func populateTemplateModel(name, goVer string) templateVars {
 	}
 }
 
-func promptForConfirmation(prompt string, maxInputAttempts int) bool {
+func promptForConfirmation(ctx context.Context, prompt string, maxInputAttempts int) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for ; maxInputAttempts > 0; maxInputAttempts-- {
@@ -179,7 +320,7 @@ func promptForConfirmation(prompt string, maxInputAttempts int) bool {
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			log.Error(err, nil)
+			log.Event(ctx, "error reading user input ", log.Error(err))
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -190,23 +331,30 @@ func promptForConfirmation(prompt string, maxInputAttempts int) bool {
 			return false
 		}
 	}
+
 	return false
 }
 
-func initGoModules(pathToRepo, name string) {
+func initGoModules(ctx context.Context, pathToRepo, name string) {
 	cmd := exec.Command("go", "mod", "init", name)
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
-		log.Error(err, nil)
+		log.Event(ctx, "error  initialising go modules", log.Error(err))
 	}
 }
 
-func promptForInput(prompt string) string {
+func promptForInput(ctx context.Context, prompt string) (string, error) {
+	var input string
+	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println(prompt)
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSuffix(input, "\n")
+	scanner.Scan()
+	input = scanner.Text()
+	if scanner.Err() != nil {
+		log.Event(ctx, "project creation failed", log.Error(scanner.Err()))
+		return "", scanner.Err()
+	}
+	return input, nil
 }
 
 func stringInSlice(a string, list []string) bool {
@@ -215,31 +363,60 @@ func stringInSlice(a string, list []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
+func finaliseModules(ctx context.Context, pathToRepo string) () {
+	cmd := exec.Command("go", "build", "./...")
+	cmd.Dir = pathToRepo
+	err := cmd.Run()
+	if err != nil {
+		log.Event(ctx, "error during go build step", log.Error(err))
+	}
+}
+
+func (a application) createGenericContentDirectoryStructure() error {
+	return os.MkdirAll(a.pathToRepo+".github", os.ModePerm)
+}
+
+func (a application) createApplicationContentDirectoryStructure() error {
+	return os.MkdirAll(a.pathToRepo+"ci/scripts", os.ModePerm)
+}
+
+func (a application) createAPIContentDirectoryStructure() error {
+	return os.MkdirAll(a.pathToRepo+"api", os.ModePerm)
+}
+
+func (a application) createControllerContentDirectoryStructure() error {
+	err := os.MkdirAll(a.pathToRepo+"handlers", os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(a.pathToRepo+"routes", os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(a.pathToRepo+"mappers", os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a application) createEventDrivenContentDirectoryStructure() error {
+	return os.MkdirAll(a.pathToRepo+"event", os.ModePerm)
+}
+
 func (a application) generateGenericContent() error {
-	err := a.generateReadMe()
+	fmt.Println("function generateGenericContent hit")
+	err := a.createGenericContentDirectoryStructure()
 	if err != nil {
 		return err
 	}
-	err = a.generateContributionGuidelines()
-	if err != nil {
-		return err
-	}
-	err = a.generateLicense()
-	if err != nil {
-		return err
-	}
-	err = a.generateGitIgnore()
-	if err != nil {
-		return err
-	}
-	err = a.generatePullRequestTemplate()
-	if err != nil {
-		return err
-	}
-	err = a.generateIssuesFile()
+
+	err = a.generateBatchOfFileTemplates(genericFiles)
 	if err != nil {
 		return err
 	}
@@ -252,30 +429,17 @@ func (a application) generateApplicationContent() error {
 	if err != nil {
 		return err
 	}
-	err = a.generateContinuousIntegration()
+
+	err = a.createApplicationContentDirectoryStructure()
 	if err != nil {
 		return err
 	}
-	err = a.generateMakeFile()
+
+	err = a.generateBatchOfFileTemplates(applicationFiles)
 	if err != nil {
 		return err
 	}
-	err = a.generateDockerConcourseFile()
-	if err != nil {
-		return err
-	}
-	err = a.generateNomadFile()
-	if err != nil {
-		return err
-	}
-	err = a.generateMainFile()
-	if err != nil {
-		return err
-	}
-	err = a.generateConfigFiles()
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
@@ -285,15 +449,16 @@ func (a application) generateApiContent() error {
 		return err
 	}
 
-	err = a.generateSwaggerSpec()
+	err = a.createAPIContentDirectoryStructure()
 	if err != nil {
 		return err
 	}
 
-	err = a.generateAPIFiles()
+	err = a.generateBatchOfFileTemplates(apiFiles)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -303,20 +468,16 @@ func (a application) generateControllerContent() error {
 		return err
 	}
 
-	err = a.generateHandlers()
+	err = a.createControllerContentDirectoryStructure()
 	if err != nil {
 		return err
 	}
 
-	err = a.generateRoutes()
+	err = a.generateBatchOfFileTemplates(controllerFiles)
 	if err != nil {
 		return err
 	}
 
-	err = a.generateMappers()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -326,107 +487,21 @@ func (a application) generateEventDrivenContent() error {
 		return err
 	}
 
-	err = a.generateEventFiles()
+	err = a.createEventDrivenContentDirectoryStructure()
 	if err != nil {
 		return err
 	}
-	return nil
-}
 
-func (a application) generateReadMe() error {
-	fileToGen := fileGenerationVars{
-		filePath:      "readme",
-		fileExtension: ".md",
-	}
-	err := a.generateFileFromTemplate(fileToGen)
+	err = a.generateBatchOfFileTemplates(eventFiles)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (a application) generateContributionGuidelines() error {
-	fileToGen := fileGenerationVars{
-		filePath:      "contributing",
-		fileExtension: ".md",
-	}
-	err := a.generateFileFromTemplate(fileToGen)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a application) generateLicense() error {
-	fileToGen := fileGenerationVars{
-		filePath:      "license",
-		fileExtension: ".md",
-	}
-	err := a.generateFileFromTemplate(fileToGen)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a application) generateGitIgnore() error {
-	fileToGen := fileGenerationVars{
-		filePath:      ".gitignore",
-		fileExtension: "",
-	}
-	err := a.generateFileFromTemplate(fileToGen)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a application) generatePullRequestTemplate() error {
-	fileToGen := fileGenerationVars{
-		filePath:      ".github/PULL_REQUEST_TEMPLATE",
-		fileExtension: ".md",
-	}
-	os.MkdirAll(a.pathToRepo+".github", os.ModePerm)
-	err := a.generateFileFromTemplate(fileToGen)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a application) generateIssuesFile() error {
-	fileToGen := fileGenerationVars{
-		filePath:      ".github/ISSUES_TEMPLATE",
-		fileExtension: ".md",
-	}
-	err := a.generateFileFromTemplate(fileToGen)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a application) generateContinuousIntegration() error {
-	tmplFilesToGen := []fileGenerationVars{
-		{
-			filePath:      "ci/build",
-			fileExtension: ".yml",
-		},
-		{
-			filePath:      "ci/unit",
-			fileExtension: ".yml",
-		},
-		{
-			filePath:      "ci/scripts/build",
-			fileExtension: ".sh",
-		},
-		{
-			filePath:      "ci/scripts/unit",
-			fileExtension: ".sh",
-		},
-	}
-	os.MkdirAll(a.pathToRepo+"ci/scripts", os.ModePerm)
-	for _, fileToGen := range tmplFilesToGen {
+func (a application) generateBatchOfFileTemplates(filesToGen []fileGen) error {
+	for _, fileToGen := range filesToGen {
 		err := a.generateFileFromTemplate(fileToGen)
 		if err != nil {
 			return err
@@ -435,124 +510,26 @@ func (a application) generateContinuousIntegration() error {
 	return nil
 }
 
-func (a application) generateConfigFiles() error {
-	return nil
-}
-
-func (a application) generateMainFile() error {
-	return nil
-}
-
-func (a application) generateNomadFile() error {
-	return nil
-}
-
-func (a application) generateDockerConcourseFile() error {
-	return nil
-}
-
-func (a application) generateMakeFile() error {
-	return nil
-}
-
-func (a application) generateAPIFiles() error {
-	return nil
-}
-
-func (a application) generateSwaggerSpec() error {
-	return nil
-}
-
-func (a application) generateMappers() error {
-	tmplFilesToGen := []fileGenerationVars{
-		{
-			filePath:      "mapper/mapper",
-			fileExtension: ".go",
-		},
-		{
-			filePath:      "mapper/mapper_test",
-			fileExtension: ".go",
-		},
-	}
-	os.MkdirAll(a.pathToRepo+"mapper", os.ModePerm)
-	for _, fileToGen := range tmplFilesToGen {
-		err := a.generateFileFromTemplate(fileToGen)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (a application) generateFileFromTemplate(fileToGen fileGenerationVars) error {
-	f, err := os.Create(a.pathToRepo + fileToGen.filePath + fileToGen.fileExtension)
+func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
+	f, err := os.Create(a.pathToRepo + fileToGen.path + fileToGen.extension)
 	if err != nil {
 		return err
 	}
 	writer := bufio.NewWriter(f)
-	tmpl := template.Must(template.ParseFiles("./app-generation/content/templates/" + fileToGen.filePath + ".tmpl"))
+	tmpl := template.Must(template.ParseFiles("./app-generation/content/templates/" + fileToGen.path + ".tmpl"))
+
 	defer func() {
-		writer.Flush()
-		f.Close()
+		ferr := writer.Flush()
+		if err == nil {
+			err = ferr
+		}
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
 	}()
+
 	err = tmpl.Execute(writer, a.templateVars)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a application) generateRoutes() error {
-	tmplFilesToGen := []fileGenerationVars{
-		{
-			filePath:      "routes/routes",
-			fileExtension: ".go",
-		},
-		{
-			filePath:      "routes/routes_test",
-			fileExtension: ".go",
-		},
-	}
-	os.MkdirAll(a.pathToRepo+"routes", os.ModePerm)
-	for _, fileToGen := range tmplFilesToGen {
-		err := a.generateFileFromTemplate(fileToGen)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (a application) generateHandlers() error {
-	tmplFilesToGen := []fileGenerationVars{
-		{
-			filePath:      "handlers/handlers",
-			fileExtension: ".go",
-		},
-		{
-			filePath:      "handlers/handlers_test",
-			fileExtension: ".go",
-		},
-	}
-	os.MkdirAll(a.pathToRepo+"handlers", os.ModePerm)
-	for _, fileToGen := range tmplFilesToGen {
-		err := a.generateFileFromTemplate(fileToGen)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (a application) generateEventFiles() error {
-
-	return nil
-}
-
-func (a application) finaliseModules(pathToRepo string) error {
-	cmd := exec.Command("go", "build", "./...")
-	cmd.Dir = pathToRepo
-	err := cmd.Run()
 	if err != nil {
 		return err
 	}

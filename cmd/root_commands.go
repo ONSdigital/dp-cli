@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	appgen "dp-utils/app-generation"
 	"dp-utils/config"
 	"dp-utils/customisemydata"
@@ -79,16 +80,16 @@ func Load(cfg *config.Config) *cobra.Command {
 		Use:   "dp-utils",
 		Short: "dp-utils provides util functions for developers in ONS Digital Publishing",
 	}
-	GenerateApp := generateApplication()
-	GenerateApp.Flags().String("name", "unset", "The name of the application, if "+
+	GenerateProject := generateApplication()
+	GenerateProject.Flags().String("name", "unset", "The name of the application, if "+
 		"Digital specific application it should be prepended with 'dp-'")
-	GenerateApp.Flags().String("go-version", "unset", "The version of Go the application should use")
-	GenerateApp.Flags().String("project-location", "unset", "Location to generate project in")
-	GenerateApp.Flags().String("create-repository", "n", "Should a repository be created for the "+
+	GenerateProject.Flags().String("go-version", "unset", "The version of Go the application should use")
+	GenerateProject.Flags().String("project-location", "unset", "Location to generate project in")
+	GenerateProject.Flags().String("create-repository", "n", "Should a repository be created for the "+
 		"project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
-	GenerateApp.Flags().String("type", "unset", "Type of application to generate, values can "+
+	GenerateProject.Flags().String("type", "unset", "Type of application to generate, values can "+
 		"be: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
-	Root.AddCommand(Version, Clean, Import, CreateRepo, GenerateApp)
+	Root.AddCommand(Version, Clean, Import, CreateRepo, GenerateProject)
 
 	return Root
 }
@@ -174,23 +175,31 @@ func generateRepository() *cobra.Command {
 
 func generateApplication() *cobra.Command {
 	return &cobra.Command{
-		Use:   "generate-application",
-		Short: "Creates a github hosted repository",
+		Use:   "generate-project",
+		Short: "Generates the boilerplate for a given project type",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
 			var err error
+			var createRepository bool
 
 			nameOfApp, _ := cmd.Flags().GetString("name")
 			goVer, _ := cmd.Flags().GetString("go")
 			projectLocation, _ := cmd.Flags().GetString("project-location")
 			projType, _ := cmd.Flags().GetString("type")
-			createRepository, _ := cmd.Flags().GetString("create-repository")
+			createRepositoryInput, _ := cmd.Flags().GetString("create-repository")
+			createRepositoryInput = strings.ToLower(strings.TrimSpace(createRepositoryInput))
+			// Can't create repo unless project type has been provided in a flag, so prompt user for it
+			if createRepositoryInput == "y" || createRepositoryInput == "yes" {
+				createRepository = true
+				// TODO ValidateProjectType need to be public anymore?
+				appgen.ValidateProjectType(ctx, projType)
+			}
 
-			err = appgen.GenerateApp(nameOfApp, projType, projectLocation, goVer)
+			err = appgen.GenerateProject(nameOfApp, projType, projectLocation, goVer)
 			if err != nil {
 				return err
 			}
-			createRepository = strings.ToLower(strings.TrimSpace(createRepository))
-			if createRepository == "y" || createRepository == "yes" {
+			if createRepository {
 				repository.GenerateGithub(nameOfApp)
 			}
 
