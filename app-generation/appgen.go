@@ -148,10 +148,10 @@ const (
 	EventDriven     ProgramType = "event-driven"
 )
 
-func GenerateProject(appName, projectType, projectLocation, goVer string) error {
+func GenerateProject(appName, projectType, projectLocation, goVer string, repositoryCreated bool) error {
 	ctx := context.Background()
 	var err error
-	appName, projectType, projectLocation, goVer, err = validateArguments(ctx, appName, projectType, projectLocation, goVer)
+	appName, projectType, projectLocation, goVer, err = validateArguments(ctx, repositoryCreated, appName, projectType, projectLocation, goVer)
 	if err != nil {
 		log.Event(ctx, "error validating arguments for command", log.Error(err))
 		return err
@@ -161,31 +161,6 @@ func GenerateProject(appName, projectType, projectLocation, goVer string) error 
 		progType:     ProgramType(projectType),
 		name:         appName,
 		templateVars: populateTemplateModel(appName, goVer),
-	}
-
-	// If path has files in then purge them... but check with user first (prompt are you sure)
-	isEmpty, err := IsEmptyDir(newApp.pathToRepo)
-	if err != nil {
-		return err
-	}
-
-	if !isEmpty {
-		//prompt user
-		maxUserInputAttempts := 3
-		deleteContents := promptForConfirmation(ctx, "The directory "+newApp.pathToRepo+" was not empty would you "+
-			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
-
-		if deleteContents {
-			err := os.RemoveAll(newApp.pathToRepo)
-			if err != nil {
-				return err
-			}
-			err = os.MkdirAll(newApp.pathToRepo, os.ModePerm)
-			if err != nil {
-				return err
-			}
-		}
-		fmt.Println("Path to generate files created")
 	}
 
 	initGoModules(ctx, newApp.pathToRepo, newApp.name)
@@ -224,7 +199,7 @@ func GenerateProject(appName, projectType, projectLocation, goVer string) error 
 	return nil
 }
 
-func validateArguments(ctx context.Context, unvalidatedName, unvalidatedType, unvalidatedProjectLocation, unvalidatedGoVersion string) (string, string, string, string, error) {
+func validateArguments(ctx context.Context, repositoryCreated bool, unvalidatedName, unvalidatedType, unvalidatedProjectLocation, unvalidatedGoVersion string) (string, string, string, string, error) {
 	var validatedAppName, validatedProjectType, validatedProjectLocation, validatedGoVersion string
 	var err error
 	validatedAppName, err = ValidateAppName(ctx, unvalidatedName)
@@ -232,8 +207,8 @@ func validateArguments(ctx context.Context, unvalidatedName, unvalidatedType, un
 	if err != nil {
 		return "", "", "", "", err
 	}
-
-	validatedProjectLocation, err = ValidateProjectLocation(ctx, unvalidatedProjectLocation)
+	offerPurge := !repositoryCreated
+	validatedProjectLocation, err = ValidateProjectLocation(ctx, unvalidatedProjectLocation, offerPurge)
 	if err != nil {
 		return "", "", "", "", err
 	}
@@ -263,7 +238,7 @@ func ValidateAppName(ctx context.Context, unvalidatedAppName string) (validatedA
 	return validatedAppName, err
 }
 
-func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation string) (validatedProjectLocation string, err error) {
+func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation string, offerPurge bool) (validatedProjectLocation string, err error) {
 	if unvalidatedProjectLocation == "unset" {
 		validatedProjectLocation, err = promptForInput(ctx, "Please specify a directory for the project to be created in")
 		if err != nil {
@@ -275,7 +250,41 @@ func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation str
 	if validatedProjectLocation[len(validatedProjectLocation)-1:] != "/" {
 		validatedProjectLocation = validatedProjectLocation + "/"
 	}
+	if offerPurge {
+		err = offerPurgeProjDestination(ctx, validatedProjectLocation)
+		if err != nil {
+			return validatedProjectLocation, err
+		}
+	}
 	return validatedProjectLocation, err
+}
+
+func offerPurgeProjDestination(ctx context.Context, projectLoc string) error {
+	// If path has files in then purge them... but check with user first (prompt are you sure)
+	isEmpty, err := IsEmptyDir(projectLoc)
+	if err != nil {
+		return err
+	}
+
+	if !isEmpty {
+		//prompt user
+		maxUserInputAttempts := 3
+		deleteContents := promptForConfirmation(ctx, "The directory "+projectLoc+" was not empty would you "+
+			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
+
+		if deleteContents {
+			err := os.RemoveAll(projectLoc)
+			if err != nil {
+				return err
+			}
+			err = os.MkdirAll(projectLoc, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
+		fmt.Println("Path to generate files created")
+	}
+	return nil
 }
 
 func ValidateProjectType(ctx context.Context, unvalidatedType string) (validatedProjectType string, err error) {
