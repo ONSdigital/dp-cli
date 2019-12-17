@@ -7,6 +7,8 @@ import (
 	"os/exec"
 )
 
+// CloneRepository will clone a given repository at a given location,
+// the location is the projectLocation joined with appName
 func CloneRepository(ctx context.Context, cloneUrl, projectLocation, appName string) {
 	// TODO prompt to blitz dir here or log and return (do nothing)
 	fmt.Println("cloneUrl is: " + cloneUrl)
@@ -22,8 +24,9 @@ func CloneRepository(ctx context.Context, cloneUrl, projectLocation, appName str
 	}
 }
 
+// PushToRepo will push the contents of a given local directory to a set project remote (.git)
 func PushToRepo(ctx context.Context, projectLocation, appName string) {
-	createNewBranch(ctx, projectLocation, appName)
+	createBoilerPlateBranch(ctx, projectLocation, appName)
 	commitProject(ctx, projectLocation, appName)
 	cmd := exec.Command("git", "push", "-u", "origin", "feature/boilerplate-generation")
 	cmd.Dir = projectLocation + appName
@@ -32,6 +35,8 @@ func PushToRepo(ctx context.Context, projectLocation, appName string) {
 		log.Event(ctx, "error during push", log.Error(err))
 	}
 }
+
+// switchRepoToSSH will convert a given locations repositories connection from HTTPS to SSH
 func switchRepoToSSH(ctx context.Context, projectLocation, appName string) error {
 	cmd := exec.Command("git", "remote", "set-url", "origin", "git@github.com:"+org+"/"+appName+".git")
 	cmd.Dir = projectLocation + appName
@@ -43,7 +48,8 @@ func switchRepoToSSH(ctx context.Context, projectLocation, appName string) error
 	return nil
 }
 
-func createNewBranch(ctx context.Context, projectLocation, appNme string) {
+// createBoilerPlateBranch will create a new branch named "feature/boilerplate-generation" locally
+func createBoilerPlateBranch(ctx context.Context, projectLocation, appNme string) {
 	stageAllFiles(ctx, projectLocation, appNme)
 	cmd := exec.Command("git", "checkout", "-b", "feature/boilerplate-generation")
 	cmd.Dir = projectLocation + appNme
@@ -53,6 +59,8 @@ func createNewBranch(ctx context.Context, projectLocation, appNme string) {
 	}
 }
 
+// commitProject will stage all files in a given directory and then commit
+// them to the current working branch on source control
 func commitProject(ctx context.Context, projectLocation, appNme string) {
 	stageAllFiles(ctx, projectLocation, appNme)
 	cmd := exec.Command("git", "commit", "-S", "-m", "initial commit, created via dp project generation tool")
@@ -63,6 +71,7 @@ func commitProject(ctx context.Context, projectLocation, appNme string) {
 	}
 }
 
+// stageAllFiles will stage all files at a given directory
 func stageAllFiles(ctx context.Context, projectLocation, appNme string) {
 	cmd := exec.Command("git", "add", "-A")
 	cmd.Dir = projectLocation + appNme

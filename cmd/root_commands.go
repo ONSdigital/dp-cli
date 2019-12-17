@@ -90,7 +90,7 @@ func Load(cfg *config.Config) *cobra.Command {
 	GenerateProject.Flags().String("create-repository", "n", "Should a repository be created for the "+
 		"project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
 	GenerateProject.Flags().String("type", "unset", "Type of application to generate, values can "+
-		"be: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
+		"be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
 	Root.AddCommand(Version, Clean, Import, CreateRepo, GenerateProject)
 
 	return Root

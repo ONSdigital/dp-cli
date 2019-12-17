@@ -70,18 +70,14 @@ Use "dp-utils [command] --help" for more information about a command.
 ```shell script
 ./dp-utils create-repo github
 ```
-
+Note: further details found at [README.md](repositorycreation/README.md)
 #### Generate a project
 ```shell script
 ./dp-utils generate-project
 ```
-##### Optional flags
---name :              The name of the application, if Digital specific application it should be prepended with 'dp-'
-
---go-version :        The version of Go the application should use (Not used on generic-programs)
-
---project-location :  Location to generate project in
-
---create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
-
---type :              Type of application to generate, values can be: 'generic-program', 'base-application', 'api', 'controller', 'event-driven'")
+Note: further details found at [README.md](app-generation/README.md)
+#### Generate a project and host the repository on github
+```shell script
+./dp-utils generate-project --create-repo yes
+```
+Note: further details found at [COMPLETE_PROJECT_SETUP.md](app-generation/COMPLETE_PROJECT_SETUP.md)

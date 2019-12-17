@@ -204,7 +204,7 @@ func getConfigurationsForNewRepo(name string, projType projectgeneration.Program
 		repoName = name
 	}
 	repoDescription = promptForInput("Please provide a description for the repository")
-	if projType == "generic-program" {
+	if projType == "generic-project" {
 		defaultBranch = "master"
 	}
 	return accessToken, userHandle, repoName, repoDescription, defaultBranch
