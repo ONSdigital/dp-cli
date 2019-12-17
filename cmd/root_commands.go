@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"context"
-	projectgeneration "dp-utils/app-generation"
+	projectgeneration "dp-utils/project-generation"
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
-	repository "dp-utils/repositorycreation"
+	repository "dp-utils/repository-creation"
 	"dp-utils/zebedee"
-	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"math/rand"
 	"os"
@@ -74,8 +73,10 @@ func Load(cfg *config.Config) *cobra.Command {
 		Short: "Creates a new repository with the typical Digital Publishing configurations ",
 	}
 	createGithubRepo := generateRepository()
-	createGithubRepo.Flags().String("name", "dp-unnamed-application", "The name of the application, if "+
+	createGithubRepo.Flags().String("name", "unset", "The name of the application, if "+
 		"Digital specific application it should be prepended with 'dp-'")
+	createGithubRepo.Flags().String("token", "unset", "The users personal access token")
+	createGithubRepo.Flags().String("library", "no", "whether or not this is a library")
 	CreateRepo.AddCommand(createGithubRepo)
 
 	Root = &cobra.Command{
@@ -165,7 +166,14 @@ func generateRepository() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			nameOfApp, _ := cmd.Flags().GetString("name")
-			_, err = repository.GenerateGithub(nameOfApp, "")
+			token, _ := cmd.Flags().GetString("token")
+			isLibraryStr, _ := cmd.Flags().GetString("library")
+			isLibraryStr = strings.ToLower(strings.TrimSpace(isLibraryStr))
+			isLibrary := false
+			if isLibraryStr == "y" || isLibraryStr == "yes" {
+				isLibrary = true
+			}
+			_, err = repository.GenerateGithub(nameOfApp, "", token, isLibrary)
 			if err != nil {
 				return err
 			}
@@ -208,8 +216,8 @@ func generateApplication() *cobra.Command {
 					log.Event(ctx, "error unable to validate project location", log.Error(err))
 					return err
 				}
-				cloneUrl, err = repository.GenerateGithub(nameOfApp, projectgeneration.ProgramType(projType))
-				fmt.Println("cloneUrl is: " + cloneUrl)
+				isLibrary := false
+				cloneUrl, err = repository.GenerateGithub(nameOfApp, projectgeneration.ProjectType(projType), "", isLibrary)
 				repository.CloneRepository(ctx, cloneUrl, projectLocation, nameOfApp)
 			}
 

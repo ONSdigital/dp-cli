@@ -66,18 +66,17 @@ Use "dp-utils [command] --help" for more information about a command.
 ```
 
 #### Create a repository on github
-// TODO prerequisite - user access token
 ```shell script
 ./dp-utils create-repo github
 ```
-Note: further details found at [README.md](repositorycreation/README.md)
+Note: further details found at [README.md](repository-creation/README.md)
 #### Generate a project
 ```shell script
 ./dp-utils generate-project
 ```
-Note: further details found at [README.md](app-generation/README.md)
+Note: further details found at [README.md](project-generation/README.md)
 #### Generate a project and host the repository on github
 ```shell script
 ./dp-utils generate-project --create-repo yes
 ```
-Note: further details found at [COMPLETE_PROJECT_SETUP.md](app-generation/COMPLETE_PROJECT_SETUP.md)
+Note: further details found at [COMPLETE_PROJECT_SETUP.md](project-generation/COMPLETE_PROJECT_SETUP.md)
