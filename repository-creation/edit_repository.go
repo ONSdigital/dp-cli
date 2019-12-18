@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"os/exec"
 )
@@ -10,8 +9,6 @@ import (
 // CloneRepository will clone a given repository at a given location,
 // the location is the projectLocation joined with appName
 func CloneRepository(ctx context.Context, cloneUrl, projectLocation, appName string) {
-	// TODO prompt to blitz dir here or log and return (do nothing)
-	fmt.Println("cloneUrl is: " + cloneUrl)
 	cmd := exec.Command("git", "clone", cloneUrl)
 	cmd.Dir = projectLocation
 	err := cmd.Run()

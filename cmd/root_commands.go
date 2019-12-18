@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
-	projectgeneration "dp-utils/project-generation"
 	"dp-utils/config"
 	"dp-utils/customisemydata"
 	"dp-utils/out"
+	projectgeneration "dp-utils/project-generation"
 	repository "dp-utils/repository-creation"
 	"dp-utils/zebedee"
 	"github.com/ONSdigital/log.go/log"
@@ -188,10 +188,9 @@ func generateApplication() *cobra.Command {
 		Use:   "generate-project",
 		Short: "Generates the boilerplate for a given project type",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
 			var err error
 			var cloneUrl string
-			var createRepository bool
+			ctx := context.Background()
 			nameOfApp, _ := cmd.Flags().GetString("name")
 			goVer, _ := cmd.Flags().GetString("go")
 			projectLocation, _ := cmd.Flags().GetString("project-location")
@@ -200,34 +199,34 @@ func generateApplication() *cobra.Command {
 			createRepositoryInput = strings.ToLower(strings.TrimSpace(createRepositoryInput))
 			// Can't create repo unless project type has been provided in a flag, so prompt user for it
 			if createRepositoryInput == "y" || createRepositoryInput == "yes" {
-				createRepository = true
-				projType, err = projectgeneration.ValidateProjectType(ctx, projType)
+				err = projectgeneration.ValidateMandatoryArguments(nameOfApp, projType, projectLocation, goVer)
 				if err != nil {
-					log.Event(ctx, "error unable to validate project type", log.Error(err))
-					return err
-				}
-				nameOfApp, err = projectgeneration.ValidateAppName(ctx, nameOfApp)
-				if err != nil {
-					log.Event(ctx, "error unable to validate name of application", log.Error(err))
-					return err
-				}
-				projectLocation, err = projectgeneration.ValidateProjectLocation(ctx, projectLocation, nameOfApp, createRepository)
-				if err != nil {
-					log.Event(ctx, "error unable to validate project location", log.Error(err))
+					log.Event(ctx, "Error generating a complete project", log.Error(err))
 					return err
 				}
 				isLibrary := false
 				cloneUrl, err = repository.GenerateGithub(nameOfApp, projectgeneration.ProjectType(projType), "", isLibrary)
+				isEmptyDir, err := projectgeneration.IsEmptyDir(projectLocation + "/" + nameOfApp)
+				if err != nil {
+					log.Event(ctx, "error unable to validate project location", log.Error(err))
+					return err
+				}
+				if isEmptyDir {
+					projectgeneration.OfferPurgeProjDestination(ctx, projectLocation, nameOfApp)
+				}
 				repository.CloneRepository(ctx, cloneUrl, projectLocation, nameOfApp)
-			}
 
-			err = projectgeneration.GenerateProject(nameOfApp, projType, projectLocation, goVer, createRepository)
-			if err != nil {
-				return err
-			}
+				err = projectgeneration.GenerateProject(nameOfApp, projType, projectLocation, goVer, true)
+				if err != nil {
+					return err
+				}
 
-			if createRepository {
 				repository.PushToRepo(ctx, projectLocation, nameOfApp)
+			} else {
+				err = projectgeneration.GenerateProject(nameOfApp, projType, projectLocation, goVer, false)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},

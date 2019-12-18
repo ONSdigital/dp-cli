@@ -3,7 +3,7 @@ package repository
 import (
 	"bufio"
 	"context"
-	projectgeneration "dp-utils/app-generation"
+	projectgeneration "dp-utils/project-generation"
 	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
@@ -85,7 +85,6 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 		return cloneUrl, err
 	}
 	cloneUrl = repositoryObj.GetCloneURL()
-	fmt.Println("cloneUrl is: " + cloneUrl)
 	// Notify user of completion and get them to turn off actions
 	log.Event(ctx, "repository has successfully been create please Disable Actions for this repository")
 	return cloneUrl, nil
@@ -138,18 +137,22 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName s
 	_, resp, err := client.Repositories.UpdateBranchProtection(ctx, org, repoName, "master", &protectionRequest)
 	if err != nil {
 		log.Event(ctx, "update branch protection failed for master", log.Error(err))
+		return err
 	}
 	_, resp, err = client.Repositories.UpdateBranchProtection(ctx, org, repoName, "develop", &protectionRequest)
 	if err != nil {
 		log.Event(ctx, "update branch protection failed for develop", log.Error(err))
+		return err
 	}
 	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "master")
 	if err != nil {
 		log.Event(ctx, "adding protection, require signatures failed on branch master", log.Error(err), log.Data{"response": resp})
+		return err
 	}
 	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "develop")
 	if err != nil {
 		log.Event(ctx, "adding protection, require signatures failed on branch develop", log.Error(err), log.Data{"response": resp})
+		return err
 	}
 	return err
 }
