@@ -2,6 +2,6 @@
 
 export GOPATH=$(pwd)/go
 
-pushd $GOPATH/src/github.com/ONSdigital/{{.Name}}
+pushd {.Name}
   make test
 popd

@@ -75,9 +75,12 @@ var applicationFiles = []fileGen{
 		path:      "ci/scripts/unit",
 		extension: ".sh",
 	},
+	{
+		path:      "Dockerfile.concourse",
+		extension: "",
+	},
 
 	// TODO Make file
-	// TODO concourse.docker
 	// TODO {appname}.Nomad
 	// TODO Config
 	// TODO Main

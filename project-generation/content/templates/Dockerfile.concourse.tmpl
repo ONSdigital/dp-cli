@@ -1,0 +1,8 @@
+FROM onsdigital/dp-concourse-tools-ubuntu
+
+WORKDIR /app/
+
+COPY templates templates
+COPY {.Name} .
+
+CMD ./{.Name}
