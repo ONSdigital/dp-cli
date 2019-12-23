@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"dp-utils/out"
+	"dp-cli/out"
 	"fmt"
 	"os"
 	"os/exec"

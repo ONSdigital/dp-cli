@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"dp-utils/config"
-	"dp-utils/customisemydata"
-	"dp-utils/out"
-	"dp-utils/zebedee"
+	"dp-cli/config"
+	"dp-cli/customisemydata"
+	"dp-cli/out"
+	"dp-cli/zebedee"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -63,8 +63,8 @@ func Load(cfg *config.Config) *cobra.Command {
 	Import.AddCommand(initCustomiseMyData(cfg))
 
 	Root = &cobra.Command{
-		Use:   "dp-utils",
-		Short: "dp-utils provides util functions for developers in ONS Digital Publishing",
+		Use:   "dp-cli",
+		Short: "dp-cli provides util functions for developers in ONS Digital Publishing",
 	}
 	Root.AddCommand(Version, Clean, Import)
 	return Root

@@ -1,4 +1,4 @@
-module dp-utils
+module dp-cli
 
 go 1.12
 

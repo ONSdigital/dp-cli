@@ -1,1 +1,0 @@
-export DP_UTILS_CFG="/Users/dave/Documents/go-projects/dp-utils/config/config.yml"
