@@ -192,7 +192,15 @@ func getConfigurationsForNewRepo() (accessToken, userHandle, repoName, repoDescr
 	userHandle = promptForInput("Please provide your github handle/username")
 	repoName = promptForInput("Please provide the full name for the new repository")
 	repoDescription = promptForInput("Please provide a description for the repository")
-	defaultBranch = promptForInput("Please pick a default branch, either: 'develop' or 'master'")
+	var response string
+	for response != "1" && response != "2"{
+		response = promptForInput("Please pick a default branch, either: \n\n[1] develop\n[2] master\n\n Please enter the number corresponding to your choice:")
+		if response == "1" {
+			defaultBranch = "develop"
+		} else if response == "2" {
+			defaultBranch = "master"
+		}
+	}
 	return accessToken, userHandle, repoName, repoDescription, defaultBranch
 }
 
