@@ -9,14 +9,14 @@ This tool can be used to create projects of the following categories:
         - event-driven
 
 ## How to use
-It is always beneficial to ensure you are using the most up to date version of the dp-utils tool. 
+It is always beneficial to ensure you are using the most up to date version of the dp-cli tool. 
 To update pull the latest changes and rebuild the tool like so:
 ```shell script
-git pull; go build -o ./dp-utils; 
+git pull; go build -o ./dp-cli; 
 ```
 
 ```shell script
-./dp-utils generate-project
+./dp-cli generate-project
 ``` 
 
 This tool can be used in conjunction with the repository creation tool, for further details read [COMPLETE_PROJECT_SETUP.md](COMPLETE_PROJECT_SETUP.md)

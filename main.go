@@ -1,9 +1,9 @@
 package main
 
 import (
-	"dp-utils/cmd"
-	"dp-utils/config"
-	"dp-utils/out"
+	"dp-cli/cmd"
+	"dp-cli/config"
+	"dp-cli/out"
 	"os"
 )
 

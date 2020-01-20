@@ -3,12 +3,14 @@ package repository
 import (
 	"bufio"
 	"context"
-	projectgeneration "dp-utils/project-generation"
+	projectgeneration "dp-cli/project-generation"
 	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
+	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 	"os"
+	"strings"
 )
 
 const (
@@ -19,12 +21,24 @@ const (
 	masterBranch = "master"
 )
 
-// GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, personalAccessToken string, isLibrary bool) (cloneUrl string, err error) {
-	fmt.Println("This script will create a new ONS Digital Publishing repository." +
-		"In order to create and configure a new repository please answer the prompts.")
+func RunGenerateRepo(cmd *cobra.Command, args []string) error {
+	var err error
+	nameOfApp, _ := cmd.Flags().GetString("name")
+	token, _ := cmd.Flags().GetString("token")
+	branchStrategyInput, _ := cmd.Flags().GetString("strategy")
+	branchStrategy := strings.ToLower(strings.TrimSpace(branchStrategyInput))
+	_, err = GenerateGithub(nameOfApp, "", token, branchStrategy)
+	if err != nil {
+		return err
+	}
 
-	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, isLibrary)
+	return nil
+}
+
+// GenerateGithub is the entry point to generating the repository
+func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
+	fmt.Println("function GenerateGithub hit ")
+	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, branchStrategy)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -56,10 +70,12 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 		return cloneUrl, err
 	}
 
-	err = createDevelopBranch(ctx, client, repoName)
-	if err != nil {
-		log.Event(ctx, "unable to create develop branch", log.Error(err))
-		return cloneUrl, err
+	if ProjectType != "generic-project" || branchStrategy == "git" {
+		err = createDevelopBranch(ctx, client, repoName)
+		if err != nil {
+			log.Event(ctx, "unable to create develop branch", log.Error(err))
+			return cloneUrl, err
+		}
 	}
 
 	err = setDevelopAsDefaultBranch(ctx, client, repoName, repo)
@@ -68,9 +84,9 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 		return cloneUrl, err
 	}
 
-	err = setBranchProtections(ctx, client, repoName)
+	err = setBranchProtections(ctx, client, repoName, branchStrategy)
 	if err != nil {
-		log.Event(ctx, "unable to set all branch protections, please review and correct these manually", log.Error(err))
+		log.Event(ctx, "unable to set all branch protections", log.Error(err))
 		return cloneUrl, err
 	}
 
@@ -106,7 +122,7 @@ func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoNa
 }
 
 // setBranchProtections sets the protections for both master and develop branches
-func setBranchProtections(ctx context.Context, client *github.Client, repoName string) error {
+func setBranchProtections(ctx context.Context, client *github.Client, repoName, branchStrategy string) error {
 	requiredStatusChecks := github.RequiredStatusChecks{
 		Strict:   true,
 		Contexts: []string{},
@@ -139,20 +155,25 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName s
 		log.Event(ctx, "update branch protection failed for master", log.Error(err))
 		return err
 	}
-	_, resp, err = client.Repositories.UpdateBranchProtection(ctx, org, repoName, "develop", &protectionRequest)
-	if err != nil {
-		log.Event(ctx, "update branch protection failed for develop", log.Error(err))
-		return err
+
+	if branchStrategy == "git" {
+		_, resp, err = client.Repositories.UpdateBranchProtection(ctx, org, repoName, "develop", &protectionRequest)
+		if err != nil {
+			log.Event(ctx, "update branch protection failed for develop", log.Error(err))
+			return err
+		}
 	}
 	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "master")
 	if err != nil {
 		log.Event(ctx, "adding protection, require signatures failed on branch master", log.Error(err), log.Data{"response": resp})
 		return err
 	}
-	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "develop")
-	if err != nil {
-		log.Event(ctx, "adding protection, require signatures failed on branch develop", log.Error(err), log.Data{"response": resp})
-		return err
+	if branchStrategy == "git" {
+		_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "develop")
+		if err != nil {
+			log.Event(ctx, "adding protection, require signatures failed on branch develop", log.Error(err), log.Data{"response": resp})
+			return err
+		}
 	}
 	return err
 }
@@ -197,26 +218,36 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, isLib bool) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
 	defaultBranch = "develop"
 	if personalAccessToken == "" || personalAccessToken == "unset" {
-		accessToken = promptForInput("Please provide your personal access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+		accessToken = PromptForInput("Please provide your personal access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	}
-	userHandle = promptForInput("Please provide your github handle/username")
+	userHandle = PromptForInput("Please provide your github handle/username")
 	if name == "" || name == "unset" {
-		repoName = promptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name')")
+		repoName = PromptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name')")
 	} else {
 		repoName = name
 	}
-	repoDescription = promptForInput("Please provide a description for the repository")
-	if projType == "generic-project" || isLib {
+	repoDescription = PromptForInput("Please provide a description for the repository")
+	if branchStrategy == "" {
+		prompt := "Please pick the branching strategy you wish this repo to use:"
+		options := []string{"github flow","git flow"}
+		ctx := context.Background()
+		branchStrategy, err := projectgeneration.OptionPromptInput(ctx, prompt, options...)
+		if err != nil {
+			log.Event(ctx, "error getting branch strategy", log.Error(err))
+		}
+		branchStrategy = strings.Replace(branchStrategy, " flow","", -1)
+	}
+	if projType == "generic-project" || branchStrategy == "github" {
 		defaultBranch = "master"
 	}
 	return accessToken, userHandle, repoName, repoDescription, defaultBranch
 }
 
-// promptForInput gives a user a message and expect input to be provided
-func promptForInput(prompt string) string {
+// PromptForInput gives a user a message and expect input to be provided
+func PromptForInput(prompt string) string {
 	var input string
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println(prompt)

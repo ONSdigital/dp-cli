@@ -145,19 +145,25 @@ const (
 func GenerateProject(appName, projType, projectLocation, goVer string, repositoryCreated bool) error {
 	ctx := context.Background()
 	var err error
-	appName, projType, projectLocation, goVer, err = validateArguments(ctx, repositoryCreated, appName, projType, projectLocation, goVer)
+
+	an, pt, pl, gv, err := configureAndValidateArguments(ctx, appName, projType, projectLocation, goVer)
 	if err != nil {
-		log.Event(ctx, "error validating arguments for command", log.Error(err))
+		log.Event(ctx, "error configuring and validating arguments", log.Error(err))
 		return err
 	}
-	newApp := application{
-		pathToRepo:    projectLocation + appName + "/",
-		projectType:   ProjectType(projType),
-		name:          appName,
-		templateModel: populateTemplateModel(appName, goVer),
+	// If repository was created then this would have already been offered
+	if !repositoryCreated {
+		OfferPurgeProjectDestination(ctx, projectLocation, appName)
 	}
 
-	initGoModules(ctx, newApp.pathToRepo, newApp.name)
+	newApp := application{
+		pathToRepo:    pl + appName + "/",
+		projectType:   ProjectType(pt),
+		name:          an,
+		templateModel: PopulateTemplateModel(an, gv),
+	}
+
+	InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 
 	switch newApp.projectType {
 	case GenericProject:
@@ -188,29 +194,10 @@ func GenerateProject(appName, projType, projectLocation, goVer string, repositor
 	default:
 		log.Event(ctx, "unable to generate project due to unknown project type given", log.Error(err))
 	}
-	finaliseModules(ctx, newApp.pathToRepo)
-	log.Event(ctx, "Project creation complete. Project can be found at "+newApp.pathToRepo)
-	return nil
-}
 
-func ValidateMandatoryArguments(nameOfApp, projType, projectLocation, goVer string) error {
-	ctx := context.Background()
-	var err error
-	projType, err = ValidateProjectType(ctx, projType)
-	if err != nil {
-		log.Event(ctx, "error unable to validate project type", log.Error(err))
-		return err
-	}
-	nameOfApp, err = ValidateAppName(ctx, nameOfApp)
-	if err != nil {
-		log.Event(ctx, "error unable to validate name of application", log.Error(err))
-		return err
-	}
-	projectLocation, err = ValidateProjectLocation(ctx, projectLocation, nameOfApp, true)
-	if err != nil {
-		log.Event(ctx, "error unable to validate project location", log.Error(err))
-		return err
-	}
+	FinaliseModules(ctx, newApp.pathToRepo)
+
+	log.Event(ctx, "Project creation complete. Project can be found at "+newApp.pathToRepo)
 	return nil
 }
 

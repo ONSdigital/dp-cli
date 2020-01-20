@@ -1,7 +1,7 @@
 package zebedee
 
 import (
-	"dp-utils/out"
+	"dp-cli/out"
 	"os"
 	"path/filepath"
 )

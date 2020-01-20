@@ -13,7 +13,7 @@
 #### Be a member of the ONS Digital Publishing team and the ONSDigital organisation with permissions to create new repositories
 ___
 ### How to use
-1. Run ./dp-utils repo-generation github
+1. Run ./dp-cli repo-generation github
 2. Enter your 'Personal Access Token' when prompted 
 3. Enter your Github handler when prompted
 4. Enter your repository name, note that if the repository is specific to Digital Publishing then prefix it with 'dp-'
