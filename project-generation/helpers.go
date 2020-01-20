@@ -165,7 +165,11 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 			}
 			if !isEmptyDir {
 				// Project directory exists at the given file path and has content inside of it
-				OfferPurgeProjectDestination(ctx, path, projectName)
+				err = OfferPurgeProjectDestination(ctx, path, projectName)
+				if err != nil {
+					log.Event(ctx, "error during offer purge of directory", log.Error(err))
+					return err
+				}
 			} //else everything is good and nothing needs to be done
 		}
 		if err != nil {
@@ -315,16 +319,6 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) {
 	}
 }
 
-// StringInSlice will check if a string as a complete word appears within a slice
-func StringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-
-	return false
-}
 
 // FinaliseModules will run go build ./... to generate go modules dependency management files
 func FinaliseModules(ctx context.Context, pathToRepo string) () {

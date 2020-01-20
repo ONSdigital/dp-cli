@@ -23,7 +23,6 @@ var (
 	version    *cobra.Command
 	clean      *cobra.Command
 	importData *cobra.Command
-	generate   *cobra.Command
 	createRepo *cobra.Command
 
 	r                    *rand.Rand
@@ -232,13 +231,21 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 			log.Event(ctx, "failed to generate project on github", log.Error(err))
 			return err
 		}
-		repository.CloneRepository(ctx, cloneUrl, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		err = repository.CloneRepository(ctx, cloneUrl, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		if err != nil {
+			log.Event(ctx, "failed to clone repository", log.Error(err))
+			return err
+		}
 		err = projectgeneration.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, true)
 		if err != nil {
 			log.Event(ctx, "failed to generate project on github", log.Error(err))
 			return err
 		}
-		repository.PushToRepo(ctx, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		err = repository.PushToRepo(ctx, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		if err != nil {
+			log.Event(ctx, "failed to push to repository", log.Error(err))
+			return err
+		}
 		return nil
 	}
 	err = projectgeneration.GenerateProject(nameOfApp, projectType, projectLocation, goVer, false)
