@@ -20,6 +20,8 @@ Clone the code
 ```shell script
 git clone git@github.com:ONSdigital/dp-cli.git
 ```
+git clone git@github.com:ONSdigital/dp-cli.git
+```
 :warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
 ### Config
@@ -28,14 +30,16 @@ Add the following to your bash profile - replacing `<PATH_TO_PROJECT>` with the 
 ```shell script
 export DP_CLI_CFG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
 ```
+export DP_CLI_CONFIG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
+```
 Build and run the binary
-````shell script
+````bash
 go build -o dp-cli
 ./dp-cli
 ````
 
 You should be presented you a help menu similar to:
-```shell script
+```
 dp-cli provides util functions for developers in ONS Digital Publishing
 
 Usage:
@@ -59,24 +63,12 @@ Use "dp-cli [command] --help" for more information about a command.
 ```shell script
 ./dp-cli clean cmd
 ```
-
-#### Import the generic hierarchy and suicides code list:
-```shell script
-./dp-cli import cmd
+./dp-cli clean cmd
 ```
 
 #### Create a repository on github
 ```shell script
 ./dp-cli create-repo github
 ```
-Note: further details found at [README.md](repository-creation/README.md)
-#### Generate a project
-```shell script
-./dp-cli generate-project
+./dp-cli import cmd
 ```
-Note: further details found at [README.md](project-generation/README.md)
-#### Generate a project and host the repository on github
-```shell script
-./dp-cli generate-project --create-repo yes
-```
-Note: further details found at [COMPLETE_PROJECT_SETUP.md](project-generation/COMPLETE_PROJECT_SETUP.md)

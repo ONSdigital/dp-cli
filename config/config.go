@@ -21,9 +21,9 @@ type Config struct {
 }
 
 func Get() (*Config, error) {
-	path := os.Getenv("DP_CLI_CFG")
+	path := os.Getenv("DP_CLI_CONFIG")
 	if len(path) == 0 {
-		return nil, errors.New("no DP_CLI_CFG config file specified")
+		return nil, errors.New("no DP_CLI_CONFIG config file specified")
 	}
 
 	b, err := ioutil.ReadFile(path)
