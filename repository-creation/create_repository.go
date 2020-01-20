@@ -48,6 +48,10 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 	client := github.NewClient(tc)
 
 	hasAccess, err := checkAccess(ctx, client)
+	if err != nil {
+		log.Event(ctx, "failed to check if had access", log.Error(err))
+		return "", err
+	}
 	if !hasAccess {
 		log.Event(ctx, "user does not have access", log.Error(err))
 		return cloneUrl, err
@@ -112,6 +116,7 @@ func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoNa
 	resp, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
 	if err != nil {
 		log.Event(ctx, "unable to add collaborators", log.Error(err))
+		return err
 	}
 
 	resp, err = client.Repositories.RemoveCollaborator(ctx, org, repoName, userHandle)
