@@ -1,8 +1,8 @@
 package customisemydata
 
 import (
-	"dp-utils/config"
-	"dp-utils/out"
+	"dp-cli/config"
+	"dp-cli/out"
 
 	"gopkg.in/mgo.v2"
 )
