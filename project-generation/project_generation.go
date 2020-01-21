@@ -112,7 +112,9 @@ func (a application) createGenericContentDirectoryStructure() error {
 
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createApplicationContentDirectoryStructure() error {
-	return os.MkdirAll(a.pathToRepo+"ci/scripts", os.ModePerm)
+	os.MkdirAll(a.pathToRepo+"config", os.ModePerm)
+	os.MkdirAll(a.pathToRepo+"ci/scripts", os.ModePerm)
+	return nil
 }
 
 // createAPIContentDirectoryStructure will create child directories for API content at a given path
@@ -267,10 +269,9 @@ func (a application) generateBatchOfFileTemplates(filesToGen []fileGen) error {
 
 // generateFileFromTemplate will generate a single file from templates
 func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
-	// if fileToGen.filePrefix {
 	fmt.Println("FILE PREFIX :::", a.pathToRepo+fileToGen.filePrefix+fileToGen.outputPath+fileToGen.extension)
-	// }
 	f, err := os.Create(a.pathToRepo + fileToGen.filePrefix + fileToGen.outputPath + fileToGen.extension)
+	fmt.Println("TEMPLATE LOCATION :::", "./project-generation/content/templates/"+fileToGen.templatePath+".tmpl")
 	if err != nil {
 		return err
 	}

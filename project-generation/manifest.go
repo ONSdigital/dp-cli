@@ -65,18 +65,6 @@ var applicationFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
-		templatePath: "Dockerfile.concourse",
-		outputPath:   "Dockerfile.concourse",
-		extension:    "",
-		filePrefix:   "",
-	},
-	{
-		templatePath: "Makefile",
-		outputPath:   "Makefile",
-		extension:    "",
-		filePrefix:   "",
-	},
-	{
 		templatePath: "config/config",
 		outputPath:   "config/config",
 		extension:    ".go",
@@ -89,15 +77,23 @@ var applicationFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "Dockerfile.concourse",
+		outputPath:   "Dockerfile.concourse",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "nomad",
 		outputPath:   "",
 		extension:    ".nomad",
 		filePrefix:   "",
 	},
-
-	// TODO Make file
-	// TODO {appname}.Nomad
-	// TODO Config
 }
 
 var controllerFiles = []fileGen{
