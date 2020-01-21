@@ -10,30 +10,27 @@
 - `dp-hierarchy-builder`
 
 to be one your `$GOPATH`:
-```shell script
+```
 go get github.com/ONSdigital/dp-code-list-scripts
 go get github.com/ONSdigital/dp-hierarchy-builder
 ```
 
 ### Getting started
 Clone the code
-```shell script
-git clone git@github.com:ONSdigital/dp-cli.git
 ```
 git clone git@github.com:ONSdigital/dp-cli.git
 ```
+
 :warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
 ### Config
 Add the following to your bash profile - replacing `<PATH_TO_PROJECT>` with the appropriate path for your set up. 
 
-```shell script
-export DP_CLI_CFG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
 ```
 export DP_CLI_CONFIG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
 ```
 Build and run the binary
-````bash
+````
 go build -o dp-cli
 ./dp-cli
 ````
@@ -60,15 +57,11 @@ Use "dp-cli [command] --help" for more information about a command.
 ```
 
 #### Clean out all CMD data from you local env:
-```shell script
-./dp-cli clean cmd
 ```
 ./dp-cli clean cmd
 ```
 
 #### Create a repository on github
-```shell script
-./dp-cli create-repo github
 ```
-./dp-cli import cmd
+./dp-cli create-repo github
 ```

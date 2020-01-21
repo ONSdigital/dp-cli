@@ -92,7 +92,7 @@ func ValidateAppName(ctx context.Context, unvalidatedAppName string) (validatedA
 		validatedAppName, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
 			"Digital publishing specific application it should be prepended with 'dp-'")
 		if err != nil {
-			return validatedAppName, err
+			return "", err
 		}
 	} else {
 		validatedAppName = unvalidatedAppName
@@ -107,7 +107,7 @@ func ValidateProjectType(ctx context.Context, projectType string) (validatedProj
 		options := []string{"generic-project", "base-application", "api", "controller", "event-driven"}
 		projectType, err = OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
-			return projectType, err
+			return "", err
 		}
 	}
 	return projectType, err
@@ -131,7 +131,7 @@ func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation str
 	if unvalidatedProjectLocation == "unset" || unvalidatedProjectLocation == "" {
 		validatedProjectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in")
 		if err != nil {
-			return validatedProjectLocation, err
+			return "", err
 		}
 	} else {
 		validatedProjectLocation = unvalidatedProjectLocation
