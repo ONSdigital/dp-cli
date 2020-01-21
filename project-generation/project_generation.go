@@ -4,15 +4,17 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/ONSdigital/log.go/log"
 	"os"
 	"text/template"
+
+	"github.com/ONSdigital/log.go/log"
 )
 
 type templateModel struct {
 	Name      string
 	Year      int
 	GoVersion string
+	Port      string
 }
 
 type application struct {
@@ -25,12 +27,13 @@ type application struct {
 }
 
 type fileGen struct {
-	path      string
-	extension string
+	templatePath string
+	outputPath   string
+	extension    string
+	filePrefix   string
 }
 
 type ProjectType string
-
 
 const (
 	GenericProject  ProjectType = "generic-project"
@@ -41,25 +44,27 @@ const (
 )
 
 // GenerateProject is the entry point into generating a project
-func GenerateProject(appName, projType, projectLocation, goVer string, repositoryCreated bool) error {
+func GenerateProject(appName, projType, projectLocation, goVer, port string, repositoryCreated bool) error {
 	ctx := context.Background()
 	var err error
 
-	an, pt, pl, gv, err := configureAndValidateArguments(ctx, appName, projType, projectLocation, goVer)
+	an, pt, pl, gv, prt, err := configureAndValidateArguments(ctx, appName, projType, projectLocation, goVer, port)
 	if err != nil {
 		log.Event(ctx, "error configuring and validating arguments", log.Error(err))
 		return err
 	}
 	// If repository was created then this would have already been offered
+	fmt.Println("PROJECT LOCATION: ", pl)
+	fmt.Println("APP NAME: ", an)
 	if !repositoryCreated {
-		OfferPurgeProjectDestination(ctx, projectLocation, appName)
+		OfferPurgeProjectDestination(ctx, pl, an)
 	}
 
 	newApp := application{
-		pathToRepo:    pl + appName + "/",
+		pathToRepo:    pl + an + "/",
 		projectType:   ProjectType(pt),
 		name:          an,
-		templateModel: PopulateTemplateModel(an, gv),
+		templateModel: PopulateTemplateModel(an, gv, prt),
 	}
 
 	InitGoModules(ctx, newApp.pathToRepo, newApp.name)
@@ -156,6 +161,9 @@ func (a application) generateGenericContent() error {
 
 // generateApplicationContent will create all files for Application content
 func (a application) generateApplicationContent() error {
+	fmt.Println("APPNAME:::", a.name)
+	applyFilePrefixesToManifest(applicationFiles, a.name)
+	fmt.Println("application files:", applicationFiles)
 	err := a.generateGenericContent()
 	if err != nil {
 		return err
@@ -172,6 +180,18 @@ func (a application) generateApplicationContent() error {
 	}
 
 	return nil
+}
+
+func applyFilePrefixesToManifest(f []fileGen, prefix string) {
+	fmt.Println("apply prefixes to manifest", f)
+	for i := 0; i < len(f); i++ {
+		if f[i].templatePath == "nomad" {
+			fmt.Println("Updating this file", f)
+			f[i].filePrefix = prefix
+			fmt.Println("PREFIX:::", prefix)
+			fmt.Println("FILE:::", f[i].filePrefix)
+		}
+	}
 }
 
 // generateAPIContent will create all files for API content
@@ -247,12 +267,15 @@ func (a application) generateBatchOfFileTemplates(filesToGen []fileGen) error {
 
 // generateFileFromTemplate will generate a single file from templates
 func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
-	f, err := os.Create(a.pathToRepo + fileToGen.path + fileToGen.extension)
+	// if fileToGen.filePrefix {
+	fmt.Println("FILE PREFIX :::", a.pathToRepo+fileToGen.filePrefix+fileToGen.outputPath+fileToGen.extension)
+	// }
+	f, err := os.Create(a.pathToRepo + fileToGen.filePrefix + fileToGen.outputPath + fileToGen.extension)
 	if err != nil {
 		return err
 	}
 	writer := bufio.NewWriter(f)
-	tmpl := template.Must(template.ParseFiles("./project-generation/content/templates/" + fileToGen.path + ".tmpl"))
+	tmpl := template.Must(template.ParseFiles("./project-generation/content/templates/" + fileToGen.templatePath + ".tmpl"))
 
 	defer func() {
 		ferr := writer.Flush()

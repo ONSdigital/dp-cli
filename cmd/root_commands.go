@@ -8,12 +8,13 @@ import (
 	projectgeneration "dp-cli/project-generation"
 	repository "dp-cli/repository-creation"
 	"dp-cli/zebedee"
-	"github.com/ONSdigital/log.go/log"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/ONSdigital/log.go/log"
 
 	"github.com/spf13/cobra"
 )
@@ -91,6 +92,7 @@ func Load(cfg *config.Config) *cobra.Command {
 		"project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
 	GenerateProject.Flags().String("type", "unset", "Type of application to generate, values can "+
 		"be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
+	GenerateProject.Flags().String("port", "", "The port this application will run on")
 	root.AddCommand(version, clean, importData, createRepo, GenerateProject)
 
 	return root
@@ -180,6 +182,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	nameOfApp, _ := cmd.Flags().GetString("name")
 	goVer, _ := cmd.Flags().GetString("go")
+	port, _ := cmd.Flags().GetString("port")
 	projectLocation, _ := cmd.Flags().GetString("project-location")
 	projectType, _ := cmd.Flags().GetString("type")
 	createRepositoryInput, _ := cmd.Flags().GetString("create-repository")
@@ -236,7 +239,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 			log.Event(ctx, "failed to clone repository", log.Error(err))
 			return err
 		}
-		err = projectgeneration.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, true)
+		err = projectgeneration.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, true)
 		if err != nil {
 			log.Event(ctx, "failed to generate project on github", log.Error(err))
 			return err
@@ -248,7 +251,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 		}
 		return nil
 	}
-	err = projectgeneration.GenerateProject(nameOfApp, projectType, projectLocation, goVer, false)
+	err = projectgeneration.GenerateProject(nameOfApp, projectType, projectLocation, goVer, port, false)
 	if err != nil {
 		return err
 	}
