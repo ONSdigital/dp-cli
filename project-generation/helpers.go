@@ -65,7 +65,10 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 			Validator: ValidatePortNumber,
 		}
 		prt = listOfArguments["port"].OutputVal
+	} else {
+		prt = port
 	}
+
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Event(ctx, "validation error", log.Error(err))
@@ -263,6 +266,7 @@ func IsEmptyDir(path string) (isEmptyDir bool, err error) {
 func PopulateTemplateModel(name, goVer, port string) templateModel {
 	// UTC to avoid any sketchy BST timing
 	year := time.Now().UTC().Year()
+	fmt.Println("PORT ::: ", port)
 	return templateModel{
 		Name:      name,
 		Year:      year,
