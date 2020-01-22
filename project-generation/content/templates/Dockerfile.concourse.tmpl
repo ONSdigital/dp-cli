@@ -3,6 +3,6 @@ FROM onsdigital/dp-concourse-tools-ubuntu
 WORKDIR /app/
 
 COPY templates templates
-COPY {.Name} .
+COPY {{.Name}} .
 
-CMD ./{.Name}
+CMD ./{{.Name}}
