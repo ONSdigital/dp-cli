@@ -3,7 +3,6 @@ package projectgeneration
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"os"
 	"text/template"
 
@@ -54,8 +53,6 @@ func GenerateProject(appName, projType, projectLocation, goVer, port string, rep
 		return err
 	}
 	// If repository was created then this would have already been offered
-	fmt.Println("PROJECT LOCATION: ", pl)
-	fmt.Println("APP NAME: ", an)
 	if !repositoryCreated {
 		OfferPurgeProjectDestination(ctx, pl, an)
 	}
@@ -147,7 +144,6 @@ func (a application) createEventDrivenContentDirectoryStructure() error {
 
 // generateGenericContent will create all files for Generic content
 func (a application) generateGenericContent() error {
-	fmt.Println("function generateGenericContent hit")
 	err := a.createGenericContentDirectoryStructure()
 	if err != nil {
 		return err
@@ -163,9 +159,7 @@ func (a application) generateGenericContent() error {
 
 // generateApplicationContent will create all files for Application content
 func (a application) generateApplicationContent() error {
-	fmt.Println("APPNAME:::", a.name)
 	applyFilePrefixesToManifest(applicationFiles, a.name)
-	fmt.Println("application files:", applicationFiles)
 	err := a.generateGenericContent()
 	if err != nil {
 		return err
@@ -185,13 +179,9 @@ func (a application) generateApplicationContent() error {
 }
 
 func applyFilePrefixesToManifest(f []fileGen, prefix string) {
-	fmt.Println("apply prefixes to manifest", f)
 	for i := 0; i < len(f); i++ {
 		if f[i].templatePath == "nomad" {
-			fmt.Println("Updating this file", f)
 			f[i].filePrefix = prefix
-			fmt.Println("PREFIX:::", prefix)
-			fmt.Println("FILE:::", f[i].filePrefix)
 		}
 	}
 }
@@ -269,9 +259,7 @@ func (a application) generateBatchOfFileTemplates(filesToGen []fileGen) error {
 
 // generateFileFromTemplate will generate a single file from templates
 func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
-	fmt.Println("FILE PREFIX :::", a.pathToRepo+fileToGen.filePrefix+fileToGen.outputPath+fileToGen.extension)
 	f, err := os.Create(a.pathToRepo + fileToGen.filePrefix + fileToGen.outputPath + fileToGen.extension)
-	fmt.Println("TEMPLATE LOCATION :::", "./project-generation/content/templates/"+fileToGen.templatePath+".tmpl")
 	if err != nil {
 		return err
 	}
