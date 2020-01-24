@@ -56,7 +56,7 @@ var applicationFiles = []fileGen{
 
 var controllerFiles = []fileGen{
 	{
-		path:      "handlers/handlers",
+		path:      "handlers/handlers", // TODO populate
 		extension: ".go",
 	},
 	{

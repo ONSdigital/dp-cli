@@ -2,7 +2,6 @@ package cli
 
 import (
 	"dp-cli/out"
-	"fmt"
 	"os"
 	"os/exec"
 	"time"
@@ -35,7 +34,6 @@ func GetProgressTicker() (chan bool, func()) {
 			}
 		}
 
-		fmt.Println("")
 	}
 
 	return stopC, progressTicker
