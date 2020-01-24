@@ -3,7 +3,7 @@ package customisemydata
 import (
 	"dp-cli/config"
 	"dp-cli/out"
-	"dp-cli/utils"
+	"dp-cli/cli"
 	"fmt"
 
 	bolt "github.com/johnnadratowski/golang-neo4j-bolt-driver"
@@ -40,13 +40,13 @@ func ImportGenericHierarchies(hierarchyBuilderPath string, cfg *config.Config) e
 
 	out.Info(fmt.Sprintf("building generic hierarchies: %+v", cfg.CMD.Hierarchies))
 
-	stopC, progressTicker := utils.GetProgressTicker()
+	stopC, progressTicker := cli.GetProgressTicker()
 	go progressTicker()
 
 	for _, script := range cfg.CMD.Hierarchies {
 		command := fmt.Sprintf("cypher-shell < %s/%s", hierarchyBuilderPath, script)
 
-		if err := utils.ExecCommand(command, ""); err != nil {
+		if err := cli.ExecCommand(command, ""); err != nil {
 			stopC <- true
 			return err
 		}
@@ -66,13 +66,13 @@ func ImportCodeLists(codeListScriptsPath string, cfg *config.Config) error {
 
 	out.InfoF("importing code lists: %+v", cfg.CMD.Codelists)
 
-	stopC, progressTicker := utils.GetProgressTicker()
+	stopC, progressTicker := cli.GetProgressTicker()
 	go progressTicker()
 
 	for _, codelist := range cfg.CMD.Codelists {
 		command := fmt.Sprintf("./load -q=%s -f=%s", "cypher", codelist)
 
-		if err := utils.ExecCommand(command, codeListScriptsPath); err != nil {
+		if err := cli.ExecCommand(command, codeListScriptsPath); err != nil {
 			stopC <- true
 			return err
 		}

@@ -1,24 +1,29 @@
 package cmd
 
 import (
+	"context"
 	"dp-cli/config"
 	"dp-cli/customisemydata"
 	"dp-cli/out"
+	projectgeneration "dp-cli/project-generation"
+	repository "dp-cli/repository-creation"
 	"dp-cli/zebedee"
+	"github.com/ONSdigital/log.go/log"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	Root     *cobra.Command
-	Version  *cobra.Command
-	Clean    *cobra.Command
-	Import   *cobra.Command
-	Generate *cobra.Command
+	root       *cobra.Command
+	version    *cobra.Command
+	clean      *cobra.Command
+	importData *cobra.Command
+	createRepo *cobra.Command
 
 	r                    *rand.Rand
 	goPath               string
@@ -42,7 +47,7 @@ func Load(cfg *config.Config) *cobra.Command {
 
 	codeListScriptsPath = filepath.Join(onsDigitalPath, "dp-code-list-scripts/code-list-scripts")
 
-	Version = &cobra.Command{
+	version = &cobra.Command{
 		Use:   "version",
 		Short: "Print the app version",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -50,24 +55,45 @@ func Load(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	Clean = &cobra.Command{
+	clean = &cobra.Command{
 		Use:   "clean",
 		Short: "Clean/Delete data from your local environment",
 	}
-	Clean.AddCommand(tearDownCustomiseMyData(cfg), clearCollections())
+	clean.AddCommand(tearDownCustomiseMyData(cfg), clearCollections())
 
-	Import = &cobra.Command{
+	importData = &cobra.Command{
 		Use:   "import",
 		Short: "ImportData your local developer environment",
 	}
-	Import.AddCommand(initCustomiseMyData(cfg))
+	importData.AddCommand(initCustomiseMyData(cfg))
 
-	Root = &cobra.Command{
+	createRepo = &cobra.Command{
+		Use:   "create-repo",
+		Short: "Creates a new repository with the typical Digital Publishing configurations ",
+	}
+	createGithubRepo := generateRepository()
+	createGithubRepo.Flags().String("name", "", "The name of the application, if "+
+		"Digital specific application it should be prepended with 'dp-'")
+	createGithubRepo.Flags().String("token", "", "The users personal access token")
+	createGithubRepo.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
+	createRepo.AddCommand(createGithubRepo)
+
+	root = &cobra.Command{
 		Use:   "dp-cli",
 		Short: "dp-cli provides util functions for developers in ONS Digital Publishing",
 	}
-	Root.AddCommand(Version, Clean, Import)
-	return Root
+	GenerateProject := generateApplication()
+	GenerateProject.Flags().String("name", "", "The name of the application, if "+
+		"Digital specific application it should be prepended with 'dp-'")
+	GenerateProject.Flags().String("go-version", "", "The version of Go the application should use")
+	GenerateProject.Flags().String("project-location", "", "Location to generate project in")
+	GenerateProject.Flags().String("create-repository", "n", "Should a repository be created for the "+
+		"project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
+	GenerateProject.Flags().String("type", "", "Type of application to generate, values can "+
+		"be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
+	root.AddCommand(version, clean, importData, createRepo, GenerateProject)
+
+	return root
 }
 
 // tearDownCustomiseMyData clean out all data from your local CMD stack.
@@ -130,4 +156,101 @@ func initCustomiseMyData(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func generateRepository() *cobra.Command {
+	return &cobra.Command{
+		Use:   "github",
+		Short: "Creates a github hosted repository",
+		RunE:  repository.RunGenerateRepo,
+	}
+}
+
+func generateApplication() *cobra.Command {
+	return &cobra.Command{
+		Use:   "generate-project",
+		Short: "Generates the boilerplate for a given project type",
+		RunE:  RunGenerateApplication,
+	}
+}
+
+func RunGenerateApplication(cmd *cobra.Command, args []string) error {
+	var err error
+	var cloneUrl string
+	ctx := context.Background()
+	nameOfApp, _ := cmd.Flags().GetString("name")
+	goVer, _ := cmd.Flags().GetString("go")
+	projectLocation, _ := cmd.Flags().GetString("project-location")
+	projectType, _ := cmd.Flags().GetString("type")
+	createRepositoryInput, _ := cmd.Flags().GetString("create-repository")
+	createRepositoryInput = strings.ToLower(strings.TrimSpace(createRepositoryInput))
+
+	// Can't create repo unless project type has been provided in a flag, so prompt user for it
+	if createRepositoryInput == "y" || createRepositoryInput == "yes" {
+
+		listOfArguments := make(projectgeneration.ListOfArguments)
+
+		listOfArguments["appName"] = &projectgeneration.Argument{
+			InputVal:  nameOfApp,
+			Context:   ctx,
+			Validator: projectgeneration.ValidateAppName,
+		}
+		listOfArguments["projectType"] = &projectgeneration.Argument{
+			InputVal:  projectType,
+			Context:   ctx,
+			Validator: projectgeneration.ValidateProjectType,
+		}
+		listOfArguments["projectLocation"] = &projectgeneration.Argument{
+			InputVal:  projectLocation,
+			Context:   ctx,
+			Validator: projectgeneration.ValidateProjectLocation,
+		}
+		listOfArguments, err = projectgeneration.ValidateArguments(listOfArguments)
+		if err != nil {
+			log.Event(ctx, "input validation error", log.Error(err))
+			return err
+		}
+
+		err := projectgeneration.ValidateProjectDirectory(ctx, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		if err != nil {
+			log.Event(ctx, "error confirming project directory is valid", log.Error(err))
+			return err
+		}
+
+		prompt := "Please pick the branching strategy you wish this repo to use:"
+		options := []string{"github flow", "git flow"}
+		strategy, err := projectgeneration.OptionPromptInput(ctx, prompt, options...)
+
+		if err != nil {
+			log.Event(ctx, "error getting branch strategy", log.Error(err))
+		}
+		strategy = strings.Replace(strategy, " flow", "", -1)
+
+		cloneUrl, err = repository.GenerateGithub(listOfArguments["appName"].OutputVal, projectgeneration.ProjectType(listOfArguments["projectType"].OutputVal), "", strategy)
+		if err != nil {
+			log.Event(ctx, "failed to generate project on github", log.Error(err))
+			return err
+		}
+		err = repository.CloneRepository(ctx, cloneUrl, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		if err != nil {
+			log.Event(ctx, "failed to clone repository", log.Error(err))
+			return err
+		}
+		err = projectgeneration.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, true)
+		if err != nil {
+			log.Event(ctx, "failed to generate project on github", log.Error(err))
+			return err
+		}
+		err = repository.PushToRepo(ctx, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		if err != nil {
+			log.Event(ctx, "failed to push to repository", log.Error(err))
+			return err
+		}
+		return nil
+	}
+	err = projectgeneration.GenerateProject(nameOfApp, projectType, projectLocation, goVer, false)
+	if err != nil {
+		return err
+	}
+	return nil
 }

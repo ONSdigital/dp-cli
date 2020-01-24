@@ -20,6 +20,7 @@ Clone the code
 ```
 git clone git@github.com:ONSdigital/dp-cli.git
 ```
+
 :warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
 ### Config
@@ -29,10 +30,10 @@ Add the following to your bash profile - replacing `<PATH_TO_PROJECT>` with the 
 export DP_CLI_CONFIG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
 ```
 Build and run the binary
-````bash
+```
 go build -o dp-cli
 ./dp-cli
-````
+```
 
 You should be presented you a help menu similar to:
 ```
@@ -42,10 +43,12 @@ Usage:
   dp-cli [command]
 
 Available Commands:
-  clean       Clean/Delete data from your local environment
-  help        Help about any command
-  import      ImportData your local developer environment
-  version     Print the app version
+  clean            Clean/Delete data from your local environment
+  create-repo      Creates a new repository with the typical Digital Publishing configurations
+  generate-project Generates the boilerplate for a given project type
+  help             Help about any command
+  import           ImportData your local developer environment
+  version          Print the app version
 
 Flags:
   -h, --help   help for dp-cli
@@ -53,12 +56,12 @@ Flags:
 Use "dp-cli [command] --help" for more information about a command.
 ```
 
-Clean out all CMD data from you local env:
+#### Clean out all CMD data from you local env:
 ```
 ./dp-cli clean cmd
 ```
 
-Import the generic hierarchy and suicides code list:
+#### Create a repository on github
 ```
-./dp-cli import cmd
+./dp-cli create-repo github
 ```
