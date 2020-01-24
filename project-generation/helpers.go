@@ -84,7 +84,7 @@ func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, er
 func ValidateAppName(ctx context.Context, name string) (string, error) {
 	var err error = nil
 
-	for valid := name != ""; !valid; valid = name != "" {
+	for name == "" {
 		name, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
 			"Digital publishing specific application it should be prepended with 'dp-'")
 		if err != nil {
@@ -113,7 +113,7 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 	if ValidVersionNumber(goVer) {
 		return goVer, nil
 	}
-	for valid := false; !valid; valid = ValidVersionNumber(goVer) {
+	for !ValidVersionNumber(goVer) {
 		goVer, err = PromptForInput(ctx, "Please specify the version of GO to use")
 		if err != nil {
 			return "", err
@@ -127,7 +127,7 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 func ValidateProjectLocation(ctx context.Context, projectLocation string) (string, error) {
 	var err error = nil
 
-	for valid := projectLocation != ""; !valid; valid = projectLocation != "" {
+	for projectLocation == "" {
 		projectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in")
 		if err != nil {
 			return "", err
