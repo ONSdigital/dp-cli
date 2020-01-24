@@ -91,7 +91,6 @@ func ValidateAppName(ctx context.Context, name string) (string, error) {
 			return "", err
 		}
 	}
-	fmt.Println("1 name is: " + name)
 	return name, err
 }
 
