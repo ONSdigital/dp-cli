@@ -49,7 +49,7 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 	pl = listOfArguments["projectLocation"].OutputVal
 	listOfArguments = make(ListOfArguments)
 	goVerUnset := goVersion == ""
-	if goVerUnset && projectType != "generic-project" {
+	if goVerUnset && ProjectType(pt) != GenericProject {
 		listOfArguments["goVersion"] = &Argument{
 			InputVal:  goVersion,
 			Context:   ctx,
@@ -91,7 +91,7 @@ func ValidateAppName(ctx context.Context, name string) (string, error) {
 			return "", err
 		}
 	}
-
+	fmt.Println("1 name is: " + name)
 	return name, err
 }
 

@@ -31,7 +31,6 @@ type fileGen struct {
 
 type ProjectType string
 
-
 const (
 	GenericProject  ProjectType = "generic-project"
 	BaseApplication ProjectType = "base-application"
@@ -52,17 +51,15 @@ func GenerateProject(appName, projType, projectLocation, goVer string, repositor
 	}
 	// If repository was created then this would have already been offered
 	if !repositoryCreated {
-		OfferPurgeProjectDestination(ctx, projectLocation, appName)
+		OfferPurgeProjectDestination(ctx, pl, an)
 	}
 
 	newApp := application{
-		pathToRepo:    pl + appName + "/",
+		pathToRepo:    pl + an + "/",
 		projectType:   ProjectType(pt),
 		name:          an,
 		templateModel: PopulateTemplateModel(an, gv),
 	}
-
-	InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 
 	switch newApp.projectType {
 	case GenericProject:
@@ -71,6 +68,7 @@ func GenerateProject(appName, projType, projectLocation, goVer string, repositor
 			return err
 		}
 	case BaseApplication:
+		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		err := newApp.generateApplicationContent()
 		if err != nil {
 			return err
