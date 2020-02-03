@@ -64,8 +64,6 @@ func GenerateProject(appName, projType, projectLocation, goVer, port string, rep
 		templateModel: PopulateTemplateModel(an, gv, prt),
 	}
 
-	InitGoModules(ctx, newApp.pathToRepo, newApp.name)
-
 	switch newApp.projectType {
 	case GenericProject:
 		err := newApp.generateGenericContent()
@@ -73,6 +71,7 @@ func GenerateProject(appName, projType, projectLocation, goVer, port string, rep
 			return err
 		}
 	case BaseApplication:
+		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		err := newApp.generateApplicationContent()
 		if err != nil {
 			return err

@@ -37,7 +37,6 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 
 // GenerateGithub is the entry point to generating the repository
 func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
-	fmt.Println("function GenerateGithub hit ")
 	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, branchStrategy)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(

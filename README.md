@@ -30,10 +30,10 @@ Add the following to your bash profile - replacing `<PATH_TO_PROJECT>` with the 
 export DP_CLI_CONFIG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
 ```
 Build and run the binary
-````
+```
 go build -o dp-cli
 ./dp-cli
-````
+```
 
 You should be presented you a help menu similar to:
 ```

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -48,8 +49,8 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 	pt = listOfArguments["projectType"].OutputVal
 	pl = listOfArguments["projectLocation"].OutputVal
 	listOfArguments = make(ListOfArguments)
-	goVerUnset := goVersion == "unset" || goVersion == ""
-	if goVerUnset && projectType != "generic-project" {
+	goVerUnset := goVersion == ""
+	if goVerUnset && ProjectType(pt) != GenericProject {
 		listOfArguments["goVersion"] = &Argument{
 			InputVal:  goVersion,
 			Context:   ctx,
@@ -78,44 +79,37 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 	return an, pt, pl, gv, prt, nil
 }
 
-func ValidateArguments(arguments map[string]*Argument) (validArguments map[string]*Argument, err error) {
-	fmt.Println("function ValidateArguments hit")
-	validArguments = make(ListOfArguments)
+func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
+	var err error = nil
 	for key, value := range arguments {
-		validArguments[key] = value
-	}
-
-	for key, value := range arguments {
-		fmt.Println("key " + key)
-		fmt.Println("value " + value.InputVal)
-		validArguments[key].OutputVal, err = value.Validator(value.Context, value.InputVal)
+		arguments[key].OutputVal, err = value.Validator(value.Context, value.InputVal)
 		if err != nil {
 			log.Event(context.Background(), "validation error ", log.Error(err))
 			return nil, err
 		}
 	}
 
-	return validArguments, err
+	return arguments, err
 }
 
 // ValidateAppName will ensure that the app name has been provided and is acceptable, if not it will keep
 // prompting until it is
-func ValidateAppName(ctx context.Context, unvalidatedAppName string) (validatedAppName string, err error) {
-	if unvalidatedAppName == "unset" || unvalidatedAppName == "" {
-		validatedAppName, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
+func ValidateAppName(ctx context.Context, name string) (string, error) {
+	var err error = nil
+
+	for name == "" {
+		name, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
 			"Digital publishing specific application it should be prepended with 'dp-'")
 		if err != nil {
 			return "", err
 		}
-	} else {
-		validatedAppName = unvalidatedAppName
 	}
-	return validatedAppName, err
+	return name, err
 }
 
 // ValidateProjectType will ensure that the project type provided by the users is one that can be boilerplate
 func ValidateProjectType(ctx context.Context, projectType string) (validatedProjectType string, err error) {
-	if projectType == "" || projectType == "unset" {
+	if projectType == "" {
 		prompt := "Please specify the project type"
 		options := []string{"generic-project", "base-application", "api", "controller", "event-driven"}
 		projectType, err = OptionPromptInput(ctx, prompt, options...)
@@ -126,16 +120,18 @@ func ValidateProjectType(ctx context.Context, projectType string) (validatedProj
 	return projectType, err
 }
 
-func ValidateGoVersion(ctx context.Context, unvalidatedGoVersion string) (validatedGoVersion string, err error) {
-	if unvalidatedGoVersion == "unset" || unvalidatedGoVersion == "" {
-		validatedGoVersion, err = PromptForInput(ctx, "Please specify the version of GO to use")
+func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
+	var err error = nil
+	if ValidVersionNumber(goVer) {
+		return goVer, nil
+	}
+	for !ValidVersionNumber(goVer) {
+		goVer, err = PromptForInput(ctx, "Please specify the version of GO to use")
 		if err != nil {
 			return "", err
 		}
-	} else {
-		validatedGoVersion = unvalidatedGoVersion
 	}
-	return validatedGoVersion, err
+	return goVer, nil
 }
 
 func ValidatePortNumber(ctx context.Context, unvalidatedPort string) (validatedPort string, err error) {
@@ -152,55 +148,52 @@ func ValidatePortNumber(ctx context.Context, unvalidatedPort string) (validatedP
 
 // ValidateProjectLocation will ensure that the projects location has been provided and is acceptable.
 // It will ensure the directory exists and has the option to offer a purge of files at that location
-func ValidateProjectLocation(ctx context.Context, unvalidatedProjectLocation string) (validatedProjectLocation string, err error) {
-	if unvalidatedProjectLocation == "unset" || unvalidatedProjectLocation == "" {
-		validatedProjectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in")
+func ValidateProjectLocation(ctx context.Context, projectLocation string) (string, error) {
+	var err error = nil
+
+	for projectLocation == "" {
+		projectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in")
 		if err != nil {
 			return "", err
 		}
-	} else {
-		validatedProjectLocation = unvalidatedProjectLocation
 	}
-	if validatedProjectLocation[len(validatedProjectLocation)-1:] != "/" {
-		validatedProjectLocation = validatedProjectLocation + "/"
+
+	if projectLocation[len(projectLocation)-1:] != "/" {
+		projectLocation = projectLocation + "/"
 	}
-	fmt.Println("validatedProjectLocation" + validatedProjectLocation)
-	return validatedProjectLocation, err
+	return projectLocation, nil
 }
 
 func ValidateProjectDirectory(ctx context.Context, path, projectName string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// File path to project does not exists
 		log.Event(ctx, "file path to project location does not exists - for safety assuming wrong location was provided")
-	} else {
-		// File path to project does exists
-		if _, err := os.Stat(path + projectName); os.IsNotExist(err) {
-			// File path to project does exists but project directory does not exist at the given path
-			err := os.Mkdir(path+projectName, os.ModeDir)
-			if err != nil {
-				log.Event(ctx, "error creating project directory", log.Error(err))
-				return err
-			}
-		} else {
-			// File path to project does exists and there is a project with the given name already present
-			isEmptyDir, err := IsEmptyDir(path + projectName)
-			if err != nil {
-				log.Event(ctx, "error checking if directory is empty", log.Error(err))
-				return err
-			}
-			if !isEmptyDir {
-				// Project directory exists at the given file path and has content inside of it
-				err = OfferPurgeProjectDestination(ctx, path, projectName)
-				if err != nil {
-					log.Event(ctx, "error during offer purge of directory", log.Error(err))
-					return err
-				}
-			} //else everything is good and nothing needs to be done
-		}
+		return err
+	}
+	if _, err := os.Stat(path + projectName); os.IsNotExist(err) {
+		// File path to project does exists but project directory does not exist at the given path
+		err := os.Mkdir(path+projectName, os.ModeDir)
 		if err != nil {
+			log.Event(ctx, "error creating project directory", log.Error(err))
+			return err
+		}
+		return nil
+	}
+	// File path to project does exists and there is a project with the given name already present
+	isEmptyDir, err := IsEmptyDir(path + projectName)
+	if err != nil {
+		log.Event(ctx, "error checking if directory is empty", log.Error(err))
+		return err
+	}
+	if !isEmptyDir {
+		// Project directory exists at the given file path and has content inside of it
+		err = OfferPurgeProjectDestination(ctx, path, projectName)
+		if err != nil {
+			log.Event(ctx, "error during offer purge of directory", log.Error(err))
 			return err
 		}
 	}
+	//everything is good and nothing needs to be done
 	return nil
 }
 
@@ -316,21 +309,36 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 	var input string
 	var optionSelected int
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println(prompt + "\n")
-	for i, option := range options {
-		fmt.Printf("[%d] %v \n", i, option)
-	}
-	fmt.Println("\nPlease enter the number corresponding to your choice:")
-	scanner.Scan()
-	input = scanner.Text()
-	if scanner.Err() != nil {
-		log.Event(ctx, "failed to read user input", log.Error(scanner.Err()))
-		return "", scanner.Err()
-	}
-	optionSelected, err := strconv.Atoi(input)
-	if scanner.Err() != nil {
-		log.Event(ctx, "failed to convert user input to valid option", log.Error(err))
-		return "", scanner.Err()
+	valid := false
+	for !valid {
+		fmt.Println(prompt + "\n")
+		for i, option := range options {
+			fmt.Printf("[%d] %v \n", i, option)
+		}
+		fmt.Println("\nPlease enter the number corresponding to your choice:")
+		scanner.Scan()
+		input = scanner.Text()
+		if scanner.Err() != nil {
+			log.Event(ctx, "failed to read user input", log.Error(scanner.Err()))
+			return "", scanner.Err()
+		}
+		// If user entered the text rather than number, it will be accepted
+		for _, opt := range options {
+			if input == opt {
+				return opt, nil
+			}
+		}
+
+		optionSelected, err := strconv.Atoi(input)
+		if scanner.Err() != nil {
+			log.Event(ctx, "failed to convert user input to valid option", log.Error(err))
+			return "", scanner.Err()
+		}
+		if optionSelected > len(options) || optionSelected < 0 {
+			fmt.Println("\n selected option is not valid, please select from the range provided")
+		} else {
+			return options[optionSelected], nil
+		}
 	}
 	return options[optionSelected], nil
 }
@@ -353,4 +361,11 @@ func FinaliseModules(ctx context.Context, pathToRepo string) {
 	if err != nil {
 		log.Event(ctx, "error during go build step", log.Error(err))
 	}
+}
+
+func ValidVersionNumber(ver string) bool {
+	// Accept formats such as '0.1'and '9.7.15'
+	var rxPat = regexp.MustCompile(`^([0-9]+\.){1,2}[0-9]+$`)
+
+	return rxPat.MatchString(ver)
 }

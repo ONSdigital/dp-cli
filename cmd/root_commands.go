@@ -73,9 +73,9 @@ func Load(cfg *config.Config) *cobra.Command {
 		Short: "Creates a new repository with the typical Digital Publishing configurations ",
 	}
 	createGithubRepo := generateRepository()
-	createGithubRepo.Flags().String("name", "unset", "The name of the application, if "+
+	createGithubRepo.Flags().String("name", "", "The name of the application, if "+
 		"Digital specific application it should be prepended with 'dp-'")
-	createGithubRepo.Flags().String("token", "unset", "The users personal access token")
+	createGithubRepo.Flags().String("token", "", "The users personal access token")
 	createGithubRepo.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
 	createRepo.AddCommand(createGithubRepo)
 
@@ -84,13 +84,13 @@ func Load(cfg *config.Config) *cobra.Command {
 		Short: "dp-cli provides util functions for developers in ONS Digital Publishing",
 	}
 	GenerateProject := generateApplication()
-	GenerateProject.Flags().String("name", "unset", "The name of the application, if "+
+	GenerateProject.Flags().String("name", "", "The name of the application, if "+
 		"Digital specific application it should be prepended with 'dp-'")
-	GenerateProject.Flags().String("go-version", "unset", "The version of Go the application should use")
-	GenerateProject.Flags().String("project-location", "unset", "Location to generate project in")
+	GenerateProject.Flags().String("go-version", "", "The version of Go the application should use")
+	GenerateProject.Flags().String("project-location", "", "Location to generate project in")
 	GenerateProject.Flags().String("create-repository", "n", "Should a repository be created for the "+
 		"project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
-	GenerateProject.Flags().String("type", "unset", "Type of application to generate, values can "+
+	GenerateProject.Flags().String("type", "", "Type of application to generate, values can "+
 		"be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
 	GenerateProject.Flags().String("port", "", "The port this application will run on")
 	root.AddCommand(version, clean, importData, createRepo, GenerateProject)
