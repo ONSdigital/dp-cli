@@ -224,8 +224,15 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 // getConfigurationsForNewRepo gets required configuration information from the end user
 func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
 	defaultBranch = "develop"
-	if personalAccessToken == "" || personalAccessToken == "unset" {
-		accessToken = PromptForInput("Please provide your personal access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	if personalAccessToken == "" {
+		token, exists := os.LookupEnv("GITHUB_PERSONAL_ACCESS_TOKEN")
+		if exists {
+			accessToken = token
+		} else {
+			accessToken = PromptForInput("Please provide your personal access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+		}
+	} else {
+		accessToken = personalAccessToken
 	}
 	userHandle = PromptForInput("Please provide your github handle/username")
 	if name == "" || name == "unset" {

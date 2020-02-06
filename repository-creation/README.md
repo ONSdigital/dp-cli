@@ -13,8 +13,9 @@
 #### Be a member of the ONS Digital Publishing team and the ONSDigital organisation with permissions to create new repositories
 ___
 ### How to use
-1. Run ./dp-cli repo-generation github
-2. Enter your 'Personal Access Token' when prompted 
-3. Enter your Github handler when prompted
-4. Enter your repository name, note that if the repository is specific to Digital Publishing then prefix it with 'dp-'
-5. Enter a description for the repository when prompted
+1. (optional) Export the environment variable GITHUB_PERSONAL_ACCESS_TOKEN with your github personal access token
+2. Run ./dp-cli repo-generation github
+3. Enter your 'Personal Access Token' when prompted (if step 1. was not complete)
+4. Enter your Github handler when prompted
+5. Enter your repository name, note that if the repository is specific to Digital Publishing then prefix it with 'dp-'
+6. Enter a description for the repository when prompted
