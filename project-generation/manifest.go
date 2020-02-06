@@ -1,83 +1,137 @@
 package projectgeneration
+
 var genericFiles = []fileGen{
 	{
-		path:      "readme",
-		extension: ".md",
+		templatePath: "readme",
+		outputPath:   "readme",
+		extension:    ".md",
+		filePrefix:   "",
 	},
 	{
-		path:      "contributing",
-		extension: ".md",
+		templatePath: "contributing",
+		outputPath:   "contributing",
+		extension:    ".md",
+		filePrefix:   "",
 	},
 	{
-		path:      "license",
-		extension: ".md",
+		templatePath: "license",
+		outputPath:   "license",
+		extension:    ".md",
+		filePrefix:   "",
 	},
 	{
-		path:      ".gitignore",
-		extension: "",
+		templatePath: ".gitignore",
+		outputPath:   ".gitignore",
+		extension:    "",
+		filePrefix:   "",
 	},
 	{
-		path:      ".github/PULL_REQUEST_TEMPLATE",
-		extension: ".md",
+		templatePath: ".github/PULL_REQUEST_TEMPLATE",
+		outputPath:   ".github/PULL_REQUEST_TEMPLATE",
+		extension:    ".md",
+		filePrefix:   "",
 	},
 	{
-		path:      ".github/ISSUES_TEMPLATE",
-		extension: ".md",
+		templatePath: ".github/ISSUES_TEMPLATE",
+		outputPath:   ".github/ISSUES_TEMPLATE",
+		extension:    ".md",
+		filePrefix:   "",
 	},
 }
 
 var applicationFiles = []fileGen{
 	{
-		path:      "ci/build",
-		extension: ".yml",
+		templatePath: "ci/build",
+		outputPath:   "ci/build",
+		extension:    ".yml",
+		filePrefix:   "",
 	},
 	{
-		path:      "ci/unit",
-		extension: ".yml",
+		templatePath: "ci/unit",
+		outputPath:   "ci/unit",
+		extension:    ".yml",
+		filePrefix:   "",
 	},
 	{
-		path:      "ci/scripts/build",
-		extension: ".sh",
+		templatePath: "ci/scripts/build",
+		outputPath:   "ci/scripts/build",
+		extension:    ".sh",
+		filePrefix:   "",
 	},
 	{
-		path:      "ci/scripts/unit",
-		extension: ".sh",
+		templatePath: "ci/scripts/unit",
+		outputPath:   "ci/scripts/unit",
+		extension:    ".sh",
+		filePrefix:   "",
 	},
 	{
-		path:      "Dockerfile.concourse",
-		extension: "",
+		templatePath: "config/config",
+		outputPath:   "config/config",
+		extension:    ".go",
+		filePrefix:   "",
 	},
-
-	// TODO Make file
-	// TODO {appname}.Nomad
-	// TODO Config
-	// TODO Main
+	{
+		templatePath: "config/config_test",
+		outputPath:   "config/config_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "Dockerfile.concourse",
+		outputPath:   "Dockerfile.concourse",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "nomad",
+		outputPath:   "",
+		extension:    ".nomad",
+		filePrefix:   "",
+	},
 }
 
 var controllerFiles = []fileGen{
 	{
-		path:      "handlers/handlers", // TODO populate
-		extension: ".go",
+		templatePath: "handlers/handlers",
+		outputPath:   "handlers/handlers",
+		extension:    ".go",
+		filePrefix:   "",
 	},
 	{
-		path:      "handlers/handlers_test",
-		extension: ".go",
+		templatePath: "handlers/handlers_test",
+		outputPath:   "handlers/handlers_test",
+		extension:    ".go",
+		filePrefix:   "",
 	},
 	{
-		path:      "routes/routes",
-		extension: ".go",
+		templatePath: "routes/routes",
+		outputPath:   "routes/routes",
+		extension:    ".go",
+		filePrefix:   "",
 	},
 	{
-		path:      "routes/routes_test",
-		extension: ".go",
+		templatePath: "routes/routes_test",
+		outputPath:   "routes/routes_test",
+		extension:    ".go",
+		filePrefix:   "",
 	},
 	{
-		path:      "mapper/mapper",
-		extension: ".go",
+		templatePath: "mapper/mapper",
+		outputPath:   "mapper/mapper",
+		extension:    ".go",
+		filePrefix:   "",
 	},
 	{
-		path:      "mapper/mapper_test",
-		extension: ".go",
+		templatePath: "mapper/mapper_test",
+		outputPath:   "mapper/mapper_test",
+		extension:    ".go",
+		filePrefix:   "",
 	},
 }
 

@@ -1,0 +1,17 @@
+BINPATH ?= build
+
+build:
+	go build -tags 'production' -o $(BINPATH)/{{.Name}}
+
+debug:
+	go build -tags 'debug' -o $(BINPATH)/{{.Name}}
+	HUMAN_LOG=1 DEBUG=1 $(BINPATH)/{{.Name}}
+
+test:
+	go test -race -cover ./...
+.PHONY: test
+
+convey:
+	goconvey ./...
+
+.PHONY: build debug

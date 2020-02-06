@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/ONSdigital/log.go/log"
 	"io"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ONSdigital/log.go/log"
 )
 
 type ListOfArguments map[string]*Argument
@@ -22,7 +23,7 @@ type Argument struct {
 	OutputVal string
 }
 
-func configureAndValidateArguments(ctx context.Context, appName, projectType, projectLocation, goVersion string) (an, pt, pl, gv string, err error) {
+func configureAndValidateArguments(ctx context.Context, appName, projectType, projectLocation, goVersion, port string) (an, pt, pl, gv, prt string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
 		InputVal:  appName,
@@ -42,7 +43,7 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Event(ctx, "validation error", log.Error(err))
-		return "", "", "", "", err
+		return "", "", "", "", "", err
 	}
 	an = listOfArguments["appName"].OutputVal
 	pt = listOfArguments["projectType"].OutputVal
@@ -57,13 +58,25 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 		}
 		gv = listOfArguments["goVersion"].OutputVal
 	}
+
+	if port == "" {
+		listOfArguments["port"] = &Argument{
+			InputVal:  port,
+			Context:   ctx,
+			Validator: ValidatePortNumber,
+		}
+		prt = listOfArguments["port"].OutputVal
+	} else {
+		prt = port
+	}
+
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Event(ctx, "validation error", log.Error(err))
-		return "", "", "", "", err
+		return "", "", "", "", "", err
 	}
 
-	return an, pt, pl, gv, nil
+	return an, pt, pl, gv, prt, nil
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
@@ -119,6 +132,18 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 		}
 	}
 	return goVer, nil
+}
+
+func ValidatePortNumber(ctx context.Context, unvalidatedPort string) (validatedPort string, err error) {
+	if unvalidatedPort == "" {
+		validatedPort, err = PromptForInput(ctx, "Please specify the port number for this app")
+		if err != nil {
+			return "", err
+		}
+	} else {
+		validatedPort = unvalidatedPort
+	}
+	return validatedPort, err
 }
 
 // ValidateProjectLocation will ensure that the projects location has been provided and is acceptable.
@@ -231,13 +256,14 @@ func IsEmptyDir(path string) (isEmptyDir bool, err error) {
 }
 
 // PopulateTemplateModel will populate the templating model with variables that can be used in templates
-func PopulateTemplateModel(name, goVer string) templateModel {
+func PopulateTemplateModel(name, goVer, port string) templateModel {
 	// UTC to avoid any sketchy BST timing
 	year := time.Now().UTC().Year()
 	return templateModel{
 		Name:      name,
 		Year:      year,
 		GoVersion: goVer,
+		Port:      port,
 	}
 }
 
@@ -328,7 +354,7 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) {
 }
 
 // FinaliseModules will run go build ./... to generate go modules dependency management files
-func FinaliseModules(ctx context.Context, pathToRepo string) () {
+func FinaliseModules(ctx context.Context, pathToRepo string) {
 	cmd := exec.Command("go", "build", "./...")
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
