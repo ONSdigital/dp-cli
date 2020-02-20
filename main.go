@@ -8,15 +8,20 @@ import (
 )
 
 func main() {
-	cfg, err := config.Get()
-	if err != nil {
+	if err := run(os.Args); err != nil {
 		out.Error(err)
 		os.Exit(1)
+	}
+}
+
+// run the dp-cli application
+func run(args []string) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
 	}
 
 	root := cmd.Load(cfg)
 
-	if err := root.Execute(); err != nil {
-		os.Exit(1)
-	}
+	return root.Execute()
 }
