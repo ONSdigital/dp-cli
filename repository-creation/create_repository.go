@@ -37,7 +37,7 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 
 // GenerateGithub is the entry point to generating the repository
 func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
-	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, branchStrategy)
+	accessToken, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, branchStrategy)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -93,7 +93,7 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 		return cloneUrl, err
 	}
 
-	err = setTeamsAndCollaborators(ctx, client, repoName, userHandle)
+	err = setTeamsAndCollaborators(ctx, client, repoName)
 	if err != nil {
 		log.Event(ctx, "unable to set team and collaborators", log.Error(err))
 		return cloneUrl, err
@@ -110,13 +110,19 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 }
 
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
-func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string, userHandle string) error {
+func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string) error {
 	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: "admin"}
 	resp, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
 	if err != nil {
 		log.Event(ctx, "unable to add collaborators", log.Error(err))
 		return err
 	}
+
+	user , resp,  err := client.Users.Get(ctx,"")
+	if err != nil {
+		log.Event(ctx, "unable to get current github user", log.Error(err), log.Data{"response": resp})
+	}
+	userHandle := *user.Name
 
 	resp, err = client.Repositories.RemoveCollaborator(ctx, org, repoName, userHandle)
 	if err != nil {
@@ -222,7 +228,7 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
 	defaultBranch = "develop"
 	if personalAccessToken == "" {
 		token, exists := os.LookupEnv("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -234,7 +240,6 @@ func getConfigurationsForNewRepo(name string, projType projectgeneration.Project
 	} else {
 		accessToken = personalAccessToken
 	}
-	userHandle = PromptForInput("Please provide your github handle/username")
 	if name == "" || name == "unset" {
 		repoName = PromptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name')")
 	} else {
@@ -254,7 +259,7 @@ func getConfigurationsForNewRepo(name string, projType projectgeneration.Project
 	if projType == "generic-project" || branchStrategy == "github" {
 		defaultBranch = "master"
 	}
-	return accessToken, userHandle, repoName, repoDescription, defaultBranch
+	return accessToken, repoName, repoDescription, defaultBranch
 }
 
 // PromptForInput gives a user a message and expect input to be provided
