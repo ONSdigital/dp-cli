@@ -172,7 +172,7 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 	}
 	if _, err := os.Stat(path + projectName); os.IsNotExist(err) {
 		// File path to project does exists but project directory does not exist at the given path
-		err := os.Mkdir(path+projectName, os.ModeDir)
+		err := os.Mkdir(path+projectName, os.ModeDir | os.ModePerm)
 		if err != nil {
 			log.Event(ctx, "error creating project directory", log.Error(err))
 			return err
