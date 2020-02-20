@@ -76,26 +76,31 @@ func GenerateProject(appName, projType, projectLocation, goVer, port string, rep
 		if err != nil {
 			return err
 		}
+		FinaliseModules(ctx, newApp.pathToRepo)
 	case API:
+		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		err := newApp.generateAPIContent()
 		if err != nil {
 			return err
 		}
+		FinaliseModules(ctx, newApp.pathToRepo)
 	case Controller:
+		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		err := newApp.generateControllerContent()
 		if err != nil {
 			return err
 		}
+		FinaliseModules(ctx, newApp.pathToRepo)
 	case EventDriven:
+		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		err := newApp.generateEventDrivenContent()
 		if err != nil {
 			return err
 		}
+		FinaliseModules(ctx, newApp.pathToRepo)
 	default:
 		log.Event(ctx, "unable to generate project due to unknown project type given", log.Error(err))
 	}
-
-	FinaliseModules(ctx, newApp.pathToRepo)
 
 	log.Event(ctx, "Project creation complete. Project can be found at "+newApp.pathToRepo)
 	return nil
@@ -128,7 +133,7 @@ func (a application) createControllerContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(a.pathToRepo+"mappers", os.ModePerm)
+	err = os.MkdirAll(a.pathToRepo+"mapper", os.ModePerm)
 	if err != nil {
 		return err
 	}

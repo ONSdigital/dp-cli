@@ -116,12 +116,6 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
-		templatePath: "routes/routes_test",
-		outputPath:   "routes/routes_test",
-		extension:    ".go",
-		filePrefix:   "",
-	},
-	{
 		templatePath: "mapper/mapper",
 		outputPath:   "mapper/mapper",
 		extension:    ".go",
@@ -130,6 +124,12 @@ var controllerFiles = []fileGen{
 	{
 		templatePath: "mapper/mapper_test",
 		outputPath:   "mapper/mapper_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "main",
+		outputPath:   "main",
 		extension:    ".go",
 		filePrefix:   "",
 	},

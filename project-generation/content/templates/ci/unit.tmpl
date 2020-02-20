@@ -9,7 +9,7 @@ image_resource:
     tag: {{.GoVersion}}
 
 inputs:
-  - name: dp-frontend-dataset-controller
+  - name: {{.Name}}
     path: go/src/github.com/ONSdigital/{{.Name}}
 
 run:
