@@ -57,6 +57,8 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 			Validator: ValidateGoVersion,
 		}
 		gv = listOfArguments["goVersion"].OutputVal
+	} else {
+		gv = goVersion
 	}
 
 	if port == "" {
