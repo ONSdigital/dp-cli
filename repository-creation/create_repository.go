@@ -27,7 +27,7 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 	token, _ := cmd.Flags().GetString("token")
 	branchStrategyInput, _ := cmd.Flags().GetString("strategy")
 	branchStrategy := strings.ToLower(strings.TrimSpace(branchStrategyInput))
-	_, err = GenerateGithub(nameOfApp, "", token, branchStrategy)
+	_, err = GenerateGithub(nameOfApp,"", "", token, branchStrategy)
 	if err != nil {
 		return err
 	}
@@ -36,8 +36,8 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 }
 
 // GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
-	accessToken, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, branchStrategy)
+func GenerateGithub(name, description string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
+	accessToken, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, description, ProjectType, personalAccessToken, branchStrategy)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -122,7 +122,7 @@ func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoNa
 	if err != nil {
 		log.Event(ctx, "unable to get current github user", log.Error(err), log.Data{"response": resp})
 	}
-	userHandle := *user.Name
+	userHandle := *user.Login
 
 	resp, err = client.Repositories.RemoveCollaborator(ctx, org, repoName, userHandle)
 	if err != nil {
@@ -228,7 +228,7 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name, description string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
 	defaultBranch = "develop"
 	if personalAccessToken == "" {
 		token, exists := os.LookupEnv("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -245,7 +245,11 @@ func getConfigurationsForNewRepo(name string, projType projectgeneration.Project
 	} else {
 		repoName = name
 	}
-	repoDescription = PromptForInput("Please provide a description for the repository")
+	if description == "" {
+		repoDescription = PromptForInput("Please provide a description for the repository")
+	} else {
+		repoDescription = description
+	}
 	if branchStrategy == "" {
 		prompt := "Please pick the branching strategy you wish this repo to use:"
 		options := []string{"github flow","git flow"}
