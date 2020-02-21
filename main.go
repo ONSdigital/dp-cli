@@ -1,9 +1,9 @@
 package main
 
 import (
-	"dp-cli/cmd"
-	"dp-cli/config"
-	"dp-cli/out"
+	"github.com/ONSdigital/dp-cli/cmd"
+	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
 	"os"
 )
 

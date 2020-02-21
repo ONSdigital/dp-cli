@@ -14,7 +14,7 @@
 ___
 ### How to use
 1. (optional) Export the environment variable GITHUB_PERSONAL_ACCESS_TOKEN with your github personal access token
-2. Run ./dp-cli repo-generation github
+2. Run `dp-cli repo-generation github`
 3. Enter your 'Personal Access Token' when prompted (if step 1. was not complete)
 4. Enter your Github handler when prompted
 5. Enter your repository name, note that if the repository is specific to Digital Publishing then prefix it with 'dp-'

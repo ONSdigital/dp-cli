@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"dp-cli/out"
+	"github.com/ONSdigital/dp-cli/out"
 
 	"github.com/spf13/cobra"
 )

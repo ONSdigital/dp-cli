@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"dp-cli/config"
+	"github.com/ONSdigital/dp-cli/config"
 	"math/rand"
 	"os"
 	"path/filepath"

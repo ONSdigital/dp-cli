@@ -1,9 +1,9 @@
-package repository
+package repository_creation
 
 import (
 	"bufio"
 	"context"
-	projectgeneration "dp-cli/project-generation"
+	"github.com/ONSdigital/dp-cli/project_generation"
 	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
@@ -27,7 +27,7 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 	token, _ := cmd.Flags().GetString("token")
 	branchStrategyInput, _ := cmd.Flags().GetString("strategy")
 	branchStrategy := strings.ToLower(strings.TrimSpace(branchStrategyInput))
-	_, err = GenerateGithub(nameOfApp, "", token, branchStrategy)
+	_, err = GenerateGithub(nameOfApp,"", "", token, branchStrategy)
 	if err != nil {
 		return err
 	}
@@ -36,8 +36,8 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 }
 
 // GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
-	accessToken, userHandle, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, ProjectType, personalAccessToken, branchStrategy)
+func GenerateGithub(name, description string, ProjectType project_generation.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
+	accessToken, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, description, ProjectType, personalAccessToken, branchStrategy)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -93,7 +93,7 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 		return cloneUrl, err
 	}
 
-	err = setTeamsAndCollaborators(ctx, client, repoName, userHandle)
+	err = setTeamsAndCollaborators(ctx, client, repoName)
 	if err != nil {
 		log.Event(ctx, "unable to set team and collaborators", log.Error(err))
 		return cloneUrl, err
@@ -110,13 +110,19 @@ func GenerateGithub(name string, ProjectType projectgeneration.ProjectType, pers
 }
 
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
-func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string, userHandle string) error {
+func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string) error {
 	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: "admin"}
 	resp, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
 	if err != nil {
 		log.Event(ctx, "unable to add collaborators", log.Error(err))
 		return err
 	}
+
+	user , resp,  err := client.Users.Get(ctx,"")
+	if err != nil {
+		log.Event(ctx, "unable to get current github user", log.Error(err), log.Data{"response": resp})
+	}
+	userHandle := *user.Login
 
 	resp, err = client.Repositories.RemoveCollaborator(ctx, org, repoName, userHandle)
 	if err != nil {
@@ -222,7 +228,7 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, userHandle, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name, description string, projType project_generation.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
 	defaultBranch = "develop"
 	if personalAccessToken == "" {
 		token, exists := os.LookupEnv("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -234,18 +240,21 @@ func getConfigurationsForNewRepo(name string, projType projectgeneration.Project
 	} else {
 		accessToken = personalAccessToken
 	}
-	userHandle = PromptForInput("Please provide your github handle/username")
 	if name == "" || name == "unset" {
 		repoName = PromptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name')")
 	} else {
 		repoName = name
 	}
-	repoDescription = PromptForInput("Please provide a description for the repository")
+	if description == "" {
+		repoDescription = PromptForInput("Please provide a description for the repository")
+	} else {
+		repoDescription = description
+	}
 	if branchStrategy == "" {
 		prompt := "Please pick the branching strategy you wish this repo to use:"
 		options := []string{"github flow","git flow"}
 		ctx := context.Background()
-		branchStrategy, err := projectgeneration.OptionPromptInput(ctx, prompt, options...)
+		branchStrategy, err := project_generation.OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			log.Event(ctx, "error getting branch strategy", log.Error(err))
 		}
@@ -254,7 +263,7 @@ func getConfigurationsForNewRepo(name string, projType projectgeneration.Project
 	if projType == "generic-project" || branchStrategy == "github" {
 		defaultBranch = "master"
 	}
-	return accessToken, userHandle, repoName, repoDescription, defaultBranch
+	return accessToken, repoName, repoDescription, defaultBranch
 }
 
 // PromptForInput gives a user a message and expect input to be provided

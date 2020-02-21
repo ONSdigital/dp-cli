@@ -1,4 +1,4 @@
-package projectgeneration
+package project_generation
 
 import (
 	"bufio"
@@ -107,6 +107,21 @@ func ValidateAppName(ctx context.Context, name string) (string, error) {
 	return name, err
 }
 
+// ValidateAppDescription will ensure that the app description has been provided and is acceptable, if not it will keep
+// prompting until it is
+func ValidateAppDescription(ctx context.Context, description string) (string, error) {
+	var err error = nil
+
+	for description == "" {
+		description, err = PromptForInput(ctx, "Please specify a short description of the application")
+		if err != nil {
+			return "", err
+		}
+	}
+	return description, err
+}
+
+
 // ValidateProjectType will ensure that the project type provided by the users is one that can be boilerplate
 func ValidateProjectType(ctx context.Context, projectType string) (validatedProjectType string, err error) {
 	if projectType == "" {
@@ -172,7 +187,7 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 	}
 	if _, err := os.Stat(path + projectName); os.IsNotExist(err) {
 		// File path to project does exists but project directory does not exist at the given path
-		err := os.Mkdir(path+projectName, os.ModeDir)
+		err := os.Mkdir(path+projectName, os.ModeDir | os.ModePerm)
 		if err != nil {
 			log.Event(ctx, "error creating project directory", log.Error(err))
 			return err
@@ -195,6 +210,21 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 	}
 	//everything is good and nothing needs to be done
 	return nil
+}
+
+
+// ValidateBranchingStrategy will ensure that the strategy  provided by the user is one that can be boilerplate
+func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (string, error) {
+	if branchingStrategy == "" {
+		prompt := "Please pick the branching strategy you wish this repo to use:"
+		options := []string{"github flow", "git flow"}
+		branchingStrategy, err := OptionPromptInput(ctx, prompt, options...)
+		if err != nil {
+			return "", err
+		}
+		branchingStrategy = strings.Replace(branchingStrategy, " flow", "", -1)
+	}
+	return branchingStrategy, nil
 }
 
 // OfferPurgeProjectDestination will offer the user an option to purge the contents at a given location

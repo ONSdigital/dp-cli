@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"dp-cli/out"
+	"github.com/ONSdigital/dp-cli/out"
 	"os"
 	"os/exec"
 	"time"
