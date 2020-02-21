@@ -44,7 +44,7 @@ const (
 )
 
 // To be replaced by `make install` with the user's own templates path
-var templatesPath string = "/Users/USERNAME/dev/ons/dp/dp-cli/project-generation/content/templates"
+var templatesPath string = "/Users/USERNAME/dev/ons/dp/dp-cli/project_generation/content/templates"
 
 // GenerateProject is the entry point into generating a project
 func GenerateProject(appName, projType, projectLocation, goVer, port string, repositoryCreated bool) error {

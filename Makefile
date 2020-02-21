@@ -1,7 +1,7 @@
 SHELL=bash
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-TEMPLATES_DIR:=$(ROOT_DIR)/project-generation/content/templates
+TEMPLATES_DIR:=$(ROOT_DIR)/project_generation/content/templates
 VERSION:=$(shell git describe --tags --dirty)
 
 build:
