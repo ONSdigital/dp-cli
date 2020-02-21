@@ -1,9 +1,9 @@
 package customisemydata
 
 import (
-	"dp-cli/config"
-	"dp-cli/out"
-	"dp-cli/cli"
+	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
+	"github.com/ONSdigital/dp-cli/cli"
 	"fmt"
 
 	bolt "github.com/johnnadratowski/golang-neo4j-bolt-driver"

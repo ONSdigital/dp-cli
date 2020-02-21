@@ -1,9 +1,9 @@
-package repository
+package repository_creation
 
 import (
 	"bufio"
 	"context"
-	projectgeneration "dp-cli/project-generation"
+	"github.com/ONSdigital/dp-cli/project_generation"
 	"fmt"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
@@ -36,7 +36,7 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 }
 
 // GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name, description string, ProjectType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
+func GenerateGithub(name, description string, ProjectType project_generation.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
 	accessToken, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, description, ProjectType, personalAccessToken, branchStrategy)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -228,7 +228,7 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name, description string, projType projectgeneration.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name, description string, projType project_generation.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
 	defaultBranch = "develop"
 	if personalAccessToken == "" {
 		token, exists := os.LookupEnv("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -254,7 +254,7 @@ func getConfigurationsForNewRepo(name, description string, projType projectgener
 		prompt := "Please pick the branching strategy you wish this repo to use:"
 		options := []string{"github flow","git flow"}
 		ctx := context.Background()
-		branchStrategy, err := projectgeneration.OptionPromptInput(ctx, prompt, options...)
+		branchStrategy, err := project_generation.OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			log.Event(ctx, "error getting branch strategy", log.Error(err))
 		}

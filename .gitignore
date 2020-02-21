@@ -1,5 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea
-/project-generation/generated/*
+/project_generation/generated/*
 
 dp-cli

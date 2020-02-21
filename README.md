@@ -31,7 +31,12 @@ export DP_CLI_CONFIG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
 ```
 Build and run the binary
 ```
-go build -o dp-cli
+make install
+dp-cli
+```
+Or to build locally
+```
+make build
 ./dp-cli
 ```
 
@@ -58,10 +63,10 @@ Use "dp-cli [command] --help" for more information about a command.
 
 #### Clean out all CMD data from you local env:
 ```
-./dp-cli clean cmd
+dp-cli clean cmd
 ```
 
 #### Create a repository on github
 ```
-./dp-cli create-repo github
+dp-cli create-repo github
 ```

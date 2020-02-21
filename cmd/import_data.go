@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"dp-cli/config"
-	"dp-cli/customisemydata"
+	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/customisemydata"
 
 	"github.com/spf13/cobra"
 )

@@ -1,4 +1,4 @@
-package projectgeneration
+package project_generation
 
 import (
 	"bufio"
@@ -41,6 +41,9 @@ const (
 	Controller      ProjectType = "controller"
 	EventDriven     ProjectType = "event-driven"
 )
+
+// To be replaced by `make install` with the user's own templates path
+var templatesPath string = "/Users/USERNAME/dev/ons/dp/dp-cli/project-generation/content/templates"
 
 // GenerateProject is the entry point into generating a project
 func GenerateProject(appName, projType, projectLocation, goVer, port string, repositoryCreated bool) error {
@@ -268,7 +271,7 @@ func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
 		return err
 	}
 	writer := bufio.NewWriter(f)
-	tmpl := template.Must(template.ParseFiles("./project-generation/content/templates/" + fileToGen.templatePath + ".tmpl"))
+	tmpl := template.Must(template.ParseFiles(templatesPath+"/" + fileToGen.templatePath + ".tmpl"))
 
 	defer func() {
 		ferr := writer.Flush()

@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"dp-cli/config"
-	"dp-cli/customisemydata"
-	"dp-cli/zebedee"
+	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/customisemydata"
+	"github.com/ONSdigital/dp-cli/zebedee"
 
 	"github.com/spf13/cobra"
 )

@@ -1,4 +1,4 @@
-package projectgeneration
+package project_generation
 
 var genericFiles = []fileGen{
 	{

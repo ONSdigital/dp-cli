@@ -1,7 +1,7 @@
 package zebedee
 
 import (
-	"dp-cli/out"
+	"github.com/ONSdigital/dp-cli/out"
 	"os"
 	"path/filepath"
 )

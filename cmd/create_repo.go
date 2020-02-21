@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"dp-cli/repository-creation"
+	"github.com/ONSdigital/dp-cli/repository_creation"
 
 	"github.com/spf13/cobra"
 )
@@ -20,7 +20,7 @@ func createGithubRepo() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "github",
 		Short: "Creates a github hosted repository",
-		RunE:  repository.RunGenerateRepo,
+		RunE:  repository_creation.RunGenerateRepo,
 	}
 
 	command.Flags().String("name", "", "The name of the application, if Digital specific application it should be prepended with 'dp-'")

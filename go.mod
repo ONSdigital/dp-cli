@@ -1,4 +1,4 @@
-module dp-cli
+module github.com/ONSdigital/dp-cli
 
 go 1.12
 
