@@ -30,6 +30,7 @@ type fileGen struct {
 	outputPath   string
 	extension    string
 	filePrefix   string
+	executable   bool
 }
 
 type ProjectType string
@@ -266,7 +267,8 @@ func (a application) generateBatchOfFileTemplates(filesToGen []fileGen) error {
 
 // generateFileFromTemplate will generate a single file from templates
 func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
-	f, err := os.Create(a.pathToRepo + fileToGen.filePrefix + fileToGen.outputPath + fileToGen.extension)
+	outputFilePath := a.pathToRepo + fileToGen.filePrefix + fileToGen.outputPath + fileToGen.extension
+	f, err := os.Create(outputFilePath)
 	if err != nil {
 		return err
 	}
@@ -287,6 +289,13 @@ func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
 	err = tmpl.Execute(writer, a.templateModel)
 	if err != nil {
 		return err
+	}
+
+	if fileToGen.executable {
+		err = os.Chmod(outputFilePath,os.ModePerm)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

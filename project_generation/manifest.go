@@ -3,19 +3,19 @@ package project_generation
 var genericFiles = []fileGen{
 	{
 		templatePath: "readme",
-		outputPath:   "readme",
+		outputPath:   "README",
 		extension:    ".md",
 		filePrefix:   "",
 	},
 	{
 		templatePath: "contributing",
-		outputPath:   "contributing",
+		outputPath:   "CONTRIBUTING",
 		extension:    ".md",
 		filePrefix:   "",
 	},
 	{
 		templatePath: "license",
-		outputPath:   "license",
+		outputPath:   "LICENSE",
 		extension:    ".md",
 		filePrefix:   "",
 	},
@@ -57,12 +57,14 @@ var applicationFiles = []fileGen{
 		outputPath:   "ci/scripts/build",
 		extension:    ".sh",
 		filePrefix:   "",
+		executable:   true,
 	},
 	{
 		templatePath: "ci/scripts/unit",
 		outputPath:   "ci/scripts/unit",
 		extension:    ".sh",
 		filePrefix:   "",
+		executable:   true,
 	},
 	{
 		templatePath: "config/config",

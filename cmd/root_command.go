@@ -18,14 +18,12 @@ var (
 	onsDigitalPath       string
 	hierarchyBuilderPath string
 	codeListScriptsPath  string
-	appVersion           string
+	appVersion           = "development"
 )
 
 func Load(cfg *config.Config) *cobra.Command {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r = rand.New(s1)
-
-	appVersion = "v0.0.1"
 
 	goPath = os.Getenv("GOPATH")
 
