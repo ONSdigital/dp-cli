@@ -10,7 +10,9 @@ image_resource:
 
 inputs:
   - name: {{.Name}}
-    path: go/src/github.com/ONSdigital/{{.Name}}
+
+  caches:
+  - path: go/
 
 run:
-  path: go/src/github.com/ONSdigital/{{.Name}}/ci/scripts/unit.sh
+  path: {{.Name}}/ci/scripts/unit.sh

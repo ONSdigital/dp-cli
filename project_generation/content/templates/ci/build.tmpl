@@ -6,11 +6,10 @@ image_resource:
   type: docker-image
   source:
     repository: golang
-    tags: {{.GoVersion}}
+    tag: {{.GoVersion}}
 
 inputs:
   - name: {{.Name}}
-    path: go/src/github.com/ONSdigital/{{.Name}}
 
 outputs:
   - name: build
@@ -19,4 +18,4 @@ caches:
   - path: go/
 
 run:
-  path: go/src/github.com/ONSdigital/{{.Name}}/ci/scripts/build.sh
+  path: {{.Name}}/ci/scripts/build.sh
