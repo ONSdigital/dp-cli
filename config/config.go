@@ -2,11 +2,21 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
+
+type Config struct {
+	CMD          CMD           `yaml:"cmd"`
+	Environments []Environment `yaml:"environments"`
+	DPSetupPath  string        `yaml:"dp-setup-path"`
+}
 
 type CMD struct {
 	MongoURL    string   `yaml:"mongo-url"`
@@ -16,12 +26,19 @@ type CMD struct {
 	Codelists   []string `yaml:"codelists"`
 }
 
-type Config struct {
-	CMD CMD `yaml:"cmd"`
+// Environment represents an environment
+type Environment struct {
+	Name    string `yaml:"name"`
+	Profile string `yaml:"profile"`
+}
+
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
 }
 
 func Get() (*Config, error) {
 	path := os.Getenv("DP_CLI_CONFIG")
+
 	if len(path) == 0 {
 		return nil, errors.New("no DP_CLI_CONFIG config file specified")
 	}
@@ -37,4 +54,27 @@ func Get() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// GetMyIP fetches your external IP address
+func GetMyIP() (string, error) {
+	res, err := httpClient.Get("https://api.ipify.org")
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		io.Copy(ioutil.Discard, res.Body)
+	}()
+
+	if res.StatusCode != 200 {
+		return "", fmt.Errorf("unexpected status code fetching IP: %d", res.StatusCode)
+	}
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
 }
