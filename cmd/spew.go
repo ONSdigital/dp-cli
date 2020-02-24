@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"dp-cli/config"
 	"encoding/json"
 	"fmt"
+
+	"github.com/ONSdigital/dp-cli/config"
 
 	"github.com/spf13/cobra"
 )

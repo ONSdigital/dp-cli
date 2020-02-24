@@ -1,10 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/ONSdigital/dp-cli/cmd"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
-	"os"
 )
 
 func main() {
