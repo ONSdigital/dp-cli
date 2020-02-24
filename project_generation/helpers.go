@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -175,9 +176,6 @@ func ValidateProjectLocation(ctx context.Context, projectLocation string) (strin
 		}
 	}
 
-	if projectLocation[len(projectLocation)-1:] != "/" {
-		projectLocation = projectLocation + "/"
-	}
 	return projectLocation, nil
 }
 
@@ -187,9 +185,10 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 		log.Event(ctx, "file path to project location does not exists - for safety assuming wrong location was provided")
 		return err
 	}
-	if _, err := os.Stat(path + projectName); os.IsNotExist(err) {
+	projectPath := filepath.Join(path,projectName)
+	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
 		// File path to project does exists but project directory does not exist at the given path
-		err := os.Mkdir(path+projectName, os.ModeDir | os.ModePerm)
+		err := os.Mkdir(projectPath, os.ModeDir | os.ModePerm)
 		if err != nil {
 			log.Event(ctx, "error creating project directory", log.Error(err))
 			return err
@@ -197,14 +196,14 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 		return nil
 	}
 	// File path to project does exists and there is a project with the given name already present
-	isEmptyDir, err := IsEmptyDir(path + projectName)
+	isEmptyDir, err := IsEmptyDir(projectPath)
 	if err != nil {
 		log.Event(ctx, "error checking if directory is empty", log.Error(err))
 		return err
 	}
 	if !isEmptyDir {
 		// Project directory exists at the given file path and has content inside of it
-		err = OfferPurgeProjectDestination(ctx, path, projectName)
+		err = OfferPurgeProjectDestination(ctx, projectPath)
 		if err != nil {
 			log.Event(ctx, "error during offer purge of directory", log.Error(err))
 			return err
@@ -230,15 +229,15 @@ func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (s
 }
 
 // OfferPurgeProjectDestination will offer the user an option to purge the contents at a given location
-func OfferPurgeProjectDestination(ctx context.Context, projectLoc, appName string) error {
-	if _, err := os.Stat(projectLoc + appName); os.IsNotExist(err) {
-		err = os.MkdirAll(projectLoc+appName, os.ModePerm)
+func OfferPurgeProjectDestination(ctx context.Context, projectPath string) error {
+	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
+		err = os.MkdirAll(projectPath, os.ModePerm)
 		if err != nil {
 			return err
 		}
 	}
 	// If path has files in then purge them... but check with user first (prompt are you sure)
-	isEmpty, err := IsEmptyDir(projectLoc + appName)
+	isEmpty, err := IsEmptyDir(projectPath)
 	if err != nil {
 		return err
 	}
@@ -246,15 +245,15 @@ func OfferPurgeProjectDestination(ctx context.Context, projectLoc, appName strin
 	if !isEmpty {
 		//prompt user
 		maxUserInputAttempts := 3
-		deleteContents := PromptForConfirmation(ctx, "The directory "+projectLoc+appName+" was not empty would you "+
+		deleteContents := PromptForConfirmation(ctx, "The directory "+projectPath+" was not empty would you "+
 			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
 
 		if deleteContents {
-			err := os.RemoveAll(projectLoc + appName)
+			err := os.RemoveAll(projectPath)
 			if err != nil {
 				return err
 			}
-			err = os.MkdirAll(projectLoc+appName, os.ModePerm)
+			err = os.MkdirAll(projectPath, os.ModePerm)
 			if err != nil {
 				return err
 			}
