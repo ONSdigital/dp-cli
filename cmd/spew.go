@@ -8,10 +8,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func debugConfig() *cobra.Command {
+func spew() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "spew",
+		Short: "log out some useful debugging info",
+	}
+
+	command.AddCommand(logConfig())
+	return command
+}
+
+func logConfig() *cobra.Command {
 	return &cobra.Command{
-		Use:   "debug",
-		Short: "print out cli configuration as json",
+		Use:   "config",
+		Short: "spew out your dp-cli config",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
