@@ -11,3 +11,4 @@ cmd:
         - "admin-geography.cypher"
     codelists:
         - "suicides.yaml"
+    dp-setup-path:

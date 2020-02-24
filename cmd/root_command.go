@@ -47,6 +47,7 @@ func Load(cfg *config.Config) *cobra.Command {
 		importDataSubCommand(cfg),
 		createRepoSubCommand(),
 		generateProjectSubCommand(),
+		debugConfig(),
 	)
 
 	return root

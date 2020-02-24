@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+var (
+	groupPrefix    = "["
+	groupSeparator = ":"
+	groupSuffix    = "]"
+)
+
 // GetGroupsForEnvironment returns a list of ansible groups for the specified environment
 func GetGroupsForEnvironment(dpSetUpPath, environment string) ([]string, error) {
 	b, err := readFile(dpSetUpPath, environment)
@@ -16,8 +22,7 @@ func GetGroupsForEnvironment(dpSetUpPath, environment string) ([]string, error) 
 		return nil, err
 	}
 
-	groups := parseFile(b)
-	return groups, nil
+	return parseFile(b)
 }
 
 func readFile(dpSetUpPath, environment string) ([]byte, error) {
@@ -25,21 +30,32 @@ func readFile(dpSetUpPath, environment string) ([]byte, error) {
 	return ioutil.ReadFile(hostsPath)
 }
 
-func parseFile(fileBytes []byte) []string {
+func parseFile(fileBytes []byte) ([]string, error) {
 	var groups []string
 
 	r := bufio.NewReader(bytes.NewReader(fileBytes))
 
 	for {
 		s, err := r.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				return nil, err
+			}
+		}
+
 		s = strings.TrimSpace(s)
-		if strings.HasPrefix(s, "[") && strings.Contains(s, ":") && strings.HasSuffix(s, "]") {
-			name := s[1:strings.Index(s, ":")]
+
+		if isGroupLine(s) {
+			name := s[1:strings.Index(s, groupSuffix)]
 			groups = append(groups, name)
 		}
-		if err == io.EOF {
-			break
-		}
 	}
-	return groups
+
+	return groups, nil
+}
+
+func isGroupLine(s string) bool {
+	return strings.HasPrefix(s, groupPrefix) && strings.Contains(s, groupSeparator) && strings.HasSuffix(s, groupSuffix)
 }
