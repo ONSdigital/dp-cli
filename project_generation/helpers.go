@@ -376,7 +376,7 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 
 // InitGoModules will initialise the go modules for a project at a given directory
 func InitGoModules(ctx context.Context, pathToRepo, name string) {
-	cmd := exec.Command("go", "mod", "init", name)
+	cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
