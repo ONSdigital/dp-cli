@@ -40,13 +40,23 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 		Short: "dp-cli provides util functions for developers in ONS Digital Publishing",
 	}
 
+	// register the root sub-commands.
+	subCommands, err := getSubCommands(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	root.AddCommand(subCommands...)
+	return root, nil
+}
+
+func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 	ssh, err := ssh.Command_(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// register the root sub-commands.
-	root.AddCommand(
+	subCommands := []*cobra.Command{
 		versionSubCommand(),
 		cleanSubCommand(cfg),
 		importDataSubCommand(cfg),
@@ -54,7 +64,7 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 		generateProjectSubCommand(),
 		spew(),
 		ssh,
-	)
+	}
 
-	return root, nil
+	return subCommands, nil
 }
