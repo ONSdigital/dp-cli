@@ -3,8 +3,10 @@ module github.com/ONSdigital/dp-cli
 go 1.12
 
 require (
+	github.com/ONSdigital/dp v0.0.0-20200220135040-f49d03479232
 	github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58 // indirect
 	github.com/ONSdigital/log.go v0.0.0-20191127134126-2a610b254f20
+	github.com/aws/aws-sdk-go v1.29.8
 	github.com/fatih/color v1.7.0
 	github.com/google/go-github/v28 v28.1.1
 	github.com/gorilla/mux v1.7.3
