@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"github.com/ONSdigital/dp-cli/config"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ONSdigital/dp-cli/config"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ var (
 	appVersion           = "development"
 )
 
-func Load(cfg *config.Config) *cobra.Command {
+func Load(cfg *config.Config) (*cobra.Command, error) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r = rand.New(s1)
 
@@ -39,14 +40,24 @@ func Load(cfg *config.Config) *cobra.Command {
 	}
 
 	// register the root sub-commands.
-	root.AddCommand(
+	subCommands, err := getSubCommands(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	root.AddCommand(subCommands...)
+	return root, nil
+}
+
+func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
+	subCommands := []*cobra.Command{
 		versionSubCommand(),
 		cleanSubCommand(cfg),
 		importDataSubCommand(cfg),
 		createRepoSubCommand(),
 		generateProjectSubCommand(),
 		spew(),
-	)
+	}
 
-	return root
+	return subCommands, nil
 }
