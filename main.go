@@ -22,7 +22,10 @@ func run(args []string) error {
 		return err
 	}
 
-	root := cmd.Load(cfg)
+	root, err := cmd.Load(cfg)
+	if err != nil {
+		return err
+	}
 
 	return root.Execute()
 }

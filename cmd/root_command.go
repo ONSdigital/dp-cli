@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/ssh"
+
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -21,7 +23,7 @@ var (
 	appVersion           = "development"
 )
 
-func Load(cfg *config.Config) *cobra.Command {
+func Load(cfg *config.Config) (*cobra.Command, error) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r = rand.New(s1)
 
@@ -38,6 +40,11 @@ func Load(cfg *config.Config) *cobra.Command {
 		Short: "dp-cli provides util functions for developers in ONS Digital Publishing",
 	}
 
+	ssh, err := ssh.Command_(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	// register the root sub-commands.
 	root.AddCommand(
 		versionSubCommand(),
@@ -46,7 +53,8 @@ func Load(cfg *config.Config) *cobra.Command {
 		createRepoSubCommand(),
 		generateProjectSubCommand(),
 		spew(),
+		ssh,
 	)
 
-	return root
+	return root, nil
 }

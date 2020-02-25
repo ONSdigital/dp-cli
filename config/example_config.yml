@@ -15,11 +15,13 @@ cmd:
     - "cpih1dim1aggid.cypher"
   codelists:
     - "opss.yaml"
-environments:
-  - name: production
-    profile: production
-  - name: develop
-  - name: sandpit
-  - name: cmd-dev
-  - name: cmd
+ssh:
+  default-profile: nargle
+  environments:
+    - name: production
+      profile: production
+    - name: develop
+    - name: sandpit
+    - name: cmd-dev
+    - name: cmd
 dp-setup-path: "path/to/your/dp-setup/project"
