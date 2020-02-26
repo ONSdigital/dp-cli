@@ -51,7 +51,7 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 }
 
 func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
-	ssh, err := ssh.Command_(cfg)
+	ssh, err := ssh.Command(cfg)
 	if err != nil {
 		return nil, err
 	}

@@ -1,60 +1,58 @@
 package ssh
 
 import (
-	"fmt"
-
 	"github.com/ONSdigital/dp-cli/ansible"
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-type RunFunc func(cmd *cobra.Command, args []string) error
+type runFunc func(cmd *cobra.Command, args []string) error
 
-func Command_(cfg *config.Config) (*cobra.Command, error) {
+func Command(cfg *config.Config) (*cobra.Command, error) {
 	c := &cobra.Command{
 		Use:   "ssh",
 		Short: "access an environment using ssh",
 	}
 
-	var subcommands []*cobra.Command
+	var subCommands []*cobra.Command
 	for _, env := range cfg.SSHConfig.Environments {
 
-		sub, err := createEnvSubCommand(cfg.DPSetupPath, env)
+		sub, err := createEnvSubCommand(cfg, env)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error creating subcommand for env: %s", env.Name)
+			return nil, errors.WithMessagef(err, "error creating sub-command for env: %s", env.Name)
 		}
-		subcommands = append(subcommands, sub)
+		subCommands = append(subCommands, sub)
 	}
 
-	c.AddCommand(subcommands...)
+	c.AddCommand(subCommands...)
 	return c, nil
 }
 
-func createEnvSubCommand(dpSetupPath string, env config.Environment) (*cobra.Command, error) {
+func createEnvSubCommand(cfg *config.Config, env config.Environment) (*cobra.Command, error) {
 	sub := &cobra.Command{
 		Use:   env.Name,
 		Short: "ssh to " + env.Name,
 	}
 
-	_, err := ansible.GetGroupsForEnvironment(dpSetupPath, env.Name)
+	_, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s\n", env.Name)
 	}
 
-	sub.RunE = func(cmd *cobra.Command, args []string) error {
-		fmt.Println("ssh-ing to " + env.Name)
-		return nil
-	}
+	sub.RunE = newRunFunc(cfg, env)
 
 	return sub, nil
 }
 
-func newRunFunc(cfg *config.Config) RunFunc {
+func newRunFunc(cfg *config.Config, env config.Environment) runFunc {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(cfg.SSHConfig.User) == 0 {
 			return errors.New("DP_SSH_USER environment variable must be set")
 		}
+
+		out.InfoFHighlight("ssh to %s end", env.Name)
 		return nil
 	}
 }

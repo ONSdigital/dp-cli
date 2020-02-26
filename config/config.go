@@ -33,7 +33,7 @@ type CMD struct {
 type SSH struct {
 	Environments   []Environment `yaml:"environments"`
 	DefaultProfile string        `yaml:"default-profile"`
-	User           string        `yaml:"ssh-user"`
+	User           string        `yaml:"user"`
 }
 
 // Environment represents an environment
