@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
 
 	"github.com/spf13/cobra"
 )
@@ -24,24 +22,12 @@ func logConfig() *cobra.Command {
 		Use:   "config",
 		Short: "spew out your dp-cli config",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Get()
+			data, err := config.Dump()
 			if err != nil {
 				return err
 			}
 
-			b, err := json.MarshalIndent(cfg, "", "  ")
-			if err != nil {
-				return err
-			}
-
-			fmt.Println(string(b))
-
-			ip, err := config.GetMyIP()
-			if err != nil {
-				return err
-			}
-
-			fmt.Println(ip)
+			out.InfoFHighlight("configuration:\n%s", string(data))
 			return nil
 		},
 	}

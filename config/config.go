@@ -63,6 +63,20 @@ func Get() (*Config, error) {
 	return &cfg, nil
 }
 
+func Dump() ([]byte, error) {
+	c, err := Get()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // GetMyIP fetches your external IP address
 func GetMyIP() (string, error) {
 	res, err := httpClient.Get("https://api.ipify.org")
