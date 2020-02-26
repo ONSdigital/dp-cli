@@ -1,9 +1,10 @@
 package zebedee
 
 import (
-	"github.com/ONSdigital/dp-cli/out"
 	"os"
 	"path/filepath"
+
+	"github.com/ONSdigital/dp-cli/out"
 )
 
 var zebedeeRoot string
@@ -29,7 +30,7 @@ func DeleteCollections() error {
 		return nil
 	}
 
-	out.InfoF("deleting Zebedee collections: %+v", files)
+	out.InfoFHighlight("deleting Zebedee collections: %+v\n", files)
 
 	for _, f := range files {
 		if err := os.RemoveAll(f); err != nil {

@@ -7,48 +7,65 @@ import (
 )
 
 var (
-	infoC          = color.New(color.Bold, color.FgHiBlue)
-	warningC       = color.New(color.Bold, color.FgHiYellow)
-	strongWarningC = color.New(color.Bold, color.FgHiRed)
-	outPrefix      = "[dp-cli]"
+	infoBoldC    = color.New(color.Bold, color.FgHiBlue)
+	infoC        = color.New(color.FgHiBlue)
+	warningBoldC = color.New(color.Bold, color.FgHiYellow)
+	warningC     = color.New(color.FgHiYellow)
+	errorBoldC   = color.New(color.Bold, color.FgHiRed)
+	errorC       = color.New(color.FgHiRed)
+	outPrefix    = "[dp-cli]"
 )
 
-func Info(msg string) {
-	infoC.Printf("%s %s\n", outPrefix, msg)
+func cliPrefix(c *color.Color) {
+	c.Printf("%s ", outPrefix)
 }
+
+func Info(msg string) {
+	cliPrefix(infoBoldC)
+	fmt.Printf("%s\n", msg)
+}
+
+func Warn(msg string) {
+	cliPrefix(warningBoldC)
+	fmt.Printf("%s\n", msg)
+}
+
 func InfoAppend(msg string) {
-	infoC.Print(msg)
+	fmt.Print(msg)
 }
 
 func InfoF(msg string, args ...interface{}) {
-	msg = fmt.Sprintf(msg, args...)
-	infoC.Printf("%s %s", outPrefix, msg)
+	cliPrefix(infoBoldC)
+	fmt.Printf(msg, args...)
 }
 
 func Error(err error) {
-	strongWarningC.Printf("%s %s", outPrefix, err.Error())
+	cliPrefix(errorBoldC)
+	fmt.Printf("%s\n", err.Error())
 }
 
 func InfoFHighlight(msg string, args ...interface{}) {
+	cliPrefix(infoBoldC)
 	highlight(infoC, msg, args...)
 }
 
 func WarnFHighlight(msg string, args ...interface{}) {
+	cliPrefix(warningBoldC)
 	highlight(warningC, msg, args...)
 }
 
 func ErrorFHighlight(msg string, args ...interface{}) {
-	highlight(strongWarningC, msg, args...)
+	cliPrefix(errorBoldC)
+	highlight(errorC, msg, args...)
 }
 
 func highlight(c *color.Color, formattedMsg string, args ...interface{}) {
 	var highlighted []interface{}
-	highlightFunc := c.SprintFunc()
 
 	for _, val := range args {
-		highlighted = append(highlighted, highlightFunc(val))
+		highlighted = append(highlighted, c.SprintFunc()(val))
 	}
 
 	formattedMsg = fmt.Sprintf(formattedMsg, highlighted...)
-	fmt.Printf("%s %s\n", highlightFunc(outPrefix), formattedMsg)
+	fmt.Printf("%s\n", formattedMsg)
 }

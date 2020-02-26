@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/ONSdigital/dp-cli/out"
 	"gopkg.in/yaml.v2"
 )
 
@@ -57,19 +56,18 @@ func Get() (*Config, error) {
 	return &cfg, nil
 }
 
-func Dump() error {
+func Dump() ([]byte, error) {
 	c, err := Get()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	data, err := yaml.Marshal(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	out.InfoFHighlight("configuration:\n%s", string(data))
-	return nil
+	return data, nil
 }
 
 // GetMyIP fetches your external IP address
