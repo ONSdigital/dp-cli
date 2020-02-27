@@ -12,8 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type runFunc func(cmd *cobra.Command, args []string) error
 
+// Example structure of the ssh command:
+//
+// 	ssh command
+// 		environment command
+// 			group command
+//				instance index
 func Command(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
 		Use:   "ssh",
@@ -59,49 +64,26 @@ func createEnvironmentGroupCommands(env config.Environment, cfg *config.Config) 
 	commands := make([]*cobra.Command, 0)
 
 	for _, grp := range groups {
-		commands = append(commands,
-			&cobra.Command{
-				Use:   grp,
-				Short: "ssh to " + grp + " in " + env.Name,
-				Args:  validateIndexChoice(env.Name, profile, grp),
-				RunE:  newEnvRunFunc(cfg.SSHConfig.User, profile, grp, env),
-			})
+
+		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, profile, grp)
+		if err != nil {
+			return nil, errors.WithMessagef(err, "error fetching ec2: %q", env)
+		}
+
+		instCount := len(instances)
+		commands = append(commands, &cobra.Command{
+			Use:   grp,
+			Short: fmt.Sprintf("ssh to a %s instance in %s - %d available", grp, env.Name, instCount),
+			Args:  validateIndexChoice(env.Name, profile, grp),
+			RunE:  newEnvRunFunc(cfg.SSHConfig.User, profile, grp, env, instances),
+		})
 	}
 
 	return commands, nil
 }
 
-func createGroupInstanceCommands(env config.Environment, profile, grp string) ([]*cobra.Command, error) {
-	r, err := aws.ListEC2ByAnsibleGroup(env.Name, profile, grp)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "error fetching ec2: %q", env.Name)
-	}
 
-	if len(r) == 0 {
-		return nil, fmt.Errorf("no matching ec2 instances found for env: %q, profile: %q, group: %q", env.Name, profile, grp)
-	}
-
-	instanceCommands := make([]*cobra.Command, 0)
-	for i, _ := range r {
-		index := strconv.Itoa(i + 1)
-		instC := &cobra.Command{
-			Use:   index,
-			Short: fmt.Sprintf("ssh to %s %s instance %s", env.Name, grp, index),
-			RunE: func(cmd *cobra.Command, args []string) error {
-				// Execute the actual work
-				//newEnvRunFunc()
-				getLogger(env)("ssh to %s %s instance %s", env.Name, grp, index)
-				return nil
-			},
-		}
-
-		instanceCommands = append(instanceCommands, instC)
-	}
-
-	return instanceCommands, nil
-}
-
-func newEnvRunFunc(sshUser, profile, grp string, env config.Environment) func(cmd *cobra.Command, args []string) error {
+func newEnvRunFunc(sshUser, profile, grp string, env config.Environment, instances []aws.EC2Result) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		log := getLogger(env)
 
@@ -111,27 +93,12 @@ func newEnvRunFunc(sshUser, profile, grp string, env config.Environment) func(cm
 
 		log("ssh to %s", env.Name)
 
-		r, err := aws.ListEC2ByAnsibleGroup(env.Name, profile, grp)
+		choice, err := strconv.Atoi(args[0])
 		if err != nil {
-			return fmt.Errorf("error fetching ec2: %s", err)
+			return fmt.Errorf("specify an integer value for instance index in range 1..%d", choice)
 		}
 
-		instCount := len(r)
-
-		if instCount == 0 {
-			return fmt.Errorf("no matching ec2 instances found for env: %s, profile: %s, group: %s", env.Name, profile, grp)
-		}
-
-		index, err := cmd.Flags().GetInt("instance")
-		if err != nil {
-			return err
-		}
-
-		if index == 0 || index > instCount {
-			return errors.Errorf("invalid instance index value: %d - must be 1..%d", index, instCount)
-		}
-
-		for _, v := range r {
+		for _, v := range instances {
 			out.InfoFHighlight("ListEC2ByAnsibleGroup %s\n", v.Name)
 		}
 		return nil
