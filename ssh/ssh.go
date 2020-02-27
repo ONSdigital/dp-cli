@@ -12,13 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
-// Example structure of the ssh command:
+// Command builds an cobra.Command to SSH into an environment.
+// The command has the following structure:
 //
-// 	ssh command
-// 		environment command
-// 			group command
-//				instance index
+// 	ssh
+// 	  environment
+// 		group
+//		  instance
+//
 func Command(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
 		Use:   "ssh",
@@ -34,6 +35,7 @@ func Command(cfg *config.Config) (*cobra.Command, error) {
 	return sshC, nil
 }
 
+// create a array of ssh sub commands for the available environments
 func createEnvironmentCommands(cfg *config.Config) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
@@ -54,84 +56,61 @@ func createEnvironmentCommands(cfg *config.Config) ([]*cobra.Command, error) {
 	return commands, nil
 }
 
+// create a array of environment sub commands for each group available in the chosen environment
 func createEnvironmentGroupCommands(env config.Environment, cfg *config.Config) ([]*cobra.Command, error) {
 	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s\n", env.Name)
 	}
 
-	profile := ""
 	commands := make([]*cobra.Command, 0)
 
 	for _, grp := range groups {
-
-		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, profile, grp)
+		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error fetching ec2: %q", env)
 		}
 
 		instCount := len(instances)
-		commands = append(commands, &cobra.Command{
+		if instCount == 0 {
+			continue
+		}
+
+		grpC := &cobra.Command{
 			Use:   grp,
 			Short: fmt.Sprintf("ssh to a %s instance in %s - %d available", grp, env.Name, instCount),
-			Args:  validateIndexChoice(env.Name, profile, grp),
-			RunE:  newEnvRunFunc(cfg.SSHConfig.User, profile, grp, env, instances),
-		})
+		}
+
+		instanceCommands, err := createInstanceCommands(cfg.SSHConfig.User, grp, env, instances)
+		if err != nil {
+			return nil, err
+		}
+
+		grpC.AddCommand(instanceCommands...)
+		commands = append(commands, grpC)
 	}
 
 	return commands, nil
 }
 
+// create a array of group sub commands for each instance available in the chosen environment group
+func createInstanceCommands(shUser, grp string, env config.Environment, instances []aws.EC2Result) ([]*cobra.Command, error) {
+	commands := make([]*cobra.Command, 0)
 
-func newEnvRunFunc(sshUser, profile, grp string, env config.Environment, instances []aws.EC2Result) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		log := getLogger(env)
+	for i, instance := range instances {
 
-		if len(sshUser) == 0 {
-			return errors.New("DP_SSH_USER environment variable must be set")
+		index := strconv.Itoa(i + 1)
+		instanceC := &cobra.Command{
+			Use:   index,
+			Short: fmt.Sprintf("ssh to %s instance %s", grp, instance.Name),
+			Run: func(cmd *cobra.Command, args []string) {
+				out.InfoFHighlight("env %s profile %s group %s instance %s", env.Name, env.Profile, grp, index)
+			},
 		}
 
-		log("ssh to %s", env.Name)
-
-		choice, err := strconv.Atoi(args[0])
-		if err != nil {
-			return fmt.Errorf("specify an integer value for instance index in range 1..%d", choice)
-		}
-
-		for _, v := range instances {
-			out.InfoFHighlight("ListEC2ByAnsibleGroup %s\n", v.Name)
-		}
-		return nil
+		commands = append(commands, instanceC)
 	}
-}
-
-func validateIndexChoice(env, profile, grp string) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		r, err := aws.ListEC2ByAnsibleGroup(env, profile, grp)
-		if err != nil {
-			return errors.WithMessagef(err, "error fetching ec2: %q", env)
-		}
-
-		available := len(r)
-
-		if available == 0 {
-			return fmt.Errorf("no matching ec2 instances found for env: %q, profile: %q, group: %q", env, profile, grp)
-		}
-
-		if len(args) == 0 {
-			return fmt.Errorf("specify and instance index in range 1..%d", available)
-		}
-
-		choice, err := strconv.Atoi(args[0])
-		if err != nil {
-			return fmt.Errorf("specify an integer value for instance index in range 1..%d", available)
-		}
-
-		if choice <= 0 || choice > available {
-			return errors.Errorf("specify an integer value for instance index in range 1..%d", available)
-		}
-		return nil
-	}
+	return commands, nil
 }
 
 func getLogger(env config.Environment) out.Log {
