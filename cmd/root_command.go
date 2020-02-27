@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-cli/config"
-	"github.com/ONSdigital/dp-cli/ssh"
-
 	"github.com/spf13/cobra"
 )
 
@@ -51,11 +49,6 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 }
 
 func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
-	ssh, err := ssh.Command(cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	subCommands := []*cobra.Command{
 		versionSubCommand(),
 		cleanSubCommand(cfg),
@@ -63,8 +56,13 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 		createRepoSubCommand(),
 		generateProjectSubCommand(),
 		spew(),
-		ssh,
 	}
 
+	ssh, err := sshCommand(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	subCommands = append(subCommands, ssh)
 	return subCommands, nil
 }
