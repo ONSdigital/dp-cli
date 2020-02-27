@@ -13,8 +13,11 @@ var (
 	warningC     = color.New(color.FgHiYellow)
 	errorBoldC   = color.New(color.Bold, color.FgHiRed)
 	errorC       = color.New(color.FgHiRed)
+	Red          = errorC
 	outPrefix    = "[dp-cli]"
 )
+
+type Log func(msg string, args ...interface{})
 
 func cliPrefix(c *color.Color) {
 	c.Printf("%s ", outPrefix)

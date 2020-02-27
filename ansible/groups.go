@@ -48,7 +48,7 @@ func parseFile(fileBytes []byte) ([]string, error) {
 		s = strings.TrimSpace(s)
 
 		if isGroupLine(s) {
-			name := s[1:strings.Index(s, groupSuffix)]
+			name := s[1:strings.Index(s, groupSeparator)]
 			groups = append(groups, name)
 		}
 	}

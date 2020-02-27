@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"github.com/ONSdigital/dp-cli/config"
-	"github.com/ONSdigital/dp-cli/ssh"
-
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/ssh"
 
 	"github.com/spf13/cobra"
 )
