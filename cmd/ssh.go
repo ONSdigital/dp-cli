@@ -12,13 +12,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Command builds an cobra.Command to SSH into an environment.
+// sshCommand builds a cobra.Command to SSH into an environment.
 // The command has the following structure:
 //
 // 	ssh
-// 	  environment
-// 		group
-//		  instance
+// 	  environment 	# develop
+// 		group		# publishing_mount
+//		  instance	# 1
 //
 func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
@@ -26,7 +26,7 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 		Short: "access an environment using ssh",
 	}
 
-	environmentCommands, err := createEnvironmentCommands(cfg)
+	environmentCommands, err := createEnvironmentSubCommands(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +35,8 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	return sshC, nil
 }
 
-// create a array of ssh sub commands for the available environments
-func createEnvironmentCommands(cfg *config.Config) ([]*cobra.Command, error) {
+// create a array of environment sub commands available to ssh to.
+func createEnvironmentSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for _, env := range cfg.SSHConfig.Environments {
@@ -45,7 +45,7 @@ func createEnvironmentCommands(cfg *config.Config) ([]*cobra.Command, error) {
 			Short: "ssh to " + env.Name,
 		}
 
-		groupCommands, err := createEnvironmentGroupCommands(env, cfg)
+		groupCommands, err := createEnvironmentGroupSubCommands(env, cfg)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error creating group commands for env: %s", env.Name)
 		}
@@ -56,8 +56,8 @@ func createEnvironmentCommands(cfg *config.Config) ([]*cobra.Command, error) {
 	return commands, nil
 }
 
-// create a array of environment sub commands for each group available in the chosen environment
-func createEnvironmentGroupCommands(env config.Environment, cfg *config.Config) ([]*cobra.Command, error) {
+// create a array of environment group sub commands available to ssh to.
+func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config) ([]*cobra.Command, error) {
 	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s\n", env.Name)
@@ -81,7 +81,7 @@ func createEnvironmentGroupCommands(env config.Environment, cfg *config.Config) 
 			Short: fmt.Sprintf("ssh to %s %s", env.Name, grp),
 		}
 
-		instanceCommands, err := createInstanceCommands(grp, cfg, env, instances)
+		instanceCommands, err := createInstanceSubCommands(grp, cfg, env, instances)
 		if err != nil {
 			return nil, err
 		}
@@ -93,8 +93,8 @@ func createEnvironmentGroupCommands(env config.Environment, cfg *config.Config) 
 	return commands, nil
 }
 
-// create a array of group sub commands for each instance available in the chosen environment group
-func createInstanceCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result) ([]*cobra.Command, error) {
+// create a array of instance sub commands available to ssh to.
+func createInstanceSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for i, instance := range instances {

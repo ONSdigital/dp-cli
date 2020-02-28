@@ -9,10 +9,15 @@
 - `dp-code-list-scripts` 
 - `dp-hierarchy-builder`
 
-to be one your `$GOPATH`:
+to be on your `$GOPATH`:
 ```
 go get github.com/ONSdigital/dp-code-list-scripts
 go get github.com/ONSdigital/dp-hierarchy-builder
+```
+
+`dp-cli` also depends on `dp-setup` for  environment config:
+```
+git clone git@github.com:ONSdigital/dp-setup.git
 ```
 
 ### Getting started
@@ -23,18 +28,54 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 :warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
-### Config
-Add the following to your bash profile - replacing `<PATH_TO_PROJECT>` with the appropriate path for your set up. 
+### Configuration
+`dp-cli` configuration is defined in a `.yml` configuration file and the app expects an environment variable that provides a path to this file.
+
+Create a new `dp-cli-config.yml` file and add the example content below (update as required to match your local set up):
 
 ```
-export DP_CLI_CONFIG="<PATH_TO_PROJECT>/dp-cli/config/config.yml"
+## Example config file Replace fields as required
+cmd:
+  neo4j-url: bolt://localhost:7687
+  mongo-url: localhost:27017
+  mongo-dbs:  # The mongo databases to be dropped when cleaning your CMD data
+    - "imports"
+    - "datasets"
+    - "filters"
+    - "codelists"
+    - "test"
+  hierarchies: # The hierarchies import scripts to run when importing CMD data.
+    - "admin-geography.cypher"
+    - "cpih1dim1aggid.cypher"
+
+  codelists: # The CMD codelist import scripts to run when importing CMD data.
+    - "opss.yaml"
+ssh:
+  environments:
+    - name: production
+      profile: production
+    - name: develop
+      profile: development
+    - name: cmd
+      profile: development
+dp-setup-path: "path/to/your/dp-setup/project" # The path to the dp-setup repo on your machine.
 ```
-Build and run the binary
+ 
+Create an environment variable `DP_CLI_CONFIG` assigning the path to config file you just created.
+
+Example:
+```
+export DP_CLI_CONFIG="<YOUR_PATH>/dp-ci-config.yml"
+```
+
+### Build and run
+
+Build, install and start the cli:
 ```
 make install
 dp-cli
 ```
-Or to build locally
+Or to build a binary locally:
 ```
 make build
 ./dp-cli
@@ -53,6 +94,8 @@ Available Commands:
   generate-project Generates the boilerplate for a given project type
   help             Help about any command
   import           ImportData your local developer environment
+  spew             log out some useful debugging info
+  ssh              access an environment using ssh
   version          Print the app version
 
 Flags:
@@ -61,12 +104,4 @@ Flags:
 Use "dp-cli [command] --help" for more information about a command.
 ```
 
-#### Clean out all CMD data from you local env:
-```
-dp-cli clean cmd
-```
-
-#### Create a repository on github
-```
-dp-cli create-repo github
-```
+Use the available commands for more info on the functionality available.

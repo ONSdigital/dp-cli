@@ -4,24 +4,24 @@
 cmd:
   neo4j-url: bolt://localhost:7687
   mongo-url: localhost:27017
-  mongo-dbs:
+  mongo-dbs:  # The mongo databases to be dropped when cleaning your CMD data
     - "imports"
     - "datasets"
     - "filters"
     - "codelists"
     - "test"
-  hierarchies:
+  hierarchies: # The hierarchies import scripts to run when importing CMD data.
     - "admin-geography.cypher"
     - "cpih1dim1aggid.cypher"
-  codelists:
+
+  codelists: # The CMD codelist import scripts to run when importing CMD data.
     - "opss.yaml"
 ssh:
-  default-profile: nargle
   environments:
     - name: production
       profile: production
     - name: develop
-    - name: sandpit
-    - name: cmd-dev
+      profile: development
     - name: cmd
-dp-setup-path: "path/to/your/dp-setup/project"
+      profile: development
+dp-setup-path: "path/to/your/dp-setup/project" # The path to the dp-setup repo on your machine.
