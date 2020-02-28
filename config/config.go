@@ -18,7 +18,7 @@ var httpClient = &http.Client{
 
 type Config struct {
 	CMD         CMD    `yaml:"cmd"`
-	SSHConfig   SSH    `yaml:"ssh"`
+	SSH         SSH    `yaml:"ssh"`
 	DPSetupPath string `yaml:"dp-setup-path"`
 }
 
@@ -31,8 +31,8 @@ type CMD struct {
 }
 
 type SSH struct {
-	Environments   []Environment `yaml:"environments"`
-	User           string        `yaml:"user"`
+	Environments []Environment `yaml:"environments"`
+	User         string        `yaml:"user"`
 }
 
 // Environment represents an environment

@@ -10,7 +10,7 @@ import (
 func importDataSubCommand(cfg *config.Config) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "import",
-		Short: "ImportData your local developer environment",
+		Short: "Import data into your local developer environment",
 	}
 
 	command.AddCommand(&cobra.Command{

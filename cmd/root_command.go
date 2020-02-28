@@ -35,7 +35,7 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 
 	root = &cobra.Command{
 		Use:   "dp-cli",
-		Short: "dp-cli provides util functions for developers in ONS Digital Publishing",
+		Short: "dp-cli is a command line client providing handy helper tools for ONS Digital Publishing software engineers",
 	}
 
 	// register the root sub-commands.
@@ -56,6 +56,7 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 		createRepoSubCommand(),
 		generateProjectSubCommand(),
 		spew(),
+		remoteAccess(cfg),
 	}
 
 	ssh, err := sshCommand(cfg)

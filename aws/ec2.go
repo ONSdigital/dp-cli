@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ONSdigital/dp/cmd/config"
+	"github.com/ONSdigital/dp-cli/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
@@ -125,7 +125,7 @@ func GetManagementACLForEnvironment(environment, profile string) (string, error)
 	return *res.NetworkAcls[0].NetworkAclId, nil
 }
 
-func AllowIPForConcourse(cfg config.Config) error {
+func AllowIPForConcourse(sshUser string) error {
 	ec2Svc := getEC2Service("", "")
 
 	sg, err := GetConcourseWebSG()
@@ -145,7 +145,7 @@ func AllowIPForConcourse(cfg config.Config) error {
 				IpProtocol: aws.String("tcp"),
 				FromPort:   aws.Int64(int64(443)),
 				ToPort:     aws.Int64(int64(443)),
-				IpRanges:   getIpRangesFor(myIP, cfg.SSHUser),
+				IpRanges:   getIpRangesFor(myIP, sshUser),
 			},
 		},
 	})
@@ -157,7 +157,7 @@ func AllowIPForConcourse(cfg config.Config) error {
 	return nil
 }
 
-func DenyIPForConcourse(cfg config.Config) error {
+func DenyIPForConcourse(sshUser string) error {
 	ec2Svc := getEC2Service("", "")
 
 	sg, err := GetConcourseWebSG()
@@ -177,7 +177,7 @@ func DenyIPForConcourse(cfg config.Config) error {
 				IpProtocol: aws.String("tcp"),
 				FromPort:   aws.Int64(int64(443)),
 				ToPort:     aws.Int64(int64(443)),
-				IpRanges:   getIpRangesFor(myIP, cfg.SSHUser),
+				IpRanges:   getIpRangesFor(myIP, sshUser),
 			},
 		},
 	})
@@ -188,20 +188,20 @@ func DenyIPForConcourse(cfg config.Config) error {
 	return nil
 }
 
-func DenyIPForEnvironment(cfg config.Config, environment, profile string) error {
-	return ChangeIPForEnvironment(false, cfg, environment, profile)
+func DenyIPForEnvironment(sshUser, environment, profile string) error {
+	return ChangeIPForEnvironment(false, sshUser, environment, profile)
 }
-func AllowIPForEnvironment(cfg config.Config, environment, profile string) error {
-	return ChangeIPForEnvironment(true, cfg, environment, profile)
+func AllowIPForEnvironment(sshUser, environment, profile string) error {
+	return ChangeIPForEnvironment(true, sshUser, environment, profile)
 }
 
-func ChangeIPForEnvironment(isAllow bool, cfg config.Config, environment, profile string) error {
+func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) error {
 	ec2Svc := getEC2Service(environment, profile)
 
-	if len(cfg.SSHUser) == 0 {
+	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
-	ruleBase := portHash(cfg.SSHUser)
+	ruleBase := portHash(sshUser)
 
 	bastionSG, err := GetBastionSGForEnvironment(environment, profile)
 	if err != nil {
@@ -238,19 +238,19 @@ func ChangeIPForEnvironment(isAllow bool, cfg config.Config, environment, profil
 			IpProtocol: aws.String("tcp"),
 			FromPort:   aws.Int64(int64(443)),
 			ToPort:     aws.Int64(int64(443)),
-			IpRanges:   getIpRangesFor(myIP, cfg.SSHUser),
+			IpRanges:   getIpRangesFor(myIP, sshUser),
 		}
 		ipPermSSH = &ec2.IpPermission{
 			IpProtocol: aws.String("tcp"),
 			FromPort:   aws.Int64(int64(22)),
 			ToPort:     aws.Int64(int64(22)),
-			IpRanges:   getIpRangesFor(myIP, cfg.SSHUser),
+			IpRanges:   getIpRangesFor(myIP, sshUser),
 		}
 		ipPermHTTP = &ec2.IpPermission{
 			IpProtocol: aws.String("tcp"),
 			FromPort:   aws.Int64(int64(80)),
 			ToPort:     aws.Int64(int64(80)),
-			IpRanges:   getIpRangesFor(myIP, cfg.SSHUser),
+			IpRanges:   getIpRangesFor(myIP, sshUser),
 		}
 		ipPermsAllHTTP = []*ec2.IpPermission{
 			ipPermHTTP,
