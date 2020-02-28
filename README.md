@@ -4,7 +4,15 @@ Command line client with providing *handy helper tools* for ONS Digital publishi
 
 :warning: Still in active development. If you noticed and bugs/issues please open a Github issue. 
 
-## Prerequisites
+### Getting started
+Clone the code
+```
+git clone git@github.com:ONSdigital/dp-cli.git
+```
+
+:warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
+
+#### Prerequisites
 `dp-cli` uses Go Modules so requires a go version of **1.11** or later. 
 
 `dp-cli` requires:
@@ -22,16 +30,9 @@ go get github.com/ONSdigital/dp-hierarchy-builder
 git clone git@github.com:ONSdigital/dp-setup.git
 ```
 
-### Getting started
-Clone the code
-```
-git clone git@github.com:ONSdigital/dp-cli.git
-```
-
-:warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
 ### Configuration
-`dp-cli` configuration is defined in a `.yml` configuration file and the app expects an environment variable that provides a path to this file.
+`dp-cli` configuration is defined in a `.yml` configuration file and the cli expects an environment variable providing the config file path.
 
 Create a new `dp-cli-config.yml` file and add the example content below (update as required to match your local set up):
 
