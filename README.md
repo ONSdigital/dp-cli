@@ -1,6 +1,6 @@
 # dp-cli
 
-Command line client with providing *handy helper tools* for ONS Digital publishing developer engineers.
+#### Command line client providing *handy helper tools* for the ONS Digital Publishing software engineering team.
 
 :warning: Still in active development. If you noticed and bugs/issues please open a Github issue. 
 
