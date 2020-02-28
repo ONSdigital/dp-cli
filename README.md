@@ -38,6 +38,7 @@ Create a new `dp-cli-config.yml` file and add the example content below (update 
 
 ```yaml
 ## Example config file Replace fields as required
+dp-setup-path: "path/to/your/dp-setup/project" # The path to the dp-setup repo on your machine.
 cmd:
   neo4j-url: bolt://localhost:7687
   mongo-url: localhost:27017
@@ -54,14 +55,14 @@ cmd:
   codelists: # The CMD codelist import scripts to run when importing CMD data.
     - "opss.yaml"
 ssh:
+  user: JamesHetfield
   environments:
     - name: production
       profile: production
     - name: develop
       profile: development
-    - name: cmd
+    - name: cmd-dev
       profile: development
-dp-setup-path: "path/to/your/dp-setup/project" # The path to the dp-setup repo on your machine.
 ```
  
 Create an environment variable `DP_CLI_CONFIG` assigning the path to config file you just created.

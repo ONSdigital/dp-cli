@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,13 +10,13 @@ import (
 	"github.com/ONSdigital/dp-cli/aws"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
-	"github.com/pkg/errors"
 )
 
 // Open an ssh connect to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result) error {
 	if len(cfg.SSHConfig.User) == 0 {
-		return errors.New("DP_SSH_USER variable must be set")
+		out.WarnFHighlight("no %s is defined in your configuration file you can view the app configuration values using the %s command\n", "ssh user", "spew config")
+		return errors.New("missing ssh user in config file")
 	}
 
 	logFunc := getLogger(env)
