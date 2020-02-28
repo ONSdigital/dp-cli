@@ -1,5 +1,7 @@
 # dp-cli
 
+Command line client with providing *handy helper tools* for ONS Digital publishing developer engineers.
+
 :warning: Still in active development. If you noticed and bugs/issues please open a Github issue. 
 
 ## Prerequisites
@@ -33,7 +35,7 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 Create a new `dp-cli-config.yml` file and add the example content below (update as required to match your local set up):
 
-```
+```yaml
 ## Example config file Replace fields as required
 cmd:
   neo4j-url: bolt://localhost:7687
