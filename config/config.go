@@ -12,10 +12,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var httpClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
+
 type Config struct {
-	CMD          CMD           `yaml:"cmd"`
-	Environments []Environment `yaml:"environments"`
-	DPSetupPath  string        `yaml:"dp-setup-path"`
+	CMD         CMD    `yaml:"cmd"`
+	SSHConfig   SSH    `yaml:"ssh"`
+	DPSetupPath string `yaml:"dp-setup-path"`
 }
 
 type CMD struct {
@@ -26,14 +30,15 @@ type CMD struct {
 	Codelists   []string `yaml:"codelists"`
 }
 
+type SSH struct {
+	Environments   []Environment `yaml:"environments"`
+	User           string        `yaml:"user"`
+}
+
 // Environment represents an environment
 type Environment struct {
 	Name    string `yaml:"name"`
 	Profile string `yaml:"profile"`
-}
-
-var httpClient = &http.Client{
-	Timeout: 5 * time.Second,
 }
 
 func Get() (*Config, error) {

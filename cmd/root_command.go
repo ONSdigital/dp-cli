@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-cli/config"
-
 	"github.com/spf13/cobra"
 )
 
@@ -59,5 +58,11 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 		spew(),
 	}
 
+	ssh, err := sshCommand(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	subCommands = append(subCommands, ssh)
 	return subCommands, nil
 }
