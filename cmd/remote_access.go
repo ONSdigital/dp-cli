@@ -14,9 +14,9 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	}
 
 	subCommands := []*cobra.Command{
-		allowCommand(cfg.SSH.User, cfg.SSH.Environments),
-		denyCommand(cfg.SSH.User, cfg.SSH.Environments),
-		concourseCommand(cfg.SSH.User),
+		allowCommand(cfg.SSHUser, cfg.Environments),
+		denyCommand(cfg.SSHUser, cfg.Environments),
+		concourseCommand(cfg.SSHUser),
 	}
 
 	cmd.AddCommand(subCommands...)

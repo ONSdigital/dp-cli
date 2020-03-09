@@ -14,7 +14,7 @@ import (
 
 // Open an ssh connect to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result) error {
-	if len(cfg.SSH.User) == 0 {
+	if len(cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command\n", "ssh user", "spew config")
 		return errors.New("missing ssh user in config file")
 	}
@@ -25,7 +25,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result) 
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]\n", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 
 	pwd := filepath.Join(cfg.DPSetupPath, "ansible")
-	unixUser := fmt.Sprintf("%s@%s", cfg.SSH.User, instance.IPAddress)
+	unixUser := fmt.Sprintf("%s@%s", cfg.SSHUser, instance.IPAddress)
 	return execCommand(pwd, "ssh", "-F", "ssh.cfg", unixUser)
 }
 

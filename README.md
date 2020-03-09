@@ -54,15 +54,14 @@ cmd:
 
   codelists: # The CMD codelist import scripts to run when importing CMD data.
     - "opss.yaml"
-ssh:
-  user: JamesHetfield
-  environments:
-    - name: production
-      profile: production
-    - name: develop
-      profile: development
-    - name: cmd-dev
-      profile: development
+ssh-user: JamesHetfield
+environments:
+  - name: production
+    profile: production
+  - name: develop
+    profile: development
+  - name: cmd-dev
+    profile: development
 ```
  
 Create an environment variable `DP_CLI_CONFIG` assigning the path to config file you just created.
