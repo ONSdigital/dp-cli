@@ -56,6 +56,7 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 		createRepoSubCommand(),
 		generateProjectSubCommand(),
 		spew(),
+		zebedeeCommand(),
 		remoteAccess(cfg),
 	}
 
