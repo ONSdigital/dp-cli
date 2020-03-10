@@ -54,15 +54,14 @@ cmd:
 
   codelists: # The CMD codelist import scripts to run when importing CMD data.
     - "opss.yaml"
-ssh:
-  user: JamesHetfield
-  environments:
-    - name: production
-      profile: production
-    - name: develop
-      profile: development
-    - name: cmd-dev
-      profile: development
+ssh-user: JamesHetfield
+environments:
+  - name: production
+    profile: production
+  - name: develop
+    profile: development
+  - name: cmd-dev
+    profile: development
 ```
  
 Create an environment variable `DP_CLI_CONFIG` assigning the path to config file you just created.
@@ -86,20 +85,21 @@ make build
 ```
 
 You should be presented you a help menu similar to:
-```
-dp-cli provides util functions for developers in ONS Digital Publishing
+```bash
+dp-cli is a command line client providing handy helper tools for ONS Digital Publishing software engineers
 
 Usage:
   dp-cli [command]
 
 Available Commands:
-  clean            Clean/Delete data from your local environment
+  clean            Delete data from your local environment
   create-repo      Creates a new repository with the typical Digital Publishing configurations
   generate-project Generates the boilerplate for a given project type
   help             Help about any command
-  import           ImportData your local developer environment
-  spew             log out some useful debugging info
-  ssh              access an environment using ssh
+  import           Import data into your local developer environment
+  remote           Allow or deny remote access to environment
+  spew             Log out some useful debugging info
+  ssh              Access an environment using ssh
   version          Print the app version
 
 Flags:

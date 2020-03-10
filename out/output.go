@@ -3,6 +3,7 @@ package out
 import (
 	"fmt"
 
+	"github.com/ONSdigital/dp-cli/config"
 	"github.com/fatih/color"
 )
 
@@ -13,9 +14,50 @@ var (
 	warningC     = color.New(color.FgHiYellow)
 	errorBoldC   = color.New(color.Bold, color.FgHiRed)
 	errorC       = color.New(color.FgHiRed)
-	Red          = errorC
 	outPrefix    = "[dp-cli]"
 )
+
+type Level int
+
+const (
+	INFO Level = iota + 1
+	WARN
+	ERROR
+)
+
+func getColor(lvl Level) *color.Color {
+	switch lvl {
+	case ERROR:
+		return errorC
+	case WARN:
+		return warningC
+	default:
+		return infoC
+	}
+}
+
+func GetLevel(env config.Environment) Level {
+	if env.Name == "production" {
+		return ERROR
+	}
+	return INFO
+}
+
+func Write(lvl Level, msg string) {
+	getColor(lvl).Printf("%s ", outPrefix)
+	fmt.Printf("%s\n", msg)
+}
+
+func WriteF(lvl Level, msg string, args ...interface{}) {
+	getColor(lvl).Printf("%s ", outPrefix)
+	fmt.Printf(msg, args...)
+}
+
+func Highlight(lvl Level, msg string, args ...interface{}) {
+	c := getColor(lvl)
+	c.Printf("%s ", outPrefix)
+	highlight(c, msg, args...)
+}
 
 type Log func(msg string, args ...interface{})
 

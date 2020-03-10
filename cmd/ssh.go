@@ -23,7 +23,7 @@ import (
 func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
 		Use:   "ssh",
-		Short: "access an environment using ssh",
+		Short: "Access an environment using ssh",
 	}
 
 	environmentCommands, err := createEnvironmentSubCommands(cfg)
@@ -39,7 +39,7 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 func createEnvironmentSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
-	for _, env := range cfg.SSHConfig.Environments {
+	for _, env := range cfg.Environments {
 		envC := &cobra.Command{
 			Use:   env.Name,
 			Short: "ssh to " + env.Name,

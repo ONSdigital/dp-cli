@@ -10,7 +10,7 @@ import (
 func spew() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "spew",
-		Short: "log out some useful debugging info",
+		Short: "Log out some useful debugging info",
 	}
 
 	command.AddCommand(logConfig())

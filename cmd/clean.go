@@ -11,7 +11,7 @@ import (
 func cleanSubCommand(cfg *config.Config) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "clean",
-		Short: "Clean/Delete data from your local environment",
+		Short: "Delete data from your local environment",
 	}
 	command.AddCommand(tearDownCustomiseMyData(cfg), clearCollections())
 	return command

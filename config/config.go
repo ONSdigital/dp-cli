@@ -17,9 +17,10 @@ var httpClient = &http.Client{
 }
 
 type Config struct {
-	CMD         CMD    `yaml:"cmd"`
-	SSHConfig   SSH    `yaml:"ssh"`
-	DPSetupPath string `yaml:"dp-setup-path"`
+	CMD          CMD           `yaml:"cmd"`
+	Environments []Environment `yaml:"environments"`
+	SSHUser      string        `yaml:"ssh-user"`
+	DPSetupPath  string        `yaml:"dp-setup-path"`
 }
 
 type CMD struct {
@@ -28,11 +29,6 @@ type CMD struct {
 	MongoDBs    []string `yaml:"mongo-dbs"`
 	Hierarchies []string `yaml:"hierarchies"`
 	Codelists   []string `yaml:"codelists"`
-}
-
-type SSH struct {
-	Environments   []Environment `yaml:"environments"`
-	User           string        `yaml:"user"`
 }
 
 // Environment represents an environment
