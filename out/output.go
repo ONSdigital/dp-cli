@@ -43,6 +43,10 @@ func GetLevel(env config.Environment) Level {
 	return INFO
 }
 
+func Prompt() {
+	getColor(INFO).Print("> ")
+}
+
 func Write(lvl Level, msg string) {
 	getColor(lvl).Printf("%s ", outPrefix)
 	fmt.Printf("%s\n", msg)
