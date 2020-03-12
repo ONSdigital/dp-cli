@@ -1,5 +1,6 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea
 /project_generation/generated/*
+dp-cli-config.yml
 
 dp-cli
