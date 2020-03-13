@@ -13,15 +13,15 @@ import (
 
 func portHash(username string) int64 {
 	var hash int64
-	for s := range username {
-		hash += int64(s)
+	for _, s := range username {
+		hash += int64(s) - int64('A')
 	}
 	// return numbers that (in all expected cases) are between 10000 and 12000
-	port := (hash * 20) + 10000
+	port := (hash * 2) + 10000
 
 	// extremely long username strings will exceed allowable port ranges
 	if port > 32766 {
-		panic("Are you sure DP_SSH_USER is correct?")
+		panic("Are you sure your ssh user config is correct?")
 	}
 
 	return port
