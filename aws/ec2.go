@@ -11,20 +11,20 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func portHash(username string) int64 {
+func ruleHash(username string) int64 {
 	var hash int64
 	for _, s := range username {
 		hash += int64(s) - int64('A')
 	}
 	// return numbers that (in all expected cases) are between 10000 and 12000
-	port := (hash * 2) + 10000
+	ruleNumber := (hash * 2) + 10000
 
 	// extremely long username strings will exceed allowable port ranges
-	if port > 32766 {
+	if ruleNumber > 32766 {
 		panic("Are you sure your ssh user config is correct?")
 	}
 
-	return port
+	return ruleNumber
 }
 
 func getEC2Service(environment, profile string) *ec2.EC2 {
@@ -201,7 +201,7 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
-	ruleBase := portHash(sshUser)
+	ruleBase := ruleHash(sshUser)
 
 	bastionSG, err := GetBastionSGForEnvironment(environment, profile)
 	if err != nil {
