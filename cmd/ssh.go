@@ -30,6 +30,9 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(environmentCommands) == 0 {
+		fmt.Println("Warning: No subcommands found for envs - missing envs in config?")
+	}
 
 	sshC.AddCommand(environmentCommands...)
 	return sshC, nil
@@ -102,7 +105,7 @@ func createInstanceSubCommands(grp string, cfg *config.Config, env config.Enviro
 
 		instanceC := &cobra.Command{
 			Use:   index,
-			Short: fmt.Sprintf("ssh to %s %s", grp, instance.Name),
+			Short: fmt.Sprintf("ssh to %s %q (%s)", grp, instance.Name, instance.IPAddress),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return ssh.Launch(cfg, env, instance)
 			},
