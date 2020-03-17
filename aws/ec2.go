@@ -11,22 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func ruleHash(username string) int64 {
-	var hash int64
-	for _, s := range username {
-		hash += int64(s) - int64('A')
-	}
-	// return numbers that (in all expected cases) are between 10000 and 12000
-	ruleNumber := (hash * 2) + 10000
-
-	// extremely long username strings will exceed allowable port ranges
-	if ruleNumber > 32766 {
-		panic("Are you sure your ssh user config is correct?")
-	}
-
-	return ruleNumber
-}
-
 func getEC2Service(environment, profile string) *ec2.EC2 {
 	// Create new EC2 client
 	return ec2.New(getAWSSession(environment, profile))
@@ -91,38 +75,6 @@ func GetELBWebSGForEnvironment(environment, profile string) (string, error) {
 
 func GetConcourseWebSG() (string, error) {
 	return GetNamedSG("concourse-ci-web", "", "")
-}
-
-func GetManagementACLForEnvironment(environment, profile string) (string, error) {
-	ec2Svc := getEC2Service(environment, profile)
-
-	res, err := ec2Svc.DescribeNetworkAcls(&ec2.DescribeNetworkAclsInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:Environment"),
-				Values: []*string{aws.String(environment)},
-			},
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(environment + " - management")},
-			},
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-
-	if len(res.NetworkAcls) < 1 {
-		return "", fmt.Errorf("no network acls matching environment: %s", environment)
-	}
-	if len(res.NetworkAcls) > 1 {
-		return "", fmt.Errorf("too many network acls matching environment: %s", environment)
-	}
-	if res.NetworkAcls[0].NetworkAclId == nil {
-		return "", fmt.Errorf("no networkAclId found for network acl: %s", environment)
-	}
-
-	return *res.NetworkAcls[0].NetworkAclId, nil
 }
 
 func AllowIPForConcourse(sshUser string) error {
@@ -201,7 +153,6 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
-	ruleBase := ruleHash(sshUser)
 
 	bastionSG, err := GetBastionSGForEnvironment(environment, profile)
 	if err != nil {
@@ -219,11 +170,6 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 	}
 
 	webSG, err := GetELBWebSGForEnvironment(environment, profile)
-	if err != nil {
-		return err
-	}
-
-	acl, err := GetManagementACLForEnvironment(environment, profile)
 	if err != nil {
 		return err
 	}
@@ -289,55 +235,6 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 				return fmt.Errorf("error removing rules from pubSG: %s", err)
 			}
 		}
-
-		_, err = ec2Svc.CreateNetworkAclEntry(&ec2.CreateNetworkAclEntryInput{
-			Egress:       aws.Bool(false),
-			NetworkAclId: aws.String(acl),
-			RuleNumber:   aws.Int64(ruleBase), // 1 to 32766
-			CidrBlock:    aws.String(myIP + "/32"),
-			Protocol:     aws.String("6"),
-			RuleAction:   aws.String("allow"),
-			PortRange: &ec2.PortRange{
-				From: aws.Int64(int64(22)),
-				To:   aws.Int64(int64(22)),
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("error adding rules to acl: %s", err)
-		}
-
-		_, err = ec2Svc.CreateNetworkAclEntry(&ec2.CreateNetworkAclEntryInput{
-			Egress:       aws.Bool(false),
-			NetworkAclId: aws.String(acl),
-			RuleNumber:   aws.Int64(ruleBase + 1), // 1 to 32766
-			CidrBlock:    aws.String(myIP + "/32"),
-			Protocol:     aws.String("6"),
-			RuleAction:   aws.String("allow"),
-			PortRange: &ec2.PortRange{
-				From: aws.Int64(int64(443)),
-				To:   aws.Int64(int64(443)),
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("error adding rules to acl: %s", err)
-		}
-
-		_, err = ec2Svc.CreateNetworkAclEntry(&ec2.CreateNetworkAclEntryInput{
-			Egress:       aws.Bool(true),
-			NetworkAclId: aws.String(acl),
-			RuleNumber:   aws.Int64(ruleBase + 2), // 1 to 32766
-			CidrBlock:    aws.String(myIP + "/32"),
-			Protocol:     aws.String("6"),
-			RuleAction:   aws.String("allow"),
-			PortRange: &ec2.PortRange{
-				From: aws.Int64(int64(32768)),
-				To:   aws.Int64(int64(61000)),
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("error adding rules to acl: %s", err)
-		}
-
 	} else {
 
 		_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
@@ -364,33 +261,6 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 			if err != nil {
 				return fmt.Errorf("error removing rules from pubSG: %s", err)
 			}
-		}
-
-		_, err = ec2Svc.DeleteNetworkAclEntry(&ec2.DeleteNetworkAclEntryInput{
-			Egress:       aws.Bool(false),
-			NetworkAclId: aws.String(acl),
-			RuleNumber:   aws.Int64(ruleBase), // 1 to 32766
-		})
-		if err != nil {
-			return fmt.Errorf("error removing rules from acl: %s", err)
-		}
-
-		_, err = ec2Svc.DeleteNetworkAclEntry(&ec2.DeleteNetworkAclEntryInput{
-			Egress:       aws.Bool(false),
-			NetworkAclId: aws.String(acl),
-			RuleNumber:   aws.Int64(ruleBase + 1), // 1 to 32766
-		})
-		if err != nil {
-			return fmt.Errorf("error removing rules from acl: %s", err)
-		}
-
-		_, err = ec2Svc.DeleteNetworkAclEntry(&ec2.DeleteNetworkAclEntryInput{
-			Egress:       aws.Bool(true),
-			NetworkAclId: aws.String(acl),
-			RuleNumber:   aws.Int64(ruleBase + 2), // 1 to 32766
-		})
-		if err != nil {
-			return fmt.Errorf("error removing rules from acl: %s", err)
 		}
 	}
 

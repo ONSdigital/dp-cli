@@ -2,7 +2,7 @@
 
 #### Command line client providing *handy helper tools* for the ONS Digital Publishing software engineering team.
 
-:warning: Still in active development. If you noticed and bugs/issues please open a Github issue. 
+:warning: Still in active development. If you noticed and bugs/issues please open a Github issue.
 
 ### Getting started
 Clone the code
@@ -13,10 +13,10 @@ git clone git@github.com:ONSdigital/dp-cli.git
 :warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
 #### Prerequisites
-`dp-cli` uses Go Modules so requires a go version of **1.11** or later. 
+`dp-cli` uses Go Modules so requires a go version of **1.11** or later.
 
 `dp-cli` requires:
-- `dp-code-list-scripts` 
+- `dp-code-list-scripts`
 - `dp-hierarchy-builder`
 
 to be on your `$GOPATH`:
@@ -63,7 +63,7 @@ environments:
   - name: cmd-dev
     profile: development
 ```
- 
+
 Create an environment variable `DP_CLI_CONFIG` assigning the path to config file you just created.
 
 Example:
@@ -147,13 +147,13 @@ Ensure you have `region=eu-west-1` in your AWS configuration.
 
 Depending on the command you're trying to run, and what you're trying to access, ensure your `AWS_DEFAULT_PROFILE` is set correctly.
 
-#### Remote Allow network ACL entry already exists error
+#### Remote Allow security group rule already exists error
 
 ```
 ➜  dp-cli remote allow develop
 [dp-cli] allowing access to develop
-Error: error adding rules to acl: NetworkAclEntryAlreadyExists: The network acl entry identified by 11560 already exists.
-	status code: 400, request id: 6c18d235-638b-478b-9c10-064834c0f6e3
+Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specified rule "peer: X.X.X.X/32, TCP, from port: 22, to port: 22, ALLOW" already exists
+        status code: 400, request id: 26a61345-8391-4c65-bfd7-4f0052892b6b
 ```
 
 The error occurs when rules have previously been added and the command is run again. Use `dp-cli remote deny` to clear out existing rules and try again.
