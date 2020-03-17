@@ -145,6 +145,8 @@ If the SSH command fails, ensure that the `dp-cli remote allow` command has been
 
 Ensure you have `region=eu-west-1` in your AWS configuration.
 
+Depending on the command you're trying to run, and what you're trying to access, ensure your `AWS_DEFAULT_PROFILE` is set correctly.
+
 #### Remote Allow network ACL entry already exists error
 
 ```
