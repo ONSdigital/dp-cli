@@ -2,37 +2,37 @@ package project_generation
 
 var genericFiles = []fileGen{
 	{
-		templatePath: "readme",
+		templatePath: "generic/README.md",
 		outputPath:   "README",
 		extension:    ".md",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "contributing",
+		templatePath: "generic/CONTRIBUTING.md",
 		outputPath:   "CONTRIBUTING",
 		extension:    ".md",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "license",
+		templatePath: "generic/LICENSE.md",
 		outputPath:   "LICENSE",
 		extension:    ".md",
 		filePrefix:   "",
 	},
 	{
-		templatePath: ".gitignore",
+		templatePath: "generic/.gitignore",
 		outputPath:   ".gitignore",
 		extension:    "",
 		filePrefix:   "",
 	},
 	{
-		templatePath: ".github/PULL_REQUEST_TEMPLATE",
+		templatePath: "generic/.github/PULL_REQUEST_TEMPLATE.md",
 		outputPath:   ".github/PULL_REQUEST_TEMPLATE",
 		extension:    ".md",
 		filePrefix:   "",
 	},
 	{
-		templatePath: ".github/ISSUES_TEMPLATE",
+		templatePath: "generic/.github/ISSUES_TEMPLATE.md",
 		outputPath:   ".github/ISSUES_TEMPLATE",
 		extension:    ".md",
 		filePrefix:   "",
@@ -41,118 +41,171 @@ var genericFiles = []fileGen{
 
 var applicationFiles = []fileGen{
 	{
-		templatePath: "ci/build",
+		templatePath: "base-app/ci/build.yml",
 		outputPath:   "ci/build",
 		extension:    ".yml",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "ci/unit",
+		templatePath: "base-app/ci/unit.yml",
 		outputPath:   "ci/unit",
 		extension:    ".yml",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "ci/scripts/build",
+		templatePath: "base-app/ci/scripts/build.sh",
 		outputPath:   "ci/scripts/build",
 		extension:    ".sh",
 		filePrefix:   "",
 		executable:   true,
 	},
 	{
-		templatePath: "ci/scripts/unit",
+		templatePath: "base-app/ci/scripts/unit.sh",
 		outputPath:   "ci/scripts/unit",
 		extension:    ".sh",
 		filePrefix:   "",
 		executable:   true,
 	},
 	{
-		templatePath: "config/config",
+		templatePath: "base-app/config/config.go",
 		outputPath:   "config/config",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "config/config_test",
+		templatePath: "base-app/config/config_test.go",
 		outputPath:   "config/config_test",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "Dockerfile.concourse",
+		templatePath: "base-app/Dockerfile.concourse",
 		outputPath:   "Dockerfile.concourse",
 		extension:    "",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "Makefile",
+		templatePath: "base-app/Makefile",
 		outputPath:   "Makefile",
 		extension:    "",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "nomad",
+		templatePath: "base-app/nomad",
 		outputPath:   "",
 		extension:    ".nomad",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "base-app/README.md",
+		outputPath:   "README",
+		extension:    ".md",
 		filePrefix:   "",
 	},
 }
 
 var controllerFiles = []fileGen{
 	{
-		templatePath: "handlers/handlers",
+		templatePath: "controller/config/config.go",
+		outputPath:   "config/config",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/handlers/handlers.go",
 		outputPath:   "handlers/handlers",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "handlers/handlers_test",
+		templatePath: "controller/handlers/handlers_test.go",
 		outputPath:   "handlers/handlers_test",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "routes/routes",
+		templatePath: "controller/routes/routes.go",
 		outputPath:   "routes/routes",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "mapper/mapper",
+		templatePath: "controller/mapper/mapper.go",
 		outputPath:   "mapper/mapper",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "mapper/mapper_test",
+		templatePath: "controller/mapper/mapper_test.go",
 		outputPath:   "mapper/mapper_test",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "main",
+		templatePath: "controller/main.go",
 		outputPath:   "main",
 		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/README.md",
+		outputPath:   "README",
+		extension:    ".md",
 		filePrefix:   "",
 	},
 }
 
 var apiFiles = []fileGen{
-	//{
-		// TODO Swagger spec
-		// TODO api/API.go
-		// TODO api/API_test.go
-		// TODO api/Hello.go
-		// TODO api/hello_test.go
-	//},
+	{
+		templatePath: "api/api/api.go",
+		outputPath:   "api/api",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/api/api_test.go",
+		outputPath:   "api/api_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/api/hello.go",
+		outputPath:   "api/hello",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/api/hello_test.go",
+		outputPath:   "api/hello_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/service/service.go",
+		outputPath:   "service/service",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/main.go",
+		outputPath:   "main",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/swagger.yaml",
+		outputPath:   "swagger",
+		extension:    ".yaml",
+		filePrefix:   "",
+	},
 }
 
 var eventFiles = []fileGen{
 	//{
-		// Todo event/
-		// TODO Event
-		// TODO Consumer
-		// TODO Consumer_test
-		// TODO handler
+	// Todo event/
+	// TODO Event
+	// TODO Consumer
+	// TODO Consumer_test
+	// TODO handler
 	//},
 }

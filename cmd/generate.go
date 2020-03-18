@@ -94,7 +94,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 			log.Event(ctx, "failed to clone repository", log.Error(err))
 			return err
 		}
-		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, true)
+		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, true)
 		if err != nil {
 			log.Event(ctx, "failed to generate project on github", log.Error(err))
 			return err
@@ -106,7 +106,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 		}
 		return nil
 	}
-	err = project_generation.GenerateProject(nameOfApp, projectType, projectLocation, goVer, port, false)
+	err = project_generation.GenerateProject(nameOfApp, appDescription, projectType, projectLocation, goVer, port, false)
 	if err != nil {
 		return err
 	}

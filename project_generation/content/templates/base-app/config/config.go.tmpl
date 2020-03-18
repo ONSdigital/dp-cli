@@ -1,18 +1,16 @@
 package config
 
 import (
-	"time"
 	"github.com/kelseyhightower/envconfig"
+	"time"
 )
 
 // Config represents service configuration for {{.Name}}
 type Config struct {
-	BindAddr             	    string          `envconfig:"BIND_ADDR"`
-	GracefulShutdownTimeout     time.Duration   `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"`
-	HealthCheckInterval         time.Duration   `envconfig:"HEALTHCHECK_INTERVAL"`
-    HealthCheckCriticalTimeout  time.Duration   `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
-	HelloWorldEmphasise         bool            `envconfig:"HELLO_WORLD_EMPHASISE"`
-
+	BindAddr                   string        `envconfig:"BIND_ADDR"`
+	GracefulShutdownTimeout    time.Duration `envconfig:"GRACEFUL_SHUTDOWN_TIMEOUT"`
+	HealthCheckInterval        time.Duration `envconfig:"HEALTHCHECK_INTERVAL"`
+	HealthCheckCriticalTimeout time.Duration `envconfig:"HEALTHCHECK_CRITICAL_TIMEOUT"`
 }
 
 var cfg *Config
@@ -28,10 +26,7 @@ func Get() (*Config, error) {
 		BindAddr:                   ":{{.Port}}",
 		GracefulShutdownTimeout:    5 * time.Second,
 		HealthCheckInterval:        10 * time.Second,
-        HealthCheckCriticalTimeout: time.Minute,
-		HelloWorldEmphasise:        true,
-
-
+		HealthCheckCriticalTimeout: time.Minute,
 	}
 
 	return cfg, envconfig.Process("", cfg)

@@ -30,7 +30,7 @@ job "{{.Name}}" {
       driver = "docker"
 
       artifact {
-        source = "s3::https://s3-eu-west-1.amazonaws.com/{{"{{"}}DEPLOYMENT_BUCKET{{"}}"}}/{{.Name}}/{{"{{"}}REVISION{{"}}"}}.tar.gz"
+        source = "s3::https://s3-eu-west-1.amazonaws.com/{{"{{"}}DEPLOYMENT_BUCKET{{"}}"}}/{{.Name}}/{{"{{"}}PROFILE{{"}}"}}/{{"{{"}}RELEASE{{"}}"}}.tar.gz"
       }
 
       config {
@@ -40,9 +40,6 @@ job "{{.Name}}" {
 
         image = "{{"{{"}}ECR_URL{{"}}"}}:concourse-{{"{{"}}REVISION{{"}}"}}"
 
-        port_map {
-          http = 8080
-        }
       }
 
       service {
@@ -97,7 +94,7 @@ job "{{.Name}}" {
       driver = "docker"
 
       artifact {
-        source = "s3::https://s3-eu-west-1.amazonaws.com/{{"{{"}}DEPLOYMENT_BUCKET{{"}}"}}/{{.Name}}/{{"{{"}}REVISION{{"}}"}}.tar.gz"
+        source = "s3::https://s3-eu-west-1.amazonaws.com/{{"{{"}}DEPLOYMENT_BUCKET{{"}}"}}/{{.Name}}/{{"{{"}}PROFILE{{"}}"}}/{{"{{"}}RELEASE{{"}}"}}.tar.gz"
       }
 
       config {
@@ -106,10 +103,6 @@ job "{{.Name}}" {
         args = ["./{{.Name}}"]
 
         image = "{{"{{"}}ECR_URL{{"}}"}}:concourse-{{"{{"}}REVISION{{"}}"}}"
-
-        port_map {
-          http = {{.Port}}
-        }
       }
 
       service {

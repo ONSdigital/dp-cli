@@ -24,12 +24,17 @@ type Argument struct {
 	OutputVal string
 }
 
-func configureAndValidateArguments(ctx context.Context, appName, projectType, projectLocation, goVersion, port string) (an, pt, pl, gv, prt string, err error) {
+func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, goVersion, port string) (an, ad, pt, pl, gv, prt string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
 		InputVal:  appName,
 		Context:   ctx,
 		Validator: ValidateAppName,
+	}
+	listOfArguments["description"] = &Argument{
+		InputVal:  appDesc,
+		Context:   ctx,
+		Validator: ValidateAppDescription,
 	}
 	listOfArguments["projectType"] = &Argument{
 		InputVal:  projectType,
@@ -44,9 +49,10 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Event(ctx, "validation error", log.Error(err))
-		return "", "", "", "", "", err
+		return "", "", "", "", "", "", err
 	}
 	an = listOfArguments["appName"].OutputVal
+	ad = listOfArguments["description"].OutputVal
 	pt = listOfArguments["projectType"].OutputVal
 	pl = listOfArguments["projectLocation"].OutputVal
 	listOfArguments = make(ListOfArguments)
@@ -76,10 +82,10 @@ func configureAndValidateArguments(ctx context.Context, appName, projectType, pr
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Event(ctx, "validation error", log.Error(err))
-		return "", "", "", "", "", err
+		return "", "", "", "", "", "", err
 	}
 
-	return an, pt, pl, gv, prt, nil
+	return an, ad, pt, pl, gv, prt, nil
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
@@ -123,7 +129,6 @@ func ValidateAppDescription(ctx context.Context, description string) (string, er
 	}
 	return description, err
 }
-
 
 // ValidateProjectType will ensure that the project type provided by the users is one that can be boilerplate
 func ValidateProjectType(ctx context.Context, projectType string) (validatedProjectType string, err error) {
@@ -185,10 +190,10 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 		log.Event(ctx, "file path to project location does not exists - for safety assuming wrong location was provided")
 		return err
 	}
-	projectPath := filepath.Join(path,projectName)
+	projectPath := filepath.Join(path, projectName)
 	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
 		// File path to project does exists but project directory does not exist at the given path
-		err := os.Mkdir(projectPath, os.ModeDir | os.ModePerm)
+		err := os.Mkdir(projectPath, os.ModeDir|os.ModePerm)
 		if err != nil {
 			log.Event(ctx, "error creating project directory", log.Error(err))
 			return err
@@ -212,7 +217,6 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 	//everything is good and nothing needs to be done
 	return nil
 }
-
 
 // ValidateBranchingStrategy will ensure that the strategy  provided by the user is one that can be boilerplate
 func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (string, error) {
@@ -287,14 +291,15 @@ func IsEmptyDir(path string) (isEmptyDir bool, err error) {
 }
 
 // PopulateTemplateModel will populate the templating model with variables that can be used in templates
-func PopulateTemplateModel(name, goVer, port string) templateModel {
+func PopulateTemplateModel(name, desc, goVer, port string) templateModel {
 	// UTC to avoid any sketchy BST timing
 	year := time.Now().UTC().Year()
 	return templateModel{
-		Name:      name,
-		Year:      year,
-		GoVersion: goVer,
-		Port:      port,
+		Name:        name,
+		Description: desc,
+		Year:        year,
+		GoVersion:   goVer,
+		Port:        port,
 	}
 }
 
@@ -374,13 +379,15 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 	return options[optionSelected], nil
 }
 
-// InitGoModules will initialise the go modules for a project at a given directory
+// InitGoModules will initialise the go modules for a project at a given directory unless go.mod already exists
 func InitGoModules(ctx context.Context, pathToRepo, name string) {
-	cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
-	cmd.Dir = pathToRepo
-	err := cmd.Run()
-	if err != nil {
-		log.Event(ctx, "error initialising go modules", log.Error(err))
+	if _, err := os.Stat(pathToRepo + "/go.mod"); os.IsNotExist(err) {
+		cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
+		cmd.Dir = pathToRepo
+		err := cmd.Run()
+		if err != nil {
+			log.Event(ctx, "error initialising go modules", log.Error(err))
+		}
 	}
 }
 
