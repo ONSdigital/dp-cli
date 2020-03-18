@@ -160,18 +160,18 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 	}
 
 	envIsProduction := environment == "production"
-	var pubSG string
+	var pubSG, webSG string
 	if !envIsProduction {
 		var err error
 		pubSG, err = GetELBPublishingSGForEnvironment(environment, profile)
 		if err != nil {
 			return err
 		}
-	}
 
-	webSG, err := GetELBWebSGForEnvironment(environment, profile)
-	if err != nil {
-		return err
+		webSG, err = GetELBWebSGForEnvironment(environment, profile)
+		if err != nil {
+			return err
+		}
 	}
 
 	myIP, err := config.GetMyIP()
@@ -218,15 +218,15 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 			return fmt.Errorf("error adding rules to bastionSG: %s", err)
 		}
 
-		_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-			GroupId:       aws.String(webSG),
-			IpPermissions: ipPermsAllHTTP,
-		})
-		if err != nil {
-			return fmt.Errorf("error removing rules from webSG: %s", err)
-		}
-
 		if !envIsProduction {
+			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+				GroupId:       aws.String(webSG),
+				IpPermissions: ipPermsAllHTTP,
+			})
+			if err != nil {
+				return fmt.Errorf("error removing rules from webSG: %s", err)
+			}
+
 			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
 				GroupId:       aws.String(pubSG),
 				IpPermissions: ipPermsAllHTTP,
@@ -245,15 +245,15 @@ func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 			return fmt.Errorf("error removing rules from bastionSG: %s", err)
 		}
 
-		_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
-			GroupId:       aws.String(webSG),
-			IpPermissions: ipPermsAllHTTP,
-		})
-		if err != nil {
-			return fmt.Errorf("error removing rules from webSG: %s", err)
-		}
-
 		if !envIsProduction {
+			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
+				GroupId:       aws.String(webSG),
+				IpPermissions: ipPermsAllHTTP,
+			})
+			if err != nil {
+				return fmt.Errorf("error removing rules from webSG: %s", err)
+			}
+
 			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
 				GroupId:       aws.String(pubSG),
 				IpPermissions: ipPermsAllHTTP,
