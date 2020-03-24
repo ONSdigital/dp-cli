@@ -14,7 +14,7 @@ var (
 	warningC     = color.New(color.FgHiYellow)
 	errorBoldC   = color.New(color.Bold, color.FgHiRed)
 	errorC       = color.New(color.FgHiRed)
-	outPrefix    = "[dp-cli]"
+	outPrefix    = "[dp]"
 )
 
 type Level int

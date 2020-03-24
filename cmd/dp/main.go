@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/ONSdigital/dp-cli/cmd"
+	"github.com/ONSdigital/dp-cli/command"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
 )
@@ -15,14 +15,14 @@ func main() {
 	}
 }
 
-// run the dp-cli application
+// run the dp application
 func run(args []string) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
 	}
 
-	root, err := cmd.Load(cfg)
+	root, err := command.Load(cfg)
 	if err != nil {
 		return err
 	}

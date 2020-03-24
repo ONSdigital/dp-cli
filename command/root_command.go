@@ -1,4 +1,4 @@
-package cmd
+package command
 
 import (
 	"math/rand"
@@ -34,8 +34,8 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 	codeListScriptsPath = filepath.Join(onsDigitalPath, "dp-code-list-scripts/code-list-scripts")
 
 	root = &cobra.Command{
-		Use:   "dp-cli",
-		Short: "dp-cli is a command line client providing handy helper tools for ONS Digital Publishing software engineers",
+		Use:   "dp",
+		Short: "dp is a command line client providing handy helper tools for ONS Digital Publishing software engineers",
 	}
 
 	// register the root sub-commands.

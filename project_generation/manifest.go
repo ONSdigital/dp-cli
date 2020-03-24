@@ -139,20 +139,20 @@ var controllerFiles = []fileGen{
 
 var apiFiles = []fileGen{
 	//{
-		// TODO Swagger spec
-		// TODO api/API.go
-		// TODO api/API_test.go
-		// TODO api/Hello.go
-		// TODO api/hello_test.go
+	// TODO Swagger spec
+	// TODO api/API.go
+	// TODO api/API_test.go
+	// TODO api/Hello.go
+	// TODO api/hello_test.go
 	//},
 }
 
 var eventFiles = []fileGen{
 	//{
-		// Todo event/
-		// TODO Event
-		// TODO Consumer
-		// TODO Consumer_test
-		// TODO handler
+	// Todo event/
+	// TODO Event
+	// TODO Consumer
+	// TODO Consumer_test
+	// TODO handler
 	//},
 }

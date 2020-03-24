@@ -76,20 +76,20 @@ export DP_CLI_CONFIG="<YOUR_PATH>/dp-cli-config.yml"
 Build, install and start the cli:
 ```
 make install
-dp-cli
+dp
 ```
 Or to build a binary locally:
 ```
 make build
-./dp-cli
+./dp
 ```
 
 You should be presented you a help menu similar to:
 ```bash
-dp-cli is a command line client providing handy helper tools for ONS Digital Publishing software engineers
+dp is a command line client providing handy helper tools for ONS Digital Publishing software engineers
 
 Usage:
-  dp-cli [command]
+  dp [command]
 
 Available Commands:
   clean            Delete data from your local environment
@@ -103,9 +103,9 @@ Available Commands:
   version          Print the app version
 
 Flags:
-  -h, --help   help for dp-cli
+  -h, --help   help for dp
 
-Use "dp-cli [command] --help" for more information about a command.
+Use "dp [command] --help" for more information about a command.
 ```
 
 Use the available commands for more info on the functionality available.
@@ -133,11 +133,11 @@ environments:
 #### SSH command fails
 
 ```
-➜  dp-cli ssh develop
+➜  dp ssh develop
 ssh to develop
 ```
 
-If the SSH command fails, ensure that the `dp-cli remote allow` command has been run for the environment you want to SSH into.
+If the SSH command fails, ensure that the `dp remote allow` command has been run for the environment you want to SSH into.
 
 #### Remote Allow security group error
 
@@ -150,10 +150,10 @@ Depending on the command you're trying to run, and what you're trying to access,
 #### Remote Allow security group rule already exists error
 
 ```
-➜  dp-cli remote allow develop
-[dp-cli] allowing access to develop
+➜  dp remote allow develop
+[dp] allowing access to develop
 Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specified rule "peer: X.X.X.X/32, TCP, from port: 22, to port: 22, ALLOW" already exists
         status code: 400, request id: 26a61345-8391-4c65-bfd7-4f0052892b6b
 ```
 
-The error occurs when rules have previously been added and the command is run again. Use `dp-cli remote deny` to clear out existing rules and try again.
+The error occurs when rules have previously been added and the command is run again. Use `dp remote deny` to clear out existing rules and try again.

@@ -19,7 +19,7 @@ There are three ways of creating a repository and using the boilerplate generati
 (note that `y` is also accepted - this is not case sensitive).
 
 ```shell script
-dp-cli generate-project --create-repository yes
+dp generate-project --create-repository yes
 ``` 
 If this method is chosen then there wil be numerous prompts such as the name of the application, 
 location to build it and the type of project it should boilerplate.
@@ -27,7 +27,7 @@ ____
 ### Second method - use command line arguments
 The second way to use this tool is to provide information via the command line as options like so
 ```shell script
-dp-cli generate-project --create-repository yes --name {name-of-repository} --project-location {location} --type {project-type}
+dp generate-project --create-repository yes --name {name-of-repository} --project-location {location} --type {project-type}
 ```
 If this method is chosen then there will be less prompts during the creation of the project
 ____
@@ -38,11 +38,11 @@ project - however this should be avoided
 
 Note: _`generate-project` can also be called after `create-repo` the order does not matter_ 
 ```shell script
-dp-cli generate-project
+dp generate-project
 ```
 
 After running follow the prompts then run the repo-creation tool
 ```shell script
-dp-cli create-repo github
+dp create-repo github
 ```
 And follow the prompts, alternatively provide command line arguments.

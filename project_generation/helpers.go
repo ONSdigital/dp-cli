@@ -124,7 +124,6 @@ func ValidateAppDescription(ctx context.Context, description string) (string, er
 	return description, err
 }
 
-
 // ValidateProjectType will ensure that the project type provided by the users is one that can be boilerplate
 func ValidateProjectType(ctx context.Context, projectType string) (validatedProjectType string, err error) {
 	if projectType == "" {
@@ -185,10 +184,10 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 		log.Event(ctx, "file path to project location does not exists - for safety assuming wrong location was provided")
 		return err
 	}
-	projectPath := filepath.Join(path,projectName)
+	projectPath := filepath.Join(path, projectName)
 	if _, err := os.Stat(projectPath); os.IsNotExist(err) {
 		// File path to project does exists but project directory does not exist at the given path
-		err := os.Mkdir(projectPath, os.ModeDir | os.ModePerm)
+		err := os.Mkdir(projectPath, os.ModeDir|os.ModePerm)
 		if err != nil {
 			log.Event(ctx, "error creating project directory", log.Error(err))
 			return err
@@ -212,7 +211,6 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 	//everything is good and nothing needs to be done
 	return nil
 }
-
 
 // ValidateBranchingStrategy will ensure that the strategy  provided by the user is one that can be boilerplate
 func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (string, error) {

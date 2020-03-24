@@ -3,8 +3,8 @@ package repository_creation
 import (
 	"bufio"
 	"context"
-	"github.com/ONSdigital/dp-cli/project_generation"
 	"fmt"
+	"github.com/ONSdigital/dp-cli/project_generation"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
 	"github.com/spf13/cobra"
@@ -27,7 +27,7 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 	token, _ := cmd.Flags().GetString("token")
 	branchStrategyInput, _ := cmd.Flags().GetString("strategy")
 	branchStrategy := strings.ToLower(strings.TrimSpace(branchStrategyInput))
-	_, err = GenerateGithub(nameOfApp,"", "", token, branchStrategy)
+	_, err = GenerateGithub(nameOfApp, "", "", token, branchStrategy)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoNa
 		return err
 	}
 
-	user , resp,  err := client.Users.Get(ctx,"")
+	user, resp, err := client.Users.Get(ctx, "")
 	if err != nil {
 		log.Event(ctx, "unable to get current github user", log.Error(err), log.Data{"response": resp})
 	}
@@ -252,13 +252,13 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 	}
 	if branchStrategy == "" {
 		prompt := "Please pick the branching strategy you wish this repo to use:"
-		options := []string{"github flow","git flow"}
+		options := []string{"github flow", "git flow"}
 		ctx := context.Background()
 		branchStrategy, err := project_generation.OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			log.Event(ctx, "error getting branch strategy", log.Error(err))
 		}
-		branchStrategy = strings.Replace(branchStrategy, " flow","", -1)
+		branchStrategy = strings.Replace(branchStrategy, " flow", "", -1)
 	}
 	if projType == "generic-project" || branchStrategy == "github" {
 		defaultBranch = "master"

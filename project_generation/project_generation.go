@@ -113,32 +113,32 @@ func GenerateProject(appName, projType, projectLocation, goVer, port string, rep
 
 // createGenericContentDirectoryStructure will create child directories for Generic content at a given path
 func (a application) createGenericContentDirectoryStructure() error {
-	return os.MkdirAll(filepath.Join(a.pathToRepo,".github"), os.ModePerm)
+	return os.MkdirAll(filepath.Join(a.pathToRepo, ".github"), os.ModePerm)
 }
 
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createApplicationContentDirectoryStructure() error {
-	os.MkdirAll(filepath.Join(a.pathToRepo,"config"), os.ModePerm)
-	os.MkdirAll(filepath.Join(a.pathToRepo,"ci/scripts"), os.ModePerm)
+	os.MkdirAll(filepath.Join(a.pathToRepo, "config"), os.ModePerm)
+	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
 	return nil
 }
 
 // createAPIContentDirectoryStructure will create child directories for API content at a given path
 func (a application) createAPIContentDirectoryStructure() error {
-	return os.MkdirAll(filepath.Join(a.pathToRepo,"api"), os.ModePerm)
+	return os.MkdirAll(filepath.Join(a.pathToRepo, "api"), os.ModePerm)
 }
 
 // createControllerContentDirectoryStructure will create child directories for Controller content at a given path
 func (a application) createControllerContentDirectoryStructure() error {
-	err := os.MkdirAll(filepath.Join(a.pathToRepo,"handlers"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(a.pathToRepo, "handlers"), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Join(a.pathToRepo,"routes"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "routes"), os.ModePerm)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Join(a.pathToRepo,"mapper"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "mapper"), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (a application) createControllerContentDirectoryStructure() error {
 
 // createEventDrivenContentDirectoryStructure will create child directories for Event Driven content at a given path
 func (a application) createEventDrivenContentDirectoryStructure() error {
-	return os.MkdirAll(filepath.Join(a.pathToRepo,"event"), os.ModePerm)
+	return os.MkdirAll(filepath.Join(a.pathToRepo, "event"), os.ModePerm)
 }
 
 // generateGenericContent will create all files for Generic content
@@ -269,13 +269,13 @@ func (a application) generateBatchOfFileTemplates(filesToGen []fileGen) error {
 // generateFileFromTemplate will generate a single file from templates
 func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
 	outputFilename := fileToGen.filePrefix + fileToGen.outputPath + fileToGen.extension
-	outputFilePath := filepath.Join(a.pathToRepo,outputFilename)
+	outputFilePath := filepath.Join(a.pathToRepo, outputFilename)
 	f, err := os.Create(outputFilePath)
 	if err != nil {
 		return err
 	}
 	writer := bufio.NewWriter(f)
-	tmpl := template.Must(template.ParseFiles(filepath.Join(templatesPath, fileToGen.templatePath + ".tmpl")))
+	tmpl := template.Must(template.ParseFiles(filepath.Join(templatesPath, fileToGen.templatePath+".tmpl")))
 
 	defer func() {
 		ferr := writer.Flush()
@@ -294,7 +294,7 @@ func (a application) generateFileFromTemplate(fileToGen fileGen) (err error) {
 	}
 
 	if fileToGen.executable {
-		err = os.Chmod(outputFilePath,os.ModePerm)
+		err = os.Chmod(outputFilePath, os.ModePerm)
 		if err != nil {
 			return err
 		}

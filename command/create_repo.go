@@ -1,4 +1,4 @@
-package cmd
+package command
 
 import (
 	"github.com/ONSdigital/dp-cli/repository_creation"
@@ -28,4 +28,3 @@ func createGithubRepo() *cobra.Command {
 	command.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
 	return command
 }
-
