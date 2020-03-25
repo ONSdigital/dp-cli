@@ -47,7 +47,7 @@ func main() {
 	if err = registerCheckers(ctx, &healthcheck); err != nil {
     	os.Exit(1)
     }
-	routes.Init(ctx, r, cfg, healthcheck)
+	routes.Setup(ctx, r, cfg, healthcheck)
 
     healthcheck.Start(ctx)
 

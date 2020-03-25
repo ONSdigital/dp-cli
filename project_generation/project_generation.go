@@ -77,29 +77,41 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 			return err
 		}
 	case BaseApplication:
-		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
-		err := newApp.generateApplicationContent()
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		if err != nil {
+			return err
+		}
+		err = newApp.generateApplicationContent()
 		if err != nil {
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
 	case API:
-		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
-		err := newApp.generateAPIContent()
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		if err != nil {
+			return err
+		}
+		err = newApp.generateAPIContent()
 		if err != nil {
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
 	case Controller:
-		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
-		err := newApp.generateControllerContent()
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		if err != nil {
+			return err
+		}
+		err = newApp.generateControllerContent()
 		if err != nil {
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
 	case EventDriven:
-		InitGoModules(ctx, newApp.pathToRepo, newApp.name)
-		err := newApp.generateEventDrivenContent()
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		if err != nil {
+			return err
+		}
+		err = newApp.generateEventDrivenContent()
 		if err != nil {
 			return err
 		}

@@ -11,7 +11,7 @@ type API struct {
 	Router *mux.Router
 }
 
-func Init(ctx context.Context, r *mux.Router) *API {
+func Setup(ctx context.Context, r *mux.Router) *API {
 	api := &API{
 		Router: r,
 	}

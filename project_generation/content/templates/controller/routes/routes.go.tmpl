@@ -12,7 +12,7 @@ import (
 )
 
 // Init initialises routes for the service
-func Init(ctx context.Context, r *mux.Router, cfg *config.Config, hc health.HealthCheck) {
+func Setup(ctx context.Context, r *mux.Router, cfg *config.Config, hc health.HealthCheck) {
     log.Event(ctx, "adding routes")
 	r.StrictSlash(true).Path("/health").HandlerFunc(hc.Handler)
 	r.StrictSlash(true).Path("/helloworld").Methods("GET").HandlerFunc(handlers.HelloWorld(*cfg))

@@ -380,15 +380,22 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 }
 
 // InitGoModules will initialise the go modules for a project at a given directory unless go.mod already exists
-func InitGoModules(ctx context.Context, pathToRepo, name string) {
-	if _, err := os.Stat(pathToRepo + "/go.mod"); os.IsNotExist(err) {
-		cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
-		cmd.Dir = pathToRepo
-		err := cmd.Run()
-		if err != nil {
-			log.Event(ctx, "error initialising go modules", log.Error(err))
-		}
+func InitGoModules(ctx context.Context, pathToRepo, name string) error {
+	_, err := os.Stat(pathToRepo + "/go.mod")
+	if os.IsExist(err) {
+		return err // file already exists but there's some other error with it
 	}
+	if err == nil {
+		return nil // file already exists, do nothing
+	}
+
+	cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
+	cmd.Dir = pathToRepo
+	err = cmd.Run()
+	if err != nil {
+		log.Event(ctx, "error initialising go modules", log.Error(err))
+	}
+	return nil
 }
 
 // FinaliseModules will run go build ./... to generate go modules dependency management files

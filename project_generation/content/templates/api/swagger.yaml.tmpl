@@ -25,6 +25,12 @@ paths:
           description: OK
           schema:
             $ref: "#/definitions/HelloResponse"
+        500:
+          $ref: '#/responses/InternalError'
+
+responses:
+  InternalError:
+    description: "Failed to process the request due to an internal error"
 
 definitions:
   HelloResponse:

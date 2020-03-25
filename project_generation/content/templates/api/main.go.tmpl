@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/signal"
+
 	"github.com/ONSdigital/{{.Name}}/service"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/pkg/errors"
-	"os"
-	"os/signal"
 )
 
 const serviceName = "{{.Name}}"
@@ -43,8 +45,9 @@ func run() error {
 	case err := <-svcErrors:
 		return errors.Wrap(err, "service error received")
 	case sig := <-signals:
-		log.Event(nil, "os signal received", log.Data{"signal": sig}, log.INFO)
-		svc.Close()
+		ctx := context.Background()
+		log.Event(ctx, "os signal received", log.Data{"signal": sig}, log.INFO)
+		svc.Close(ctx)
 	}
 	return nil
 }

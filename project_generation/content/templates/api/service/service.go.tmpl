@@ -13,7 +13,7 @@ import (
 
 type Service struct {
 	Config      *config.Config
-	Server      *server.Server
+	server      *server.Server
 	Router      *mux.Router
 	API         *api.API
 	HealthCheck *healthcheck.HealthCheck
@@ -35,7 +35,7 @@ func Run(buildTime, gitCommit, version string, svcErrors chan error) (*Service, 
 	s := server.New(cfg.BindAddr, r)
 	s.HandleOSSignals = false
 
-	a := api.Init(ctx, r)
+	a := api.Setup(ctx, r)
 
 	versionInfo, err := healthcheck.NewVersionInfo(
 		buildTime,
@@ -54,7 +54,7 @@ func Run(buildTime, gitCommit, version string, svcErrors chan error) (*Service, 
 
 	go func() {
 		if err := s.ListenAndServe(); err != nil {
-			svcErrors <- errors.Wrap(err, "failure in  http listen and serve")
+			svcErrors <- errors.Wrap(err, "failure in http listen and serve")
 		}
 	}()
 
@@ -63,19 +63,19 @@ func Run(buildTime, gitCommit, version string, svcErrors chan error) (*Service, 
 		Router:      r,
 		API:         a,
 		HealthCheck: &hc,
-		Server:      s,
+		server:      s,
 	}, nil
 }
 
 // Gracefully shutdown the service
-func (svc *Service) Close() {
+func (svc *Service) Close(ctx context.Context) {
 	timeout := svc.Config.GracefulShutdownTimeout
-	log.Event(nil, "commencing graceful shutdown", log.Data{"graceful_shutdown_timeout": timeout}, log.INFO)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	log.Event(ctx, "commencing graceful shutdown", log.Data{"graceful_shutdown_timeout": timeout}, log.INFO)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// stop any incoming requests before closing any outbound connections
-	if err := svc.Server.Shutdown(ctx); err != nil {
+	if err := svc.server.Shutdown(ctx); err != nil {
 		log.Event(ctx, "failed to shutdown http server", log.Error(err), log.ERROR)
 	}
 
@@ -83,7 +83,7 @@ func (svc *Service) Close() {
 		log.Event(ctx, "error closing API", log.Error(err), log.ERROR)
 	}
 
-	log.Event(nil, "graceful shutdown complete", log.INFO)
+	log.Event(ctx, "graceful shutdown complete", log.INFO)
 }
 
 func registerCheckers(ctx context.Context, hc *healthcheck.HealthCheck) (err error) {
