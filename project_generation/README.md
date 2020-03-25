@@ -16,7 +16,7 @@ git pull; make install;
 ```
 
 ```shell script
-dp-cli generate-project
+dp generate-project
 ``` 
 
 This tool can be used in conjunction with the repository creation tool, for further details read [COMPLETE_PROJECT_SETUP.md](COMPLETE_PROJECT_SETUP.md)

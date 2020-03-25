@@ -1,4 +1,4 @@
-package cmd
+package command
 
 import (
 	"github.com/ONSdigital/dp-cli/out"
@@ -15,4 +15,3 @@ func versionSubCommand() *cobra.Command {
 		},
 	}
 }
-
