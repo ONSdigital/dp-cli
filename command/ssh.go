@@ -26,7 +26,10 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 		Short: "Access an environment using ssh",
 	}
 
-	environmentCommands, err := createEnvironmentSubCommands(cfg)
+	var portArgs []string
+	sshC.PersistentFlags().StringSliceVarP(&portArgs, "port", "p", nil, "Optional port forwarding rule[s] of the form [<local>:]remote eg '15900', '8080:15900' or '15900,8080:15900'")
+
+	environmentCommands, err := createEnvironmentSubCommands(cfg, &portArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +42,7 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 }
 
 // create a array of environment sub commands available to ssh to.
-func createEnvironmentSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
+func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for _, env := range cfg.Environments {
@@ -48,7 +51,7 @@ func createEnvironmentSubCommands(cfg *config.Config) ([]*cobra.Command, error) 
 			Short: "ssh to " + env.Name,
 		}
 
-		groupCommands, err := createEnvironmentGroupSubCommands(env, cfg)
+		groupCommands, err := createEnvironmentGroupSubCommands(env, cfg, portArgs)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error creating group commands for env: %s", env.Name)
 		}
@@ -60,7 +63,7 @@ func createEnvironmentSubCommands(cfg *config.Config) ([]*cobra.Command, error) 
 }
 
 // create a array of environment group sub commands available to ssh to.
-func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config) ([]*cobra.Command, error) {
+func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string) ([]*cobra.Command, error) {
 	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s\n", env.Name)
@@ -84,7 +87,7 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 			Short: fmt.Sprintf("ssh to %s %s", env.Name, grp),
 		}
 
-		instanceCommands, err := createInstanceSubCommands(grp, cfg, env, instances)
+		instanceCommands, err := createInstanceSubCommands(grp, cfg, env, instances, portArgs)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +100,7 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 }
 
 // create a array of instance sub commands available to ssh to.
-func createInstanceSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result) ([]*cobra.Command, error) {
+func createInstanceSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result, portArgs *[]string) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for i, instance := range instances {
@@ -109,7 +112,7 @@ func createInstanceSubCommands(grp string, cfg *config.Config, env config.Enviro
 			Use:   index,
 			Short: fmt.Sprintf("ssh to %s %q (%s)", grp, inst.Name, inst.IPAddress),
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return ssh.Launch(cfg, e, inst)
+				return ssh.Launch(cfg, e, inst, portArgs)
 			},
 		}
 

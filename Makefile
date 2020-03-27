@@ -10,4 +10,7 @@ build:
 install:
 	go install -ldflags="-X 'github.com/ONSdigital/dp-cli/command.appVersion=$(VERSION)' -X 'github.com/ONSdigital/dp-cli/project_generation.templatesPath=$(TEMPLATES_DIR)'" github.com/ONSdigital/dp-cli/cmd/dp
 
-.PHONY: install echo
+test:
+	go test -race -cover ./...
+
+.PHONY: buid install test
