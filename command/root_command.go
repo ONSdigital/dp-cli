@@ -57,6 +57,7 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 		generateProjectSubCommand(),
 		spew(),
 		remoteAccess(cfg),
+		overrideKey(),
 	}
 
 	ssh, err := sshCommand(cfg)
