@@ -106,7 +106,7 @@ job "{{.Name}}" {
       }
 
       service {
-        name = {{.Name}}
+        name = "{{.Name}}"
         port = "http"
         tags = ["publishing"]
 
