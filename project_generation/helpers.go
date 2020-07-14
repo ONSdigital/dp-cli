@@ -303,7 +303,7 @@ func PopulateTemplateModel(name, desc, goVer, port string) templateModel {
 	}
 }
 
-// PromptForConfirmation will prompt for yes/no style answers on command line
+// PromptForConfirmation will prompt for yes/no style answers on command-line
 func PromptForConfirmation(ctx context.Context, prompt string, maxInputAttempts int) bool {
 	reader := bufio.NewReader(os.Stdin)
 

@@ -2,9 +2,10 @@ package command
 
 import (
 	"context"
+	"strings"
+
 	"github.com/ONSdigital/dp-cli/project_generation"
 	"github.com/ONSdigital/dp-cli/repository_creation"
-	"strings"
 
 	"github.com/ONSdigital/log.go/log"
 	"github.com/spf13/cobra"
@@ -29,9 +30,9 @@ func generateProjectSubCommand() *cobra.Command {
 	return command
 }
 
-func RunGenerateApplication(cmd *cobra.Command, args []string) error {
-	var err error
-	var cloneUrl string
+// RunGenerateApplication will create and setup the repo
+func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
+	cloneURL := ""
 	ctx := context.Background()
 	nameOfApp, _ := cmd.Flags().GetString("name")
 	appDescription, _ := cmd.Flags().GetString("description")
@@ -84,12 +85,12 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) error {
 			log.Event(ctx, "error confirming project directory is valid", log.Error(err))
 			return err
 		}
-		cloneUrl, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal)
+		cloneURL, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal)
 		if err != nil {
 			log.Event(ctx, "failed to generate project on github", log.Error(err))
 			return err
 		}
-		err = repository_creation.CloneRepository(ctx, cloneUrl, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
+		err = repository_creation.CloneRepository(ctx, cloneURL, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
 		if err != nil {
 			log.Event(ctx, "failed to clone repository", log.Error(err))
 			return err

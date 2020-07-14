@@ -21,6 +21,7 @@ var (
 	appVersion           = "development"
 )
 
+// Load will load the sub-commands
 func Load(cfg *config.Config) (*cobra.Command, error) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r = rand.New(s1)
@@ -35,7 +36,7 @@ func Load(cfg *config.Config) (*cobra.Command, error) {
 
 	root = &cobra.Command{
 		Use:   "dp",
-		Short: "dp is a command line client providing handy helper tools for ONS Digital Publishing software engineers",
+		Short: "dp is a command-line client providing handy helper tools for ONS Digital Publishing software engineers",
 	}
 
 	// register the root sub-commands.

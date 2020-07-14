@@ -14,8 +14,8 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 )
 
-// Open an ssh connect to the specified environment
-func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string) error {
+// Launch an ssh connection to the specified environment
+func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int) error {
 	if len(cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command\n", "ssh user", "spew config")
 		return errors.New("missing ssh user in config file")
@@ -37,12 +37,15 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			args = append(args, sshPortArgs...)
 		}
 	}
-	unixUser := fmt.Sprintf("%s@%s", cfg.SSHUser, instance.IPAddress)
-	args = append(args, unixUser)
+	for v := 0; v < *verboseCount; v++ {
+		args = append(args, "-v")
+	}
+	userHost := fmt.Sprintf("%s@%s", cfg.SSHUser, instance.IPAddress)
+	args = append(args, userHost)
 	return execCommand(pwd, "ssh", args...)
 }
 
-func execCommand(pwd string, command string, arg ...string) error {
+func execCommand(pwd, command string, arg ...string) error {
 	c := exec.Command(command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
@@ -56,18 +59,24 @@ func execCommand(pwd string, command string, arg ...string) error {
 }
 
 func getSSHPortArguments(portArg string) ([]string, error) {
-	validPort := regexp.MustCompile(`^(([0-9]+):)?([0-9]+)$`)
+	validPort := regexp.MustCompile(
+		`^(?P<local_port>[0-9]+)` +
+			`(?:` +
+			`(?:` + `:(?P<remote_host>[-a-z0-9._]+)` + `)?` +
+			`(?:` + `:(?P<remote_port>[0-9]+)` + `)` +
+			`)?$`,
+	)
 	if !validPort.MatchString(portArg) {
-		return nil, errors.New(fmt.Sprintf("'%s' is not a valid port forwarding argument", portArg))
+		return nil, fmt.Errorf("%q is not a valid port forwarding argument", portArg)
 	}
 
 	ports := strings.Split(portArg, ":")
-	var sshPortArg string
-	if len(ports) == 1 {
-		sshPortArg = fmt.Sprintf("%s:localhost:%s", ports[0], ports[0])
-	} else {
-		sshPortArg = fmt.Sprintf("%s:localhost:%s", ports[0], ports[1])
+	localPort, host, remotePort := ports[0], "localhost", ports[0]
+	if len(ports) == 2 {
+		remotePort = ports[1]
+	} else if len(ports) == 3 {
+		host, remotePort = ports[1], ports[2]
 	}
-
+	sshPortArg := fmt.Sprintf("%s:%s:%s", localPort, host, remotePort)
 	return []string{"-L", sshPortArg}, nil
 }

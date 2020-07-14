@@ -7,16 +7,18 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func getEC2Service(environment, profile string) *ec2.EC2 {
-	// Create new EC2 client
-	return ec2.New(getAWSSession(environment, profile))
+type secGroup struct {
+	id          string
+	name        string
+	ports       []int64
+	portToMyIPs map[int64][]string
 }
-
-var resultCache = make(map[string][]EC2Result)
 
 // EC2Result is the information returned for an individual EC2 instance
 type EC2Result struct {
@@ -26,7 +28,14 @@ type EC2Result struct {
 	AnsibleGroups []string
 }
 
-func GetNamedSG(name, environment, profile string) (string, error) {
+var resultCache = make(map[string][]EC2Result)
+
+func getEC2Service(environment, profile string) *ec2.EC2 {
+	// Create new EC2 client
+	return ec2.New(getAWSSession(environment, profile))
+}
+
+func getNamedSG(name, environment, profile, sshUser string, ports ...int64) (sg secGroup, err error) {
 	ec2Svc := getEC2Service(environment, profile)
 	filters := []*ec2.Filter{
 		{
@@ -45,228 +54,170 @@ func GetNamedSG(name, environment, profile string) (string, error) {
 		Filters: filters,
 	})
 	if err != nil {
-		return "", err
+		return
 	}
 
 	if len(res.SecurityGroups) < 1 {
-		return "", fmt.Errorf("no security groups matching environment: %q with name %q", environment, name)
+		err = fmt.Errorf("no security groups matching environment: %q with name %q", environment, name)
+		return
 	}
 	if len(res.SecurityGroups) > 1 {
-		return "", fmt.Errorf("too many security groups matching environment: %s name: %q", environment, name)
+		err = fmt.Errorf("too many security groups matching environment: %s name: %q", environment, name)
+		return
 	}
 	if res.SecurityGroups[0].GroupId == nil {
-		return "", fmt.Errorf("no groupId found for security group on environment: %q name: %q", environment, name)
+		err = fmt.Errorf("no groupId found for security group on environment: %q name: %q", environment, name)
+		return
 	}
 
-	return *res.SecurityGroups[0].GroupId, nil
-}
+	sg.id = *res.SecurityGroups[0].GroupId
+	sg.name = name
+	sg.ports = ports
+	sg.portToMyIPs = make(map[int64][]string)
 
-func GetBastionSGForEnvironment(environment, profile string) (string, error) {
-	return GetNamedSG(environment+" - bastion", environment, profile)
-}
+	// we have an SG, so get its list of allowed IPs for sshUser
+	for _, sg1 := range res.SecurityGroups {
+		for _, ipperm := range sg1.IpPermissions {
+			if *ipperm.IpProtocol != "tcp" || *ipperm.ToPort != *ipperm.FromPort {
+				continue
+			}
+			// ensure `ipperm` is for one of `ports` for this SG
+			for _, port := range ports {
+				if *ipperm.ToPort == port {
+					// ensure `iprange` is for `sshUser`
+					for _, iprange := range ipperm.IpRanges {
+						if iprange.CidrIp == nil ||
+							iprange.Description == nil ||
+							*iprange.Description == "" ||
+							*iprange.Description != sshUser {
+							continue
+						}
 
-func GetELBPublishingSGForEnvironment(environment, profile string) (string, error) {
-	return GetNamedSG(environment+" - publishing elb", environment, profile)
-}
-
-func GetELBWebSGForEnvironment(environment, profile string) (string, error) {
-	return GetNamedSG(environment+" - web elb", environment, profile)
-}
-
-func GetConcourseWebSG() (string, error) {
-	return GetNamedSG("concourse-ci-web", "", "")
-}
-
-func AllowIPForConcourse(sshUser string) error {
-	ec2Svc := getEC2Service("", "")
-
-	sg, err := GetConcourseWebSG()
-	if err != nil {
-		return err
+						// add this CIDR to this SG for this `port`
+						sg.portToMyIPs[port] = append(
+							sg.portToMyIPs[port],
+							*iprange.CidrIp,
+						)
+					}
+					break
+				}
+			}
+		}
 	}
 
-	myIP, err := config.GetMyIP()
-	if err != nil {
-		return err
-	}
-
-	_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId: aws.String(sg),
-		IpPermissions: []*ec2.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int64(int64(443)),
-				ToPort:     aws.Int64(int64(443)),
-				IpRanges:   getIpRangesFor(myIP, sshUser),
-			},
-		},
-	})
-
-	if err != nil {
-		return fmt.Errorf("error adding rules to sg: %s", err)
-	}
-
-	return nil
+	return
 }
 
-func DenyIPForConcourse(sshUser string) error {
-	ec2Svc := getEC2Service("", "")
-
-	sg, err := GetConcourseWebSG()
-	if err != nil {
-		return err
-	}
-
-	myIP, err := config.GetMyIP()
-	if err != nil {
-		return err
-	}
-
-	_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
-		GroupId: aws.String(sg),
-		IpPermissions: []*ec2.IpPermission{
-			{
-				IpProtocol: aws.String("tcp"),
-				FromPort:   aws.Int64(int64(443)),
-				ToPort:     aws.Int64(int64(443)),
-				IpRanges:   getIpRangesFor(myIP, sshUser),
-			},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("error removing rules from sg: %s", err)
-	}
-
-	return nil
+func getBastionSGForEnvironment(environment, profile, sshUser string) (secGroup, error) {
+	return getNamedSG(environment+" - bastion", environment, profile, sshUser, 22, 443)
 }
 
-func DenyIPForEnvironment(sshUser, environment, profile string) error {
-	return ChangeIPForEnvironment(false, sshUser, environment, profile)
+func getELBPublishingSGForEnvironment(environment, profile, sshUser string) (secGroup, error) {
+	return getNamedSG(environment+" - publishing elb", environment, profile, sshUser, 80, 443)
 }
+
+func getELBWebSGForEnvironment(environment, profile, sshUser string) (secGroup, error) {
+	return getNamedSG(environment+" - web elb", environment, profile, sshUser, 80, 443)
+}
+
+func getConcourseWebSG(sshUser string) (secGroup, error) {
+	return getNamedSG("concourse-ci-web", "", "", sshUser, 443)
+}
+
+// AllowIPForEnvironment adds your IP to this environment
 func AllowIPForEnvironment(sshUser, environment, profile string) error {
-	return ChangeIPForEnvironment(true, sshUser, environment, profile)
+	return changeIPForEnvironment(true, sshUser, environment, profile)
 }
 
-func ChangeIPForEnvironment(isAllow bool, sshUser, environment, profile string) error {
-	ec2Svc := getEC2Service(environment, profile)
+// DenyIPForEnvironment removes your IP - and any others for sshUser - for this environment
+func DenyIPForEnvironment(sshUser, environment, profile string) error {
+	return changeIPForEnvironment(false, sshUser, environment, profile)
+}
 
+func changeIPForEnvironment(isAllow bool, sshUser, environment, profile string) (err error) {
 	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
 
-	bastionSG, err := GetBastionSGForEnvironment(environment, profile)
-	if err != nil {
-		return err
-	}
-
-	envIsProduction := environment == "production"
-	var pubSG, webSG string
-	if !envIsProduction {
-		var err error
-		pubSG, err = GetELBPublishingSGForEnvironment(environment, profile)
-		if err != nil {
-			return err
-		}
-
-		webSG, err = GetELBWebSGForEnvironment(environment, profile)
-		if err != nil {
-			return err
-		}
-	}
-
-	myIP, err := config.GetMyIP()
-	if err != nil {
-		return err
-	}
-
-	var (
-		ipPermHTTPS = &ec2.IpPermission{
-			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(443)),
-			ToPort:     aws.Int64(int64(443)),
-			IpRanges:   getIpRangesFor(myIP, sshUser),
-		}
-		ipPermSSH = &ec2.IpPermission{
-			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(22)),
-			ToPort:     aws.Int64(int64(22)),
-			IpRanges:   getIpRangesFor(myIP, sshUser),
-		}
-		ipPermHTTP = &ec2.IpPermission{
-			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(int64(80)),
-			ToPort:     aws.Int64(int64(80)),
-			IpRanges:   getIpRangesFor(myIP, sshUser),
-		}
-		ipPermsAllHTTP = []*ec2.IpPermission{
-			ipPermHTTP,
-			ipPermHTTPS,
-		}
-		ipPermsAllSecure = []*ec2.IpPermission{
-			ipPermSSH,
-			ipPermHTTPS,
-		}
-	)
-
+	var myIP string
 	if isAllow {
-
-		_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-			GroupId:       aws.String(bastionSG),
-			IpPermissions: ipPermsAllSecure,
-		})
-		if err != nil {
-			return fmt.Errorf("error adding rules to bastionSG: %s", err)
+		if myIP, err = config.GetMyIP(); err != nil {
+			return err
 		}
+	}
 
-		if !envIsProduction {
-			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId:       aws.String(webSG),
-				IpPermissions: ipPermsAllHTTP,
-			})
-			if err != nil {
-				return fmt.Errorf("error removing rules from webSG: %s", err)
-			}
-
-			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
-				GroupId:       aws.String(pubSG),
-				IpPermissions: ipPermsAllHTTP,
-			})
-			if err != nil {
-				return fmt.Errorf("error removing rules from pubSG: %s", err)
-			}
+	// build `secGroups` (wanted changes, per relevant security group) for `environment`
+	var secGroups []secGroup
+	var sg secGroup
+	var ec2Svc *ec2.EC2
+	if environment == "concourse" {
+		ec2Svc = getEC2Service("", "")
+		if sg, err = getConcourseWebSG(sshUser); err != nil {
+			return err
 		}
+		secGroups = append(secGroups, sg)
+
 	} else {
+		ec2Svc = getEC2Service(environment, profile)
+		if sg, err = getBastionSGForEnvironment(environment, profile, sshUser); err != nil {
+			return err
+		}
+		secGroups = append(secGroups, sg)
 
-		_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
-			GroupId:       aws.String(bastionSG),
-			IpPermissions: ipPermsAllSecure,
-		})
-		if err != nil {
-			return fmt.Errorf("error removing rules from bastionSG: %s", err)
+		if environment != "production" {
+			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser); err != nil {
+				return err
+			}
+			secGroups = append(secGroups, sg)
+
+			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser); err != nil {
+				return err
+			}
+			secGroups = append(secGroups, sg)
+		}
+	}
+
+	// apply `secGroups` changes
+	countPerms := 0
+	for _, sg = range secGroups {
+		perms := getIPPermsForSG(isAllow, sg, myIP, sshUser)
+		if len(perms) == 0 {
+			continue
 		}
 
-		if !envIsProduction {
-			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
-				GroupId:       aws.String(webSG),
-				IpPermissions: ipPermsAllHTTP,
-			})
-			if err != nil {
-				return fmt.Errorf("error removing rules from webSG: %s", err)
-			}
+		countPerms += len(perms)
+		out.Highlight(out.INFO, "amending %q: %q with %d ports\n", sg.id, sg.name, len(perms))
 
-			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
-				GroupId:       aws.String(pubSG),
-				IpPermissions: ipPermsAllHTTP,
+		if isAllow {
+			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+				GroupId:       aws.String(sg.id),
+				IpPermissions: perms,
 			})
 			if err != nil {
-				return fmt.Errorf("error removing rules from pubSG: %s", err)
+				return fmt.Errorf("error adding rules to %q SG: %q: %s", environment, sg.name, err)
+			}
+		} else {
+			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
+				GroupId:       aws.String(sg.id),
+				IpPermissions: perms,
+			})
+			if err != nil {
+				return fmt.Errorf("error removing rules from %q SG: %q: %s", environment, sg.name, err)
 			}
 		}
+	}
+	if countPerms == 0 {
+		errFormat := "no changes made (%s)"
+		if isAllow {
+			return fmt.Errorf(errFormat, "all IPs already exist in SGs")
+		}
+		return fmt.Errorf(errFormat, `no IPs to delete for "`+sshUser+`"`)
 	}
 
 	return nil
 }
 
+// ListEC2ByAnsibleGroup returns EC2 instances matching ansibleGroup for this env/profile
 func ListEC2ByAnsibleGroup(environment, profile string, ansibleGroup string) ([]EC2Result, error) {
 	r, err := ListEC2(environment, profile)
 	if err != nil {
@@ -317,9 +268,8 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 			}
 			request.SetNextToken(*result.NextToken)
 		}
-		result, err = ec2Svc.DescribeInstances(request)
 
-		if err != nil {
+		if result, err = ec2Svc.DescribeInstances(request); err != nil {
 			return nil, err
 		}
 
@@ -355,11 +305,49 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 	return resultCache[environment], nil
 }
 
-func getIpRangesFor(myIP, sshUser string) []*ec2.IpRange {
-	return []*ec2.IpRange{
-		{
-			CidrIp:      aws.String(myIP + "/32"),
-			Description: &sshUser,
-		},
+// getIPPermsForSG returns the permissions for all ports for this SG
+func getIPPermsForSG(isAllow bool, sg secGroup, myIP, sshUser string) (ipPerms []*ec2.IpPermission) {
+	for _, port := range sg.ports {
+		ipRanges := getIPRangesForPort(isAllow, sg, myIP, sshUser, port)
+		if len(ipRanges) == 0 {
+			continue
+		}
+		ipPerms = append(ipPerms, &ec2.IpPermission{
+			IpProtocol: aws.String("tcp"),
+			FromPort:   aws.Int64(port),
+			ToPort:     aws.Int64(port),
+			IpRanges:   ipRanges,
+		})
 	}
+	return ipPerms
+}
+
+// getIPRangesForPort returns the IPs that we will allow/deny for `port`
+// Skips:
+// - for `allow`: existing IPs for this SG/port
+// - for `deny`:  missing IPs for this SG/port
+func getIPRangesForPort(isAllow bool, sg secGroup, myIP, sshUser string, port int64) (ipr []*ec2.IpRange) {
+	if isAllow {
+		if !strings.Contains(myIP, "/") {
+			myIP += "/32"
+		}
+		for _, cidr := range sg.portToMyIPs[port] {
+			if cidr == myIP {
+				out.Highlight(out.INFO, "IP %q access to port %3d already in %q SG for %q - skipping\n", cidr, port, sg.name, sshUser)
+				return
+			}
+		}
+		ipr = append(ipr, &ec2.IpRange{
+			CidrIp:      aws.String(myIP),
+			Description: aws.String(sshUser),
+		})
+	} else {
+		for _, cidr := range sg.portToMyIPs[port] {
+			ipr = append(ipr, &ec2.IpRange{
+				CidrIp:      aws.String(cidr),
+				Description: aws.String(sshUser),
+			})
+		}
+	}
+	return
 }

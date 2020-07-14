@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var specialEnvs = []string{"concourse"}
+
 func remoteAccess(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remote",
@@ -16,7 +18,6 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	subCommands := []*cobra.Command{
 		allowCommand(cfg.SSHUser, cfg.Environments),
 		denyCommand(cfg.SSHUser, cfg.Environments),
-		concourseCommand(cfg.SSHUser),
 	}
 
 	cmd.AddCommand(subCommands...)
@@ -41,6 +42,17 @@ func allowCommand(sshUser string, envs []config.Environment) *cobra.Command {
 				lvl := out.GetLevel(env)
 				out.Highlight(lvl, "allowing access to %s", env.Name)
 				return aws.AllowIPForEnvironment(sshUser, env.Name, env.Profile)
+			},
+		})
+	}
+
+	for _, e := range specialEnvs {
+		cmds = append(cmds, &cobra.Command{
+			Use:   e,
+			Short: "allow access to " + e,
+			RunE: func(cmd *cobra.Command, args []string) error {
+				out.Highlight(out.INFO, "allowing access to %s", e)
+				return aws.AllowIPForEnvironment(sshUser, e, "")
 			},
 		})
 	}
@@ -71,35 +83,17 @@ func denyCommand(sshUser string, envs []config.Environment) *cobra.Command {
 		})
 	}
 
+	for _, e := range specialEnvs {
+		cmds = append(cmds, &cobra.Command{
+			Use:   e,
+			Short: "deny access to " + e,
+			RunE: func(cmd *cobra.Command, args []string) error {
+				out.Highlight(out.INFO, "denying access to %s", e)
+				return aws.DenyIPForEnvironment(sshUser, e, "")
+			},
+		})
+	}
+
 	c.AddCommand(cmds...)
-	return c
-}
-
-// build the concourse sub command - has allow and deny sub commands.
-func concourseCommand(sshUser string) *cobra.Command {
-	c := &cobra.Command{
-		Use:   "concourse",
-		Short: "allow or deny access to concourse",
-	}
-
-	allow := &cobra.Command{
-		Use:   "allow",
-		Short: "allow access to concourse",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			out.WriteF(out.INFO, "allow access to concourse")
-			return aws.AllowIPForConcourse(sshUser)
-		},
-	}
-
-	deny := &cobra.Command{
-		Use:   "deny",
-		Short: "deny access to concourse",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			out.WriteF(out.INFO, "denying access to concourse")
-			return aws.DenyIPForConcourse(sshUser)
-		},
-	}
-
-	c.AddCommand(allow, deny)
 	return c
 }

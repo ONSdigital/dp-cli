@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -72,6 +73,17 @@ func Dump() ([]byte, error) {
 
 // GetMyIP fetches your external IP address
 func GetMyIP() (string, error) {
+	if ip := os.Getenv("MY_IP"); len(ip) > 0 {
+		isIP, err := regexp.Match(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, []byte(ip))
+		if err != nil {
+			return "", err
+		}
+		if !isIP {
+			return "", errors.New("unexpected format for var MY_IP")
+		}
+		return ip, nil
+	}
+
 	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
 		return "", err
