@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ONSdigital/dp-cli/config"
@@ -186,7 +187,7 @@ func changeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 		}
 
 		countPerms += len(perms)
-		out.Highlight(out.INFO, "amending %q: %q with %d ports\n", sg.id, sg.name, len(perms))
+		out.Highlight(out.INFO, "amending %s: %s with %s ports\n", sg.id, sg.name, strconv.Itoa(len(perms)))
 
 		if isAllow {
 			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
@@ -194,7 +195,7 @@ func changeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 				IpPermissions: perms,
 			})
 			if err != nil {
-				return fmt.Errorf("error adding rules to %q SG: %q: %s", environment, sg.name, err)
+				return fmt.Errorf("error adding rules to %s SG: %s: %s", environment, sg.name, err)
 			}
 		} else {
 			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
@@ -333,7 +334,7 @@ func getIPRangesForPort(isAllow bool, sg secGroup, myIP, sshUser string, port in
 		}
 		for _, cidr := range sg.portToMyIPs[port] {
 			if cidr == myIP {
-				out.Highlight(out.INFO, "IP %q access to port %3d already in %q SG for %q - skipping\n", cidr, port, sg.name, sshUser)
+				out.Highlight(out.INFO, "IP %s access to port %s already in %s SG for %s - skipping\n", cidr, strconv.Itoa(int(port)), sg.name, sshUser)
 				return
 			}
 		}
