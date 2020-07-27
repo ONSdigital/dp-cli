@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/dp-cli/ansible"
 	"github.com/ONSdigital/dp-cli/aws"
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
 	"github.com/ONSdigital/dp-cli/ssh"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 		return nil, err
 	}
 	if len(environmentCommands) == 0 {
-		fmt.Println("Warning: No subcommands found for envs - missing envs in config?")
+		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
 	}
 
 	sshC.AddCommand(environmentCommands...)

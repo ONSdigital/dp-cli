@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/user"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -18,10 +20,12 @@ var httpClient = &http.Client{
 }
 
 type Config struct {
-	CMD          CMD           `yaml:"cmd"`
-	Environments []Environment `yaml:"environments"`
-	SSHUser      string        `yaml:"ssh-user"`
-	DPSetupPath  string        `yaml:"dp-setup-path"`
+	CMD                    CMD           `yaml:"cmd"`
+	Environments           []Environment `yaml:"environments"`
+	SSHUser                string        `yaml:"ssh-user"`
+	DPSetupPath            string        `yaml:"dp-setup-path"`
+	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
+	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
 }
 
 type CMD struct {
@@ -41,7 +45,11 @@ type Environment struct {
 func Get() (*Config, error) {
 	path := os.Getenv("DP_CLI_CONFIG")
 	if len(path) == 0 {
-		return nil, errors.New("no DP_CLI_CONFIG config file specified")
+		var err error
+		path, err = getDefaultConfigPath()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	b, err := ioutil.ReadFile(path)
@@ -55,6 +63,14 @@ func Get() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func getDefaultConfigPath() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", errors.New("no DP_CLI_CONFIG config file specified and failed to determine user's home directory")
+	}
+	return filepath.Join(usr.HomeDir, ".dp-cli-config.yml"), nil
 }
 
 func Dump() ([]byte, error) {
