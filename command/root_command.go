@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
 	"github.com/spf13/cobra"
 )
 
@@ -63,9 +64,10 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 
 	ssh, err := sshCommand(cfg)
 	if err != nil {
-		return nil, err
+		out.WarnFHighlight("warning: failed to initialise ssh subcommands: %s", err)
+	} else {
+		subCommands = append(subCommands, ssh)
 	}
 
-	subCommands = append(subCommands, ssh)
 	return subCommands, nil
 }
