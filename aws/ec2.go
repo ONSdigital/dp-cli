@@ -127,24 +127,27 @@ func getConcourseWebSG(sshUser string) (secGroup, error) {
 
 // AllowIPForEnvironment adds your IP to this environment
 func AllowIPForEnvironment(sshUser, environment, profile string) error {
-	return changeIPForEnvironment(true, sshUser, environment, profile)
+	return changeIPsForEnvironment(true, sshUser, environment, profile)
 }
 
 // DenyIPForEnvironment removes your IP - and any others for sshUser - for this environment
 func DenyIPForEnvironment(sshUser, environment, profile string) error {
-	return changeIPForEnvironment(false, sshUser, environment, profile)
+	return changeIPsForEnvironment(false, sshUser, environment, profile)
 }
 
-func changeIPForEnvironment(isAllow bool, sshUser, environment, profile string) (err error) {
+func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string) (err error) {
 	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
 
-	var myIP string
+	var myIP, verb string
 	if isAllow {
+		verb = "allowing"
 		if myIP, err = config.GetMyIP(); err != nil {
 			return err
 		}
+	} else {
+		verb = "denying"
 	}
 
 	// build `secGroups` (wanted changes, per relevant security group) for `environment`
@@ -187,7 +190,14 @@ func changeIPForEnvironment(isAllow bool, sshUser, environment, profile string) 
 		}
 
 		countPerms += len(perms)
-		out.Highlight(out.INFO, "amending %s: %s with %s ports\n", sg.id, sg.name, strconv.Itoa(len(perms)))
+		ips := map[string][]int64{}
+		for _, perm := range perms {
+			for _, ipr := range perm.IpRanges {
+				ips[*ipr.CidrIp] = append(ips[*ipr.CidrIp], *perm.FromPort)
+			}
+		}
+
+		out.Highlight(out.INFO, verb+" %s (%s) IP/ports: %v", sg.name, sg.id, ips)
 
 		if isAllow {
 			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
@@ -334,7 +344,7 @@ func getIPRangesForPort(isAllow bool, sg secGroup, myIP, sshUser string, port in
 		}
 		for _, cidr := range sg.portToMyIPs[port] {
 			if cidr == myIP {
-				out.Highlight(out.INFO, "IP %s access to port %s already in %s SG for %s - skipping\n", cidr, strconv.Itoa(int(port)), sg.name, sshUser)
+				out.Highlight(out.WARN, "skipping existing access for %s - IP %s to port %s in SG %s (%s)", sshUser, cidr, strconv.Itoa(int(port)), sg.name, sg.id)
 				return
 			}
 		}

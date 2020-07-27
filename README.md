@@ -2,7 +2,7 @@
 
 Command-line client providing *handy helper tools* for the ONS Digital Publishing software engineering team
 
-:warning: Still in active development. If you noticed and bugs/issues please open a Github issue.
+:warning: Still in active development. If you notice any bugs/issues please open a Github issue.
 
 ### Getting started
 

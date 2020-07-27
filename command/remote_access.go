@@ -7,7 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var specialEnvs = []string{"concourse"}
+var specialEnvs = []config.Environment{{
+	Name:    "concourse",
+	Profile: "",
+}}
 
 func remoteAccess(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
@@ -31,28 +34,23 @@ func allowCommand(sshUser string, envs []config.Environment) *cobra.Command {
 		Short: "allow access to environment",
 	}
 
+	skipDeny := c.PersistentFlags().BoolP("no-deny", "D", false, "Skip any 'deny' of existing IPs - allows >1 IP for user")
+
 	cmds := make([]*cobra.Command, 0)
 
-	for _, e := range envs {
+	for _, e := range append(envs, specialEnvs...) {
 		env := e
 		cmds = append(cmds, &cobra.Command{
 			Use:   e.Name,
 			Short: "allow access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				lvl := out.GetLevel(env)
+				if !*skipDeny {
+					out.Highlight(lvl, "removing existing access to %s", env.Name)
+					aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile)
+				}
 				out.Highlight(lvl, "allowing access to %s", env.Name)
 				return aws.AllowIPForEnvironment(sshUser, env.Name, env.Profile)
-			},
-		})
-	}
-
-	for _, e := range specialEnvs {
-		cmds = append(cmds, &cobra.Command{
-			Use:   e,
-			Short: "allow access to " + e,
-			RunE: func(cmd *cobra.Command, args []string) error {
-				out.Highlight(out.INFO, "allowing access to %s", e)
-				return aws.AllowIPForEnvironment(sshUser, e, "")
 			},
 		})
 	}
@@ -70,7 +68,7 @@ func denyCommand(sshUser string, envs []config.Environment) *cobra.Command {
 
 	cmds := make([]*cobra.Command, 0)
 
-	for _, e := range envs {
+	for _, e := range append(envs, specialEnvs...) {
 		env := e
 		cmds = append(cmds, &cobra.Command{
 			Use:   e.Name,
@@ -79,17 +77,6 @@ func denyCommand(sshUser string, envs []config.Environment) *cobra.Command {
 				lvl := out.GetLevel(env)
 				out.Highlight(lvl, "denying access to %s", env.Name)
 				return aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile)
-			},
-		})
-	}
-
-	for _, e := range specialEnvs {
-		cmds = append(cmds, &cobra.Command{
-			Use:   e,
-			Short: "deny access to " + e,
-			RunE: func(cmd *cobra.Command, args []string) error {
-				out.Highlight(out.INFO, "denying access to %s", e)
-				return aws.DenyIPForEnvironment(sshUser, e, "")
 			},
 		})
 	}

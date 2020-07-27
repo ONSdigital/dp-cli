@@ -16,9 +16,9 @@ import (
 // The command has the following structure:
 //
 // 	ssh
-// 	  environment 	# develop
+// 	    environment 	# develop
 // 		group		# publishing_mount
-//		  instance	# 1
+//		    instance	# 1
 //
 func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
@@ -65,7 +65,7 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string, verboseCount *int) ([]*cobra.Command, error) {
 	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s\n", env.Name)
+		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
 	}
 
 	commands := make([]*cobra.Command, 0)

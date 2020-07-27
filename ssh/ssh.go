@@ -17,14 +17,14 @@ import (
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int) error {
 	if len(cfg.SSHUser) == 0 {
-		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command\n", "ssh user", "spew config")
-		return errors.New("missing ssh user in config file")
+		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh user", "spew config")
+		return errors.New("missing `ssh user` in config file")
 	}
 
 	lvl := out.GetLevel(env)
 	fmt.Println("")
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
-	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]\n", instance.IPAddress, instance.Name, instance.AnsibleGroups)
+	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 
 	pwd := filepath.Join(cfg.DPSetupPath, "ansible")
 	args := []string{"-F", "ssh.cfg"}
