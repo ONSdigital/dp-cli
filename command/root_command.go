@@ -2,8 +2,6 @@ package command
 
 import (
 	"math/rand"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/ONSdigital/dp-cli/config"
@@ -15,7 +13,6 @@ var (
 	root *cobra.Command
 
 	r                    *rand.Rand
-	goPath               string
 	onsDigitalPath       string
 	hierarchyBuilderPath string
 	codeListScriptsPath  string
@@ -26,14 +23,6 @@ var (
 func Load(cfg *config.Config) (*cobra.Command, error) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r = rand.New(s1)
-
-	goPath = os.Getenv("GOPATH")
-
-	onsDigitalPath = filepath.Join(goPath, "src/github.com/ONSdigital")
-
-	hierarchyBuilderPath = filepath.Join(onsDigitalPath, "dp-hierarchy-builder/cypher-scripts")
-
-	codeListScriptsPath = filepath.Join(onsDigitalPath, "dp-code-list-scripts/code-list-scripts")
 
 	root = &cobra.Command{
 		Use:   "dp",

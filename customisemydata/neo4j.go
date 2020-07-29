@@ -2,6 +2,7 @@ package customisemydata
 
 import (
 	"fmt"
+
 	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
@@ -32,7 +33,7 @@ func DropNeo4jData(cfg *config.Config) error {
 	return nil
 }
 
-func ImportGenericHierarchies(hierarchyBuilderPath string, cfg *config.Config) error {
+func ImportGenericHierarchies(cfg *config.Config) error {
 	if len(cfg.CMD.Hierarchies) == 0 {
 		out.Info("no hierarchies defined in config skipping step")
 		return nil
@@ -44,7 +45,7 @@ func ImportGenericHierarchies(hierarchyBuilderPath string, cfg *config.Config) e
 	go progressTicker()
 
 	for _, script := range cfg.CMD.Hierarchies {
-		command := fmt.Sprintf("cypher-shell < %s/%s", hierarchyBuilderPath, script)
+		command := fmt.Sprintf("cypher-shell < %s/%s", cfg.DPHierarchyBuilderPath, script)
 
 		if err := cli.ExecCommand(command, ""); err != nil {
 			stopC <- true
@@ -58,7 +59,7 @@ func ImportGenericHierarchies(hierarchyBuilderPath string, cfg *config.Config) e
 	return nil
 }
 
-func ImportCodeLists(codeListScriptsPath string, cfg *config.Config) error {
+func ImportCodeLists(cfg *config.Config) error {
 	if len(cfg.CMD.Codelists) == 0 {
 		out.Info("no code lists defined in config skipping step")
 		return nil
@@ -72,7 +73,7 @@ func ImportCodeLists(codeListScriptsPath string, cfg *config.Config) error {
 	for _, codelist := range cfg.CMD.Codelists {
 		command := fmt.Sprintf("./load -q=%s -f=%s", "cypher", codelist)
 
-		if err := cli.ExecCommand(command, codeListScriptsPath); err != nil {
+		if err := cli.ExecCommand(command, cfg.DPCodeListScriptsPath); err != nil {
 			stopC <- true
 			return err
 		}

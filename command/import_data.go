@@ -19,12 +19,12 @@ func importDataSubCommand(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-			err = customisemydata.ImportGenericHierarchies(hierarchyBuilderPath, cfg)
+			err = customisemydata.ImportGenericHierarchies(cfg)
 			if err != nil {
 				return err
 			}
 
-			err = customisemydata.ImportCodeLists(codeListScriptsPath, cfg)
+			err = customisemydata.ImportCodeLists(cfg)
 			if err != nil {
 				return err
 			}
@@ -44,12 +44,12 @@ func initCustomiseMyData(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-			err = customisemydata.ImportGenericHierarchies(hierarchyBuilderPath, cfg)
+			err = customisemydata.ImportGenericHierarchies(cfg)
 			if err != nil {
 				return err
 			}
 
-			err = customisemydata.ImportCodeLists(codeListScriptsPath, cfg)
+			err = customisemydata.ImportCodeLists(cfg)
 			if err != nil {
 				return err
 			}

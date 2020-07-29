@@ -1,10 +1,12 @@
-# dp-cli
+dp-cli
+======
 
 Command-line client providing *handy helper tools* for the ONS Digital Publishing software engineering team
 
 :warning: Still in active development. If you notice any bugs/issues please open a Github issue.
 
-### Getting started
+Getting started
+---------------
 
 Clone the code
 
@@ -14,66 +16,47 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 :warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
-#### Prerequisites
+### Prerequisites
 
-`dp-cli` uses Go Modules so requires a go version of **1.11** or later.
+**Required:**
 
-`dp-cli` requires (for some functionality) the repos:
+The DP CLI uses Go Modules so requires a go version of **1.11** or later.
 
-- `dp-code-list-scripts`
-- `dp-hierarchy-builder`
+**Optional:**
 
-to be on your `$GOPATH`:
+ The following are only required for some functionality of this tool.
 
-```sh
-go get github.com/ONSdigital/dp-code-list-scripts
-go get github.com/ONSdigital/dp-hierarchy-builder
-```
+In order to use the `dp ssh` subcommand you will need:
 
-`dp-cli` also depends on `dp-setup` for  environment config:
+- [`dp-setup`](https://github.com/ONSdigital/dp-setup) cloned locally:
 
-```sh
-git clone git@github.com:ONSdigital/dp-setup.git
-```
+  ```bash
+  git clone git@github.com:ONSdigital/dp-setup
+  ```
+
+In order to use the `dp import cmd` subcommand you will need:
+
+- [`dp-code-list-scripts`](https://github.com/ONSdigital/dp-code-list-scripts) cloned locally:
+
+  ```bash
+  git clone git@github.com:ONSdigital/dp-code-list-scripts
+  ```
+
+- [`dp-hierarchy-builder`](https://github.com/ONSdigital/dp-hierarchy-builder) cloned locally:
+
+  ```bash
+  git clone git@github.com:ONSdigital/dp-hierarchy-builder
+  ```
 
 ### Configuration
 
-`dp-cli` configuration is defined in a YAML file and the CLI expects an environment variable `DP_CLI_CONFIG` with the path to that config file.
+Configuration is defined in a YAML file. By default the CLI expects the config to be in `~/.dp-cli-config.yml`. The config file location can be customised by setting `DP_CLI_CONFIG` environment variable to your chosen path.
 
-Create a new `dp-cli-config.yml` file and add the example content below (edit to match your local setup):
+The [sample config file](./config/example_config.yml) should be tailored to suit you. For example:
 
-```yaml
-## Example config file - replace fields as required
-dp-setup-path: "/path/to/your/clone/of/dp-setup" # The path to the dp-setup repo on your machine
-cmd:
-  neo4j-url: bolt://localhost:7687
-  mongo-url: localhost:27017
-  mongo-dbs:  # The mongo databases to be dropped when cleaning your data
-    - "imports"
-    - "datasets"
-    - "filters"
-    - "codelists"
-    - "test"
-  hierarchies: # The hierarchies import scripts to run when importing data
-    - "admin-geography.cypher"
-    - "cpih1dim1aggid.cypher"
-
-  codelists: # The codelist import scripts to run when importing data
-    - "opss.yaml"
-ssh-user: JamesHetfield
-environments:
-  - name: production
-    profile: production
-  - name: develop
-    profile: development
-  - name: cmd-dev
-    profile: development
-```
-
-Create an environment variable `DP_CLI_CONFIG` with the path to the above file:
-
-```sh
-export DP_CLI_CONFIG="<YOUR_PATH>/dp-cli-config.yml"
+```bash
+cp -i config/example_config.yml ~/.dp-cli-config.yml
+vi ~/.dp-cli-config.yml
 ```
 
 ### Build and run
@@ -127,7 +110,7 @@ Use the available commands for more info on the functionality available.
 
 [Ensure you have AWS credentials set up](https://github.com/ONSdigital/dp/blob/master/guides/AWS_CREDENTIALS.md).
 
-If you do not want to set up separate profiles, another option is to not specify any profiles in your `dp-cli-config.yml`. That way the default credentials will be used.
+If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
 
 ```yaml
 environments:
