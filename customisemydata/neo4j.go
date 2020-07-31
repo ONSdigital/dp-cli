@@ -2,6 +2,7 @@ package customisemydata
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
@@ -45,9 +46,9 @@ func ImportGenericHierarchies(cfg *config.Config) error {
 	go progressTicker()
 
 	for _, script := range cfg.CMD.Hierarchies {
-		command := fmt.Sprintf("cypher-shell < %s/%s", cfg.DPHierarchyBuilderPath, script)
+		command := fmt.Sprintf("cypher-shell < %s", script)
 
-		if err := cli.ExecCommand(command, ""); err != nil {
+		if err := cli.ExecCommand(command, filepath.Join(cfg.DPHierarchyBuilderPath, "cypher-scripts")); err != nil {
 			stopC <- true
 			return err
 		}
@@ -73,7 +74,7 @@ func ImportCodeLists(cfg *config.Config) error {
 	for _, codelist := range cfg.CMD.Codelists {
 		command := fmt.Sprintf("./load -q=%s -f=%s", "cypher", codelist)
 
-		if err := cli.ExecCommand(command, cfg.DPCodeListScriptsPath); err != nil {
+		if err := cli.ExecCommand(command, filepath.Join(cfg.DPCodeListScriptsPath, "code-list-scripts")); err != nil {
 			stopC <- true
 			return err
 		}
