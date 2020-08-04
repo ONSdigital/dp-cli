@@ -1,9 +1,6 @@
 package command
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
 	"github.com/spf13/cobra"
@@ -12,7 +9,6 @@ import (
 var (
 	root *cobra.Command
 
-	r                    *rand.Rand
 	onsDigitalPath       string
 	hierarchyBuilderPath string
 	codeListScriptsPath  string
@@ -21,8 +17,6 @@ var (
 
 // Load will load the sub-commands
 func Load(cfg *config.Config) (*cobra.Command, error) {
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r = rand.New(s1)
 
 	root = &cobra.Command{
 		Use:   "dp",
@@ -53,9 +47,16 @@ func getSubCommands(cfg *config.Config) ([]*cobra.Command, error) {
 
 	ssh, err := sshCommand(cfg)
 	if err != nil {
-		out.WarnFHighlight("warning: failed to initialise ssh subcommands: %s", err)
+		out.WarnFHighlight("warning: failed to initialise ssh sub-commands: %s", err)
 	} else {
 		subCommands = append(subCommands, ssh)
+	}
+
+	scp, err := scpCommand(cfg)
+	if err != nil {
+		out.WarnFHighlight("warning: failed to initialise scp sub-commands: %s", err)
+	} else {
+		subCommands = append(subCommands, scp)
 	}
 
 	return subCommands, nil
