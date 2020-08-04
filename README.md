@@ -90,6 +90,7 @@ Available Commands:
   help             Help about any command
   import           Import data into your local developer environment
   remote           Allow or deny remote access to environment
+  scp              Push (or `--pull`) a file to (from) an environment using scp
   spew             Log out some useful debugging info
   ssh              Access an environment using ssh
   version          Print the app version
@@ -122,14 +123,14 @@ environments:
     profile:
 ```
 
-#### SSH command fails
+#### SSH/SCP command fails
 
 ```sh
-➜  dp ssh develop
+$ dp ssh develop
 ssh to develop
 ```
 
-If the SSH command fails, ensure that the `dp remote allow` command has been run for the environment you want to SSH into.
+If the SSH or SCP command fails, ensure that the `dp remote allow` command has been run for the environment you want to connect to.
 
 #### Remote Allow security group error
 
@@ -151,11 +152,25 @@ Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specifi
 The error occurs when rules have previously been added and the command is run again.
 Use `dp remote deny $env` to clear out existing rules and try again.
 
-This error should no longer appear - the code should now avoid re-adding existing rules.
+_This error should no longer appear_ - the code should now avoid re-adding existing rules.
 However, it is possible that the rule has been added with a description that does not match your username.
 If so, you will have to use the AWS web UI/console to remove any offending security group rules.
 
 ### Advanced use
+
+#### ssh commands
+
+You can run ssh commands from the command-line, for example to determine the time on a given host:
+
+```sh
+$ dp ssh develop web 1 date
+```
+
+:warning: However, if you wish to include *flags* in the (remote) command, you must tell `dp` to stop looking for flags - use the `--` flag:
+
+```sh
+$ dp ssh develop web 1 -- ls -la
+```
 
 #### Manually configuring your IP
 
@@ -163,4 +178,16 @@ Optionally, (e.g. to avoid the program looking up your IP), you can use an envir
 
 ```sh
 MY_IP=192.168.11.22 dp remote allow develop
+```
+
+#### Remote allow extra ports
+
+You can expand the allowed ports in your config for `publishing`, `web` or `bastion` with:
+
+```yaml
+environments:
+  - name: example-environment
+    extra-ports:
+      publishing:
+        - 80
 ```

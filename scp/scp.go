@@ -25,7 +25,7 @@ func withCWD(file string) (string, error) {
 }
 
 // Launch an scp file copy to the specified environment
-func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, isPull *bool, verboseCount *int, srcFile, destFile string) (err error) {
+func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, isPull, recurse *bool, verboseCount *int, srcFile, destFile string) (err error) {
 	if len(cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh user", "spew config")
 		return errors.New("missing `ssh user` in config file")
@@ -53,11 +53,14 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
-	vs := ""
+	flags := "-p"
 	for v := 0; v < *verboseCount; v++ {
-		vs += "v"
+		flags += "v"
 	}
-	return execCommand(ansibleDir, "scp", "-"+vs+"pF", "ssh.cfg", srcFile, destFile)
+	if *recurse {
+		flags += "r"
+	}
+	return execCommand(ansibleDir, "scp", flags+"F", "ssh.cfg", srcFile, destFile)
 }
 
 func execCommand(pwd, command string, arg ...string) error {
