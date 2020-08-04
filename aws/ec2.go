@@ -36,7 +36,7 @@ func getEC2Service(environment, profile string) *ec2.EC2 {
 	return ec2.New(getAWSSession(environment, profile))
 }
 
-func getNamedSG(name, environment, profile, sshUser string, ports ...int64) (sg secGroup, err error) {
+func getNamedSG(name, environment, profile, sshUser string, ports []int64) (sg secGroup, err error) {
 	ec2Svc := getEC2Service(environment, profile)
 	filters := []*ec2.Filter{
 		{
@@ -82,26 +82,32 @@ func getNamedSG(name, environment, profile, sshUser string, ports ...int64) (sg 
 			if *ipperm.IpProtocol != "tcp" || *ipperm.ToPort != *ipperm.FromPort {
 				continue
 			}
-			// ensure `ipperm` is for one of `ports` for this SG
-			for _, port := range ports {
-				if *ipperm.ToPort == port {
-					// ensure `iprange` is for `sshUser`
-					for _, iprange := range ipperm.IpRanges {
-						if iprange.CidrIp == nil ||
-							iprange.Description == nil ||
-							*iprange.Description == "" ||
-							*iprange.Description != sshUser {
-							continue
-						}
-
-						// add this CIDR to this SG for this `port`
-						sg.portToMyIPs[port] = append(
-							sg.portToMyIPs[port],
-							*iprange.CidrIp,
-						)
-					}
-					break
+			// ensure `iprange` is for `sshUser`
+			for _, iprange := range ipperm.IpRanges {
+				// skip unless Description is sshUser
+				if iprange.CidrIp == nil ||
+					iprange.Description == nil ||
+					*iprange.Description == "" ||
+					*iprange.Description != sshUser {
+					continue
 				}
+
+				// see if `ipperm` is for current allowed `ports` for this SG
+				isUnusualPort := true
+				for _, port := range ports {
+					if *ipperm.ToPort == port {
+						isUnusualPort = false
+						break
+					}
+				}
+				if isUnusualPort {
+					out.Highlight(out.WARN, "%s has unexpected port %s for %s", name, *ipperm.ToPort, sshUser)
+				}
+				// add CIDR to list that is keyed on ToPort
+				sg.portToMyIPs[*ipperm.ToPort] = append(
+					sg.portToMyIPs[*ipperm.ToPort],
+					*iprange.CidrIp,
+				)
 			}
 		}
 	}
@@ -109,33 +115,42 @@ func getNamedSG(name, environment, profile, sshUser string, ports ...int64) (sg 
 	return
 }
 
-func getBastionSGForEnvironment(environment, profile, sshUser string) (secGroup, error) {
-	return getNamedSG(environment+" - bastion", environment, profile, sshUser, 22, 443)
+func getBastionSGForEnvironment(environment, profile, sshUser string, morePorts []int64) (secGroup, error) {
+	return getNamedSG(
+		environment+" - bastion", environment, profile, sshUser,
+		append(morePorts, 22, 443),
+	)
 }
 
-func getELBPublishingSGForEnvironment(environment, profile, sshUser string) (secGroup, error) {
-	return getNamedSG(environment+" - publishing elb", environment, profile, sshUser, 80, 443)
+func getELBPublishingSGForEnvironment(environment, profile, sshUser string, morePorts []int64) (secGroup, error) {
+	return getNamedSG(
+		environment+" - publishing elb", environment, profile, sshUser,
+		append(morePorts, 443),
+	)
 }
 
-func getELBWebSGForEnvironment(environment, profile, sshUser string) (secGroup, error) {
-	return getNamedSG(environment+" - web elb", environment, profile, sshUser, 80, 443)
+func getELBWebSGForEnvironment(environment, profile, sshUser string, morePorts []int64) (secGroup, error) {
+	return getNamedSG(
+		environment+" - web elb", environment, profile, sshUser,
+		append(morePorts, 80, 443),
+	)
 }
 
 func getConcourseWebSG(sshUser string) (secGroup, error) {
-	return getNamedSG("concourse-ci-web", "", "", sshUser, 443)
+	return getNamedSG("concourse-ci-web", "", "", sshUser, []int64{443})
 }
 
 // AllowIPForEnvironment adds your IP to this environment
-func AllowIPForEnvironment(sshUser, environment, profile string) error {
-	return changeIPsForEnvironment(true, sshUser, environment, profile)
+func AllowIPForEnvironment(sshUser, environment, profile string, morePorts config.AddPorts) error {
+	return changeIPsForEnvironment(true, sshUser, environment, profile, morePorts)
 }
 
 // DenyIPForEnvironment removes your IP - and any others for sshUser - for this environment
-func DenyIPForEnvironment(sshUser, environment, profile string) error {
-	return changeIPsForEnvironment(false, sshUser, environment, profile)
+func DenyIPForEnvironment(sshUser, environment, profile string, morePorts config.AddPorts) error {
+	return changeIPsForEnvironment(false, sshUser, environment, profile, morePorts)
 }
 
-func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string) (err error) {
+func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string, morePorts config.AddPorts) (err error) {
 	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
@@ -163,18 +178,18 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string)
 
 	} else {
 		ec2Svc = getEC2Service(environment, profile)
-		if sg, err = getBastionSGForEnvironment(environment, profile, sshUser); err != nil {
+		if sg, err = getBastionSGForEnvironment(environment, profile, sshUser, morePorts.Bastion); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 		if environment != "production" {
-			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser); err != nil {
+			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, morePorts.Publishing); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
 
-			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser); err != nil {
+			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser, morePorts.Web); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
@@ -190,14 +205,16 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string)
 		}
 
 		countPerms += len(perms)
-		ips := map[string][]int64{}
+
+		// changingIPs is used to show what it being changed (maps IPs to ports)
+		changingIPs := map[string][]int64{}
 		for _, perm := range perms {
 			for _, ipr := range perm.IpRanges {
-				ips[*ipr.CidrIp] = append(ips[*ipr.CidrIp], *perm.FromPort)
+				changingIPs[*ipr.CidrIp] = append(changingIPs[*ipr.CidrIp], *perm.FromPort)
 			}
 		}
 
-		out.Highlight(out.INFO, verb+" %s (%s) IP/ports: %v", sg.name, sg.id, ips)
+		out.Highlight(out.INFO, verb+" %s via %s (%s) IP/ports: %v", sshUser, sg.name, sg.id, changingIPs)
 
 		if isAllow {
 			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
@@ -318,7 +335,15 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 
 // getIPPermsForSG returns the permissions for all ports for this SG
 func getIPPermsForSG(isAllow bool, sg secGroup, myIP, sshUser string) (ipPerms []*ec2.IpPermission) {
-	for _, port := range sg.ports {
+	var portsToChange []int64
+	if isAllow {
+		portsToChange = sg.ports
+	} else {
+		for port := range sg.portToMyIPs {
+			portsToChange = append(portsToChange, port)
+		}
+	}
+	for _, port := range portsToChange {
 		ipRanges := getIPRangesForPort(isAllow, sg, myIP, sshUser, port)
 		if len(ipRanges) == 0 {
 			continue

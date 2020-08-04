@@ -47,10 +47,10 @@ func allowCommand(sshUser string, envs []config.Environment) *cobra.Command {
 				lvl := out.GetLevel(env)
 				if !*skipDeny {
 					out.Highlight(lvl, "removing existing access to %s", env.Name)
-					aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile)
+					aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts)
 				}
 				out.Highlight(lvl, "allowing access to %s", env.Name)
-				return aws.AllowIPForEnvironment(sshUser, env.Name, env.Profile)
+				return aws.AllowIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts)
 			},
 		})
 	}
@@ -76,7 +76,7 @@ func denyCommand(sshUser string, envs []config.Environment) *cobra.Command {
 			RunE: func(cmd *cobra.Command, args []string) error {
 				lvl := out.GetLevel(env)
 				out.Highlight(lvl, "denying access to %s", env.Name)
-				return aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile)
+				return aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts)
 			},
 		})
 	}

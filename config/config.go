@@ -38,10 +38,19 @@ type CMD struct {
 
 // Environment represents an environment
 type Environment struct {
-	Name    string `yaml:"name"`
-	Profile string `yaml:"profile"`
+	Name       string   `yaml:"name"`
+	Profile    string   `yaml:"profile"`
+	ExtraPorts AddPorts `yaml:"extra-ports"`
 }
 
+// AddPorts is a list of ports for the given Security Group
+type AddPorts struct {
+	Bastion    []int64 `yaml:"bastion"`
+	Publishing []int64 `yaml:"publishing"`
+	Web        []int64 `yaml:"web"`
+}
+
+// Get returns the config struct by parsing the YML file
 func Get() (*Config, error) {
 	path := os.Getenv("DP_CLI_CONFIG")
 	if len(path) == 0 {
