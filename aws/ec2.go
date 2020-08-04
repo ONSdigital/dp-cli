@@ -115,24 +115,24 @@ func getNamedSG(name, environment, profile, sshUser string, ports []int64) (sg s
 	return
 }
 
-func getBastionSGForEnvironment(environment, profile, sshUser string, morePorts []int64) (secGroup, error) {
+func getBastionSGForEnvironment(environment, profile, sshUser string, extraPorts []int64) (secGroup, error) {
 	return getNamedSG(
 		environment+" - bastion", environment, profile, sshUser,
-		append(morePorts, 22, 443),
+		append(extraPorts, 22, 443),
 	)
 }
 
-func getELBPublishingSGForEnvironment(environment, profile, sshUser string, morePorts []int64) (secGroup, error) {
+func getELBPublishingSGForEnvironment(environment, profile, sshUser string, extraPorts []int64) (secGroup, error) {
 	return getNamedSG(
 		environment+" - publishing elb", environment, profile, sshUser,
-		append(morePorts, 443),
+		append(extraPorts, 443),
 	)
 }
 
-func getELBWebSGForEnvironment(environment, profile, sshUser string, morePorts []int64) (secGroup, error) {
+func getELBWebSGForEnvironment(environment, profile, sshUser string, extraPorts []int64) (secGroup, error) {
 	return getNamedSG(
 		environment+" - web elb", environment, profile, sshUser,
-		append(morePorts, 80, 443),
+		append(extraPorts, 80, 443),
 	)
 }
 
@@ -141,16 +141,16 @@ func getConcourseWebSG(sshUser string) (secGroup, error) {
 }
 
 // AllowIPForEnvironment adds your IP to this environment
-func AllowIPForEnvironment(sshUser, environment, profile string, morePorts config.AddPorts) error {
-	return changeIPsForEnvironment(true, sshUser, environment, profile, morePorts)
+func AllowIPForEnvironment(sshUser, environment, profile string, extraPorts config.ExtraPorts) error {
+	return changeIPsForEnvironment(true, sshUser, environment, profile, extraPorts)
 }
 
 // DenyIPForEnvironment removes your IP - and any others for sshUser - for this environment
-func DenyIPForEnvironment(sshUser, environment, profile string, morePorts config.AddPorts) error {
-	return changeIPsForEnvironment(false, sshUser, environment, profile, morePorts)
+func DenyIPForEnvironment(sshUser, environment, profile string, extraPorts config.ExtraPorts) error {
+	return changeIPsForEnvironment(false, sshUser, environment, profile, extraPorts)
 }
 
-func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string, morePorts config.AddPorts) (err error) {
+func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string, extraPorts config.ExtraPorts) (err error) {
 	if len(sshUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
@@ -178,18 +178,18 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string,
 
 	} else {
 		ec2Svc = getEC2Service(environment, profile)
-		if sg, err = getBastionSGForEnvironment(environment, profile, sshUser, morePorts.Bastion); err != nil {
+		if sg, err = getBastionSGForEnvironment(environment, profile, sshUser, extraPorts.Bastion); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 		if environment != "production" {
-			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, morePorts.Publishing); err != nil {
+			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, extraPorts.Publishing); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
 
-			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser, morePorts.Web); err != nil {
+			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser, extraPorts.Web); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)

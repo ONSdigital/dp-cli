@@ -38,13 +38,13 @@ type CMD struct {
 
 // Environment represents an environment
 type Environment struct {
-	Name       string   `yaml:"name"`
-	Profile    string   `yaml:"profile"`
-	ExtraPorts AddPorts `yaml:"extra-ports"`
+	Name       string     `yaml:"name"`
+	Profile    string     `yaml:"profile"`
+	ExtraPorts ExtraPorts `yaml:"extra-ports"`
 }
 
-// AddPorts is a list of ports for the given Security Group
-type AddPorts struct {
+// ExtraPorts is a list of ports for the given Security Group
+type ExtraPorts struct {
 	Bastion    []int64 `yaml:"bastion"`
 	Publishing []int64 `yaml:"publishing"`
 	Web        []int64 `yaml:"web"`
