@@ -25,12 +25,12 @@ func withCWD(file string) (string, error) {
 	if file[0] == '/' {
 		return file, nil
 	}
-	var pwd string
+	var currentDir string
 	var err error
-	if pwd, err = os.Getwd(); err != nil {
+	if currentDir, err = os.Getwd(); err != nil {
 		return "", err
 	}
-	return filepath.Join(pwd, file), nil
+	return filepath.Join(currentDir, file), nil
 }
 
 // Launch an scp file copy to/from the specified environment
@@ -88,13 +88,13 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	return execCommand(ansibleDir, "scp", flags+"F", "ssh.cfg", srcFile, destFile)
 }
 
-func execCommand(pwd, command string, arg ...string) error {
+func execCommand(wrkDir, command string, arg ...string) error {
 	c := exec.Command(command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Env = os.Environ()
-	c.Dir = pwd
+	c.Dir = wrkDir
 	if err := c.Run(); err != nil {
 		return err
 	}

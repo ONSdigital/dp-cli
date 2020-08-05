@@ -26,7 +26,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 
-	pwd := filepath.Join(cfg.DPSetupPath, "ansible")
+	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	args := []string{"-F", "ssh.cfg"}
 	if portArgs != nil {
 		for _, portArg := range *portArgs {
@@ -43,16 +43,16 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	userHost := fmt.Sprintf("%s@%s", cfg.SSHUser, instance.IPAddress)
 	args = append(args, userHost)
 	args = append(args, extraArgs...)
-	return execCommand(pwd, "ssh", args...)
+	return execCommand(ansibleDir, "ssh", args...)
 }
 
-func execCommand(pwd, command string, arg ...string) error {
+func execCommand(wrkDir, command string, arg ...string) error {
 	c := exec.Command(command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Env = os.Environ()
-	c.Dir = pwd
+	c.Dir = wrkDir
 	if err := c.Run(); err != nil {
 		return err
 	}
