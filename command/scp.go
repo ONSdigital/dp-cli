@@ -30,11 +30,13 @@ func scpCommand(cfg *config.Config) (*cobra.Command, error) {
 		Use:   "scp",
 		Short: "Push (or `--pull`) a file to (from) an environment using scp",
 	}
-
-	pullFlag := scpC.PersistentFlags().Bool("pull", false, "pull file - first arg is remote-file [default: push (1st arg local)]")
-	verboseCount := scpC.PersistentFlags().CountP("verbose", "v", "verbose - increase scp verbosity")
-	recurse := scpC.PersistentFlags().BoolP("recurse", "r", false, "recurse - copy recursively")
-	environmentCommands, err := createEnvironmentSCPSubCommands(cfg, pullFlag, recurse, verboseCount)
+	scpOpts := scp.Options{
+		IsConfirmed: scpC.PersistentFlags().Bool("confirm-non-sensitive", false, "declare: no sensitive files being copied"),
+		IsPull:      scpC.PersistentFlags().Bool("pull", false, "pull file - first arg is remote-file [default: push (1st arg local)]"),
+		IsRecursing: scpC.PersistentFlags().BoolP("recurse", "r", false, "recurse - copy recursively"),
+		Verbosity:   scpC.PersistentFlags().CountP("verbose", "v", "verbose - increase scp verbosity"),
+	}
+	environmentCommands, err := createEnvironmentSCPSubCommands(cfg, scpOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +49,7 @@ func scpCommand(cfg *config.Config) (*cobra.Command, error) {
 }
 
 // create an array of environment sub-commands available to `scp`
-func createEnvironmentSCPSubCommands(cfg *config.Config, isPull, recurse *bool, verboseCount *int) ([]*cobra.Command, error) {
+func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for _, env := range cfg.Environments {
@@ -56,7 +58,7 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, isPull, recurse *bool, 
 			Short: "scp on " + env.Name,
 		}
 
-		groupCommands, err := createEnvironmentGroupSCPSubCommands(env, cfg, isPull, recurse, verboseCount)
+		groupCommands, err := createEnvironmentGroupSCPSubCommands(env, cfg, scpOpts)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error creating group commands for env: %s", env.Name)
 		}
@@ -68,7 +70,7 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, isPull, recurse *bool, 
 }
 
 // create an array of environment group sub-commands available to `scp env`
-func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, isPull, recurse *bool, verboseCount *int) ([]*cobra.Command, error) {
+func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
 	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
@@ -92,7 +94,7 @@ func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Co
 			Short: fmt.Sprintf("scp on %s %s", env.Name, grp),
 		}
 
-		instanceCommands, err := createInstanceSCPSubCommands(grp, cfg, env, instances, isPull, recurse, verboseCount)
+		instanceCommands, err := createInstanceSCPSubCommands(grp, cfg, env, instances, scpOpts)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +107,7 @@ func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Co
 }
 
 // create an array of instance sub-commands available to `scp env group`
-func createInstanceSCPSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result, isPull, recurse *bool, verboseCount *int) ([]*cobra.Command, error) {
+func createInstanceSCPSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result, scpOpts scp.Options) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for i, instance := range instances {
@@ -124,7 +126,7 @@ func createInstanceSCPSubCommands(grp string, cfg *config.Config, env config.Env
 			),
 			Args: cobra.ExactValidArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return scp.Launch(cfg, e, inst, isPull, recurse, verboseCount, args[0], args[1])
+				return scp.Launch(cfg, e, inst, scpOpts, args[0], args[1])
 			},
 		}
 
