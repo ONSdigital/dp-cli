@@ -409,7 +409,7 @@ func FinaliseModules(ctx context.Context, pathToRepo string) {
 	format := exec.Command("go", "fmt", "./...")
 	format.Dir = pathToRepo
 	if err := format.Run(); err != nil {
-		log.Event(ctx, "error during go build step", log.Error(err))
+		log.Event(ctx, "error during go fmt step", log.Error(err))
 	}
 }
 
