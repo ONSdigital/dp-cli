@@ -400,10 +400,15 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) error {
 
 // FinaliseModules will run go build ./... to generate go modules dependency management files
 func FinaliseModules(ctx context.Context, pathToRepo string) {
-	cmd := exec.Command("go", "build", "./...")
-	cmd.Dir = pathToRepo
-	err := cmd.Run()
-	if err != nil {
+	build := exec.Command("go", "build", "./...")
+	build.Dir = pathToRepo
+	if err := build.Run(); err != nil {
+		log.Event(ctx, "error during go build step", log.Error(err))
+	}
+
+	format := exec.Command("go", "fmt", "./...")
+	format.Dir = pathToRepo
+	if err := format.Run(); err != nil {
 		log.Event(ctx, "error during go build step", log.Error(err))
 	}
 }
