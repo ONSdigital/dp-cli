@@ -86,6 +86,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
+		FormatGoFiles(ctx, newApp.pathToRepo)
 	case API:
 		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		if err != nil {
@@ -96,6 +97,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
+		FormatGoFiles(ctx, newApp.pathToRepo)
 	case Controller:
 		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		if err != nil {
@@ -106,6 +108,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
+		FormatGoFiles(ctx, newApp.pathToRepo)
 	case EventDriven:
 		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
 		if err != nil {
@@ -116,6 +119,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 			return err
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
+		FormatGoFiles(ctx, newApp.pathToRepo)
 	default:
 		log.Event(ctx, "unable to generate project due to unknown project type given", log.Error(err))
 	}
