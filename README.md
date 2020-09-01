@@ -59,7 +59,44 @@ cp -i config/example_config.yml ~/.dp-cli-config.yml
 vi ~/.dp-cli-config.yml
 ```
 
+[ set paths for:
+
+    dp-setup-path:
+    dp-hierarchy-builder-path:
+    dp-code-list-scripts-path:
+  
+   set your `ssh-user:`
+
+and if this is a first time setup, comment out production from environments, thus:
+
+    # - name: production
+    #   profile: production
+]
+
 ### Build and run
+
+Check you have a suitable version of `go` installed with:
+
+`go version`
+
+(Ideally 1.13)
+
+[ The following will ensure version 1.13
+
+  ```sh
+  brew install go@1.13
+  brew unlink go
+  brew link —force go@1.13
+  ```
+
+Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
+
+  ```sh
+  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.13/bin:$PATH"' >> ~/.zshrc
+  ```
+
+  and restart the terminal ]
 
 Build, install and start the CLI:
 
@@ -67,6 +104,17 @@ Build, install and start the CLI:
 make install
 dp
 ```
+[
+  If you get:
+
+  `zsh: command not found: dp`
+
+Then either edit your .zshrc file have the correct path OR do:
+  ```sh
+  echo 'export PATH="$GOPATH/bin:$PATH"' >> ~/.zshrc
+  ```
+
+  and restart the terminal ]
 
 Or to build a binary locally:
 
