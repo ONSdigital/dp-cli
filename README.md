@@ -22,6 +22,29 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 The DP CLI uses Go Modules so requires a go version of **1.11** or later.
 
+Check you have a suitable version of `go` installed with:
+
+`go version`
+
+(Ideally 1.13)
+
+[ The following will ensure version 1.13
+
+  ```sh
+  brew install go@1.13
+  brew unlink go
+  brew link —force go@1.13
+  ```
+
+Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
+
+  ```sh
+  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.13/bin:$PATH"' >> ~/.zshrc
+  ```
+
+  and restart the terminal ]
+
 **Optional:**
 
  The following are only required for some functionality of this tool.
@@ -74,29 +97,6 @@ and if this is a first time setup, comment out production from environments, thu
 ]
 
 ### Build and run
-
-Check you have a suitable version of `go` installed with:
-
-`go version`
-
-(Ideally 1.13)
-
-[ The following will ensure version 1.13
-
-  ```sh
-  brew install go@1.13
-  brew unlink go
-  brew link —force go@1.13
-  ```
-
-Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
-
-  ```sh
-  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export PATH="/usr/local/opt/go@1.13/bin:$PATH"' >> ~/.zshrc
-  ```
-
-  and restart the terminal ]
 
 Build, install and start the CLI:
 
