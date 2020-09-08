@@ -48,7 +48,7 @@ func ImportGenericHierarchies(cfg *config.Config) error {
 	for _, script := range cfg.CMD.Hierarchies {
 		command := fmt.Sprintf("cypher-shell < %s", script)
 
-		if err := cli.ExecCommand(command, filepath.Join(cfg.DPHierarchyBuilderPath, "cypher-scripts")); err != nil {
+		if err := cli.ExecCommand(command, filepath.Join(cfg.SourceDir, "dp-hierarchy-builder", "cypher-scripts")); err != nil {
 			stopC <- true
 			return err
 		}
@@ -74,7 +74,7 @@ func ImportCodeLists(cfg *config.Config) error {
 	for _, codelist := range cfg.CMD.Codelists {
 		command := fmt.Sprintf("./load -q=%s -f=%s", "cypher", codelist)
 
-		if err := cli.ExecCommand(command, filepath.Join(cfg.DPCodeListScriptsPath, "code-list-scripts")); err != nil {
+		if err := cli.ExecCommand(command, filepath.Join(cfg.SourceDir, "dp-code-list-scripts", "code-list-scripts")); err != nil {
 			stopC <- true
 			return err
 		}

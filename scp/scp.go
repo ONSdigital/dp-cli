@@ -77,7 +77,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	}
 
-	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
+	ansibleDir := filepath.Join(cfg.SourceDir, "dp-setup", "ansible")
 	flags := "-p"
 	for v := 0; v < *opts.Verbosity; v++ {
 		flags += "v"

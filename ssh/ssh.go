@@ -26,7 +26,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 
-	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
+	ansibleDir := filepath.Join(cfg.SourceDir, "dp-setup", "ansible")
 	args := []string{"-F", "ssh.cfg"}
 	if portArgs != nil {
 		for _, portArg := range *portArgs {

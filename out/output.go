@@ -1,10 +1,13 @@
 package out
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/fatih/color"
+	"github.com/pkg/term"
 )
 
 var (
@@ -44,19 +47,25 @@ func GetLevel(env config.Environment) Level {
 }
 
 func Write(lvl Level, msg string) {
-	getColor(lvl).Printf("%s ", outPrefix)
+	cliPrefix(getColor(lvl))
 	fmt.Printf("%s\n", msg)
 }
 
 func WriteF(lvl Level, msg string, args ...interface{}) {
-	getColor(lvl).Printf("%s ", outPrefix)
+	cliPrefix(getColor(lvl))
 	fmt.Printf(msg, args...)
 }
 
 func Highlight(lvl Level, msg string, args ...interface{}) {
 	c := getColor(lvl)
-	c.Printf("%s ", outPrefix)
-	highlight(c, msg, args...)
+	cliPrefix(c)
+	highlight(c, msg, true, args...)
+}
+
+func HighlightRaw(lvl Level, msg string, args ...interface{}) {
+	c := getColor(lvl)
+	cliPrefix(c)
+	highlight(c, msg, false, args...)
 }
 
 type Log func(msg string, args ...interface{})
@@ -91,26 +100,76 @@ func Error(err error) {
 
 func InfoFHighlight(msg string, args ...interface{}) {
 	cliPrefix(infoBoldC)
-	highlight(infoC, msg, args...)
+	highlight(infoC, msg, true, args...)
 }
 
 func WarnFHighlight(msg string, args ...interface{}) {
 	cliPrefix(warningBoldC)
-	highlight(warningC, msg, args...)
+	highlight(warningC, msg, true, args...)
 }
 
 func ErrorFHighlight(msg string, args ...interface{}) {
 	cliPrefix(errorBoldC)
-	highlight(errorC, msg, args...)
+	highlight(errorC, msg, true, args...)
 }
 
-func highlight(c *color.Color, formattedMsg string, args ...interface{}) {
+func highlight(c *color.Color, formattedMsg string, newline bool, args ...interface{}) {
 	var highlighted []interface{}
 
 	for _, val := range args {
 		highlighted = append(highlighted, c.SprintFunc()(val))
 	}
 
-	formattedMsg = fmt.Sprintf(formattedMsg, highlighted...)
-	fmt.Printf("%s\n", formattedMsg)
+	fmt.Printf(formattedMsg, highlighted...)
+	if newline {
+		fmt.Println("")
+	}
+}
+
+func YesOrNo(msg string, args ...interface{}) (byte, error) {
+	defaultKey := byte('y')
+	otherKeys := "nq"
+
+	for {
+		HighlightRaw(INFO, msg, args...)
+		fmt.Printf(
+			" [%s%s] ",
+			warningBoldC.SprintFunc()(defaultKey),
+			infoC.SprintFunc()(otherKeys),
+		)
+		readKey, err := getChar()
+		if err != nil {
+			return readKey, err
+		}
+
+		if readKey == '\n' || readKey == ' ' || readKey == defaultKey {
+			return defaultKey, nil
+		} else if strings.Contains(otherKeys, string(readKey)) {
+			return readKey, nil
+		}
+	}
+}
+
+// returns a byte
+func getChar() (b byte, err error) {
+	var t *term.Term
+	if t, err = term.Open("/dev/tty"); err != nil {
+		return
+	}
+	defer t.Close()
+
+	term.RawMode(t)
+	defer t.Restore()
+
+	bytes := make([]byte, 3)
+	var readCount int
+	if readCount, err = t.Read(bytes); err != nil {
+		return
+	}
+	if readCount == 1 {
+		b = bytes[0]
+	} else {
+		err = errors.New("too many chars read")
+	}
+	return
 }

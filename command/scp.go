@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 
 	"github.com/ONSdigital/dp-cli/ansible"
@@ -71,7 +72,7 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([
 
 // create an array of environment group sub-commands available to `scp env`
 func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
-	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
+	groups, err := ansible.GetGroupsForEnvironment(filepath.Join(cfg.SourceDir, "dp-setup"), env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
 	}

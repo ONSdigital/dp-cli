@@ -10,6 +10,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -20,12 +21,11 @@ var httpClient = &http.Client{
 }
 
 type Config struct {
-	CMD                    CMD           `yaml:"cmd"`
-	Environments           []Environment `yaml:"environments"`
-	SSHUser                string        `yaml:"ssh-user"`
-	DPSetupPath            string        `yaml:"dp-setup-path"`
-	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
-	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
+	CMD          CMD                `yaml:"cmd"`
+	Environments []Environment      `yaml:"environments"`
+	SSHUser      string             `yaml:"ssh-user"`
+	SourcePath   []string           `yaml:"dp-source-path"`
+	Services     map[string]Service `yaml:"services"`
 }
 
 type CMD struct {
@@ -50,6 +50,30 @@ type ExtraPorts struct {
 	Web        []int64 `yaml:"web"`
 }
 
+// Service allows individual configuration of a service
+type Service struct {
+	Path    string            `yaml:"path"`
+	RepoURI string            `yaml:"repo_uri"`
+	Once    bool              `yaml:"once"`
+	Subnet  map[string]Subnet `yaml:"subnet"`
+}
+
+type Subnet struct {
+	Ignore   bool   `yaml:"ignore"`
+	Priority int    `yaml:"priority"`
+	StartCmd string `yaml:"start-command"`
+}
+
+// WithOpts is used to pass cmdline opts to commands
+type WithOpts struct {
+	ForUser         *string
+	HTTPOnly        *bool
+	Interactive     *bool
+	LimitWeb        *bool
+	LimitPublishing *bool
+	Verbose         *int
+}
+
 // Get returns the config struct by parsing the YML file
 func Get() (*Config, error) {
 	path := os.Getenv("DP_CLI_CONFIG")
@@ -71,7 +95,60 @@ func Get() (*Config, error) {
 		return nil, err
 	}
 
+	// convert ~ to home dir in paths, or prepend SourceDir if relative
+	for idx := range cfg.SourcePath {
+		cfg.SourcePath[idx] = cfg.expandPath(cfg.SourcePath[idx])
+	}
+	for svcName, svc := range cfg.Services {
+		svc.Path = cfg.FindOrFromURI(cfg.Services[svcName].Path, cfg.Services[svcName].RepoURI)
+	}
 	return &cfg, nil
+}
+
+func IsDir(dir string) (isDir bool, err error) {
+	if s, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			err = nil
+		}
+	} else {
+		isDir = s.IsDir()
+	}
+	return
+}
+
+func FindPath(dir string, path []string) string {
+	for _, d := range path {
+		fullPath := filepath.Join(d, dir)
+		if isDir, err := IsDir(fullPath); err == nil && isDir {
+			return fullPath
+		}
+	}
+	return ""
+}
+
+func (cfg *Config) FindOrFromURI(path, uri string) string {
+	if path == "" {
+		if uri != "" {
+			if lastSlashAt := strings.LastIndex(uri, "/"); lastSlashAt != -1 {
+				path = uri[lastSlashAt:]
+			}
+		}
+	}
+	return cfg.expandPath(path)
+}
+
+func (cfg *Config) expandPath(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		path = os.Getenv("HOME") + path[1:]
+	}
+	if !strings.HasPrefix(path, "/") {
+		newPath := FindPath(path, cfg.SourcePath)
+		if newPath != "" {
+			path = newPath
+		}
+
+	}
+	return path
 }
 
 func getDefaultConfigPath() (string, error) {

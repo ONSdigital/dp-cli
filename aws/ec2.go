@@ -141,17 +141,17 @@ func getConcourseWebSG(sshUser string) (secGroup, error) {
 }
 
 // AllowIPForEnvironment adds your IP to this environment
-func AllowIPForEnvironment(sshUser, environment, profile string, extraPorts config.ExtraPorts) error {
-	return changeIPsForEnvironment(true, sshUser, environment, profile, extraPorts)
+func AllowIPForEnvironment(environment, profile string, extraPorts config.ExtraPorts, opts config.WithOpts) error {
+	return changeIPsForEnvironment(true, environment, profile, extraPorts, opts)
 }
 
 // DenyIPForEnvironment removes your IP - and any others for sshUser - for this environment
-func DenyIPForEnvironment(sshUser, environment, profile string, extraPorts config.ExtraPorts) error {
-	return changeIPsForEnvironment(false, sshUser, environment, profile, extraPorts)
+func DenyIPForEnvironment(environment, profile string, extraPorts config.ExtraPorts, opts config.WithOpts) error {
+	return changeIPsForEnvironment(false, environment, profile, extraPorts, opts)
 }
 
-func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string, extraPorts config.ExtraPorts) (err error) {
-	if len(sshUser) == 0 {
+func changeIPsForEnvironment(isAllow bool, environment, profile string, extraPorts config.ExtraPorts, opts config.WithOpts) (err error) {
+	if len(*opts.ForUser) == 0 {
 		return errors.New("please set DP_SSH_USER to change remote access")
 	}
 
@@ -171,25 +171,27 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string,
 	var ec2Svc *ec2.EC2
 	if environment == "concourse" {
 		ec2Svc = getEC2Service("", "")
-		if sg, err = getConcourseWebSG(sshUser); err != nil {
+		if sg, err = getConcourseWebSG(*opts.ForUser); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 	} else {
 		ec2Svc = getEC2Service(environment, profile)
-		if sg, err = getBastionSGForEnvironment(environment, profile, sshUser, extraPorts.Bastion); err != nil {
-			return err
+		if opts.HTTPOnly == nil || *opts.HTTPOnly == false {
+			if sg, err = getBastionSGForEnvironment(environment, profile, *opts.ForUser, extraPorts.Bastion); err != nil {
+				return err
+			}
+			secGroups = append(secGroups, sg)
 		}
-		secGroups = append(secGroups, sg)
 
 		if environment != "production" {
-			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, extraPorts.Publishing); err != nil {
+			if sg, err = getELBPublishingSGForEnvironment(environment, profile, *opts.ForUser, extraPorts.Publishing); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
 
-			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser, extraPorts.Web); err != nil {
+			if sg, err = getELBWebSGForEnvironment(environment, profile, *opts.ForUser, extraPorts.Web); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
@@ -199,7 +201,7 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string,
 	// apply `secGroups` changes
 	countPerms := 0
 	for _, sg = range secGroups {
-		perms := getIPPermsForSG(isAllow, sg, myIP, sshUser)
+		perms := getIPPermsForSG(isAllow, sg, myIP, *opts.ForUser)
 		if len(perms) == 0 {
 			continue
 		}
@@ -214,7 +216,7 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string,
 			}
 		}
 
-		out.Highlight(out.INFO, verb+" %s via %s (%s) IP/ports: %v", sshUser, sg.name, sg.id, changingIPs)
+		out.Highlight(out.INFO, verb+" %s via %s (%s) IP/ports: %v", *opts.ForUser, sg.name, sg.id, changingIPs)
 
 		if isAllow {
 			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
@@ -239,7 +241,7 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string,
 		if isAllow {
 			return fmt.Errorf(errFormat, "all IPs already exist in SGs")
 		}
-		return fmt.Errorf(errFormat, `no IPs to delete for "`+sshUser+`"`)
+		return fmt.Errorf(errFormat, `no IPs to delete for "`+*opts.ForUser+`"`)
 	}
 
 	return nil

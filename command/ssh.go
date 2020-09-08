@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 
 	"github.com/ONSdigital/dp-cli/ansible"
@@ -64,7 +65,7 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 
 // create a array of environment group sub commands available to ssh to.
 func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string, verboseCount *int) ([]*cobra.Command, error) {
-	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
+	groups, err := ansible.GetGroupsForEnvironment(filepath.Join(cfg.SourceDir, "dp-setup"), env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
 	}
