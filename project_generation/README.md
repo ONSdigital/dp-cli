@@ -29,3 +29,9 @@ Although these flags are optional, for most, if they are not provided then the u
 - --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
 - --type :              Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
 
+### Example output
+The project generation command has been used to create example outputs of the various types of project. These can be found
+in the [dp-hello-world repository](https://github.com/ONSdigital/dp-hello-world). This provides a place where issues and
+discussions around the content of the base projects can be discussed and agreed upon. Once agreed upon there, the
+changes need to be applied to the templates in this repository and the example output can be regenerated with the new
+version of this tool, ready for further improvements.
