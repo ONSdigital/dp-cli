@@ -122,7 +122,7 @@ func ValidateAppDescription(ctx context.Context, description string) (string, er
 	var err error = nil
 
 	for description == "" {
-		description, err = PromptForInput(ctx, "Please specify a short description of the application")
+		description, err = PromptForInput(ctx, "Please specify a short description of the application:")
 		if err != nil {
 			return "", err
 		}
@@ -149,7 +149,7 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 		return goVer, nil
 	}
 	for !ValidVersionNumber(goVer) {
-		goVer, err = PromptForInput(ctx, "Please specify the version of GO to use")
+		goVer, err = PromptForInput(ctx, "Please specify the version of GO to use:")
 		if err != nil {
 			return "", err
 		}
@@ -159,7 +159,7 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 
 func ValidatePortNumber(ctx context.Context, unvalidatedPort string) (validatedPort string, err error) {
 	if unvalidatedPort == "" {
-		validatedPort, err = PromptForInput(ctx, "Please specify the port number for this app")
+		validatedPort, err = PromptForInput(ctx, "Please specify the port number for this app:")
 		if err != nil {
 			return "", err
 		}
@@ -175,7 +175,7 @@ func ValidateProjectLocation(ctx context.Context, projectLocation string) (strin
 	var err error = nil
 
 	for projectLocation == "" {
-		projectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in")
+		projectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in:")
 		if err != nil {
 			return "", err
 		}

@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/ONSdigital/dp-cli/project_generation"
 	"github.com/ONSdigital/log.go/log"
 	"github.com/google/go-github/v28/github"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
-	"os"
-	"strings"
 )
 
 const (
@@ -235,18 +236,18 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 		if exists {
 			accessToken = token
 		} else {
-			accessToken = PromptForInput("Please provide your personal access token, to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+			accessToken = PromptForInput("Please provide your personal access token (to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line):")
 		}
 	} else {
 		accessToken = personalAccessToken
 	}
 	if name == "" || name == "unset" {
-		repoName = PromptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name')")
+		repoName = PromptForInput("Please provide the full name for the new repository (note 'unset' is not an applicable name'):")
 	} else {
 		repoName = name
 	}
 	if description == "" {
-		repoDescription = PromptForInput("Please provide a description for the repository")
+		repoDescription = PromptForInput("Please provide a description for the repository:")
 	} else {
 		repoDescription = description
 	}
