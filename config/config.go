@@ -90,6 +90,7 @@ type WithOpts struct {
 	LimitWeb        *bool
 	LimitPublishing *bool
 	PanesPerTag     *int
+	Svcs            *[]string
 	Skip            *[]string
 	Tags            *[]string
 	Verbose         *int

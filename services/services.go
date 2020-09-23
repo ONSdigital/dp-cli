@@ -136,8 +136,8 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 		svcName := manifest.Name
 
 		// limit svcName to those on cmdline, if any
-		if len(args) > 0 && !isIn(svcName, args) {
-			warnAt(3, opts, "non-arg %q", svcName)
+		if len(*opts.Svcs) > 0 && !isIn(svcName, *opts.Svcs) {
+			warnAt(3, opts, "non-opt %q", svcName)
 			return nil
 		}
 
@@ -299,8 +299,8 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 
 	// add any config items not already in svcCache
 	for svcName, cfgSvcsByTag := range cfg.Services.Apps {
-		if len(args) > 0 && !isIn(svcName, args) {
-			warnAt(3, opts, "config: skipping %q arg %v", svcName, args)
+		if len(*opts.Svcs) > 0 && !isIn(svcName, *opts.Svcs) {
+			warnAt(3, opts, "config: skipping %q arg %v", svcName, *opts.Svcs)
 			continue
 		}
 		// warnAt(3, opts, "ook %q", svcName)
@@ -566,11 +566,13 @@ func execOrClone(isClone bool, cfg *config.Config, opts config.WithOpts, args []
 	seenRepos := map[string]bool{}
 
 	for svcName, svc := range svcs {
+
 		for subnet := range svc {
 			if _, ok := seenRepos[svc[subnet].RepoURI]; ok {
 				warnAt(2, opts, "Skipping seen %s in %s\n", svcName, svc[subnet].RepoURI)
 				continue
 			}
+			seenRepos[svc[subnet].RepoURI] = true
 
 			// XXX isClone needs parent (and bail if is sub-dir)
 			// !isClone needs repo dir (and check for dir)
@@ -578,12 +580,11 @@ func execOrClone(isClone bool, cfg *config.Config, opts config.WithOpts, args []
 			var githubOrg, repo, cwd string
 			var cmd []string
 			var isExist, isDir bool
-
 			// get path from RepoURI, get githubOrg
 			if matches := repoRegex.FindStringSubmatch(svc[subnet].RepoURI); len(matches) > 0 {
 				githubOrg, repo = matches[1]+":"+matches[2], matches[3]
 				if path, isExist, isDir, err = cfg.FindDirElseFromURI(repo, svc[subnet].RepoURI); err != nil {
-					return err
+					return
 				}
 			} else {
 				// check path exists
@@ -624,7 +625,6 @@ func execOrClone(isClone bool, cfg *config.Config, opts config.WithOpts, args []
 			if err = execCommandWrap(svcName, opts, cwd, cmd...); err != nil {
 				return
 			}
-			seenRepos[svc[subnet].RepoURI] = true
 		}
 	}
 	return nil
@@ -669,9 +669,9 @@ func execCommand(wrkDir, command string, arg ...string) error {
 	return nil
 }
 
-func warnAt(minLevel int, opts config.WithOpts, fmt string, args ...interface{}) {
+func warnAt(minLevel int, opts config.WithOpts, fmt string, fmtArgs ...interface{}) {
 	if *opts.Verbose >= minLevel {
-		out.WarnE(fmt, args...)
+		out.WarnE(fmt, fmtArgs...)
 	}
 }
 

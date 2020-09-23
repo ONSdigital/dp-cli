@@ -18,8 +18,9 @@ func servicesCommand(cfg *config.Config, appVersion string) *cobra.Command {
 		LimitWeb:        cmd.PersistentFlags().BoolP("web", "w", false, "limit to web services"),
 		LimitPublishing: cmd.PersistentFlags().BoolP("pub", "p", false, "limit to publishing services"),
 		Verbose:         cmd.PersistentFlags().CountP("verbose", "v", "increase verbosity"),
-		Skip:            cmd.PersistentFlags().StringArrayP("skip", "s", nil, "skip service by name"),
-		Tags:            cmd.PersistentFlags().StringArrayP("tags", "t", nil, "limit services by tag"),
+		Tags:            cmd.PersistentFlags().StringArrayP("tag", "t", nil, "limit services by tag(s)"),
+		Svcs:            cmd.PersistentFlags().StringArrayP("svc", "s", nil, "limit service(s) by name"),
+		Skip:            cmd.PersistentFlags().StringArrayP("skip", "S", nil, "skip service(s) by name"),
 		AppVersion:      appVersion,
 	}
 

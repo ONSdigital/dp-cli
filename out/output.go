@@ -153,7 +153,7 @@ func YesOrNo(msg string, args ...interface{}) (byte, error) {
 		HighlightRaw(INFO, msg, args...)
 		fmt.Printf(
 			" [%s%s] ",
-			warningBoldC.SprintFunc()(defaultKey),
+			warningBoldC.SprintFunc()(string(defaultKey)),
 			infoC.SprintFunc()(otherKeys),
 		)
 		readKey, err := getChar()
@@ -161,7 +161,12 @@ func YesOrNo(msg string, args ...interface{}) (byte, error) {
 			return readKey, err
 		}
 
-		if readKey == '\n' || readKey == ' ' || readKey == defaultKey {
+		if readKey == '\r' {
+			fmt.Println()
+		} else {
+			fmt.Println(string(readKey))
+		}
+		if readKey == '\r' || readKey == ' ' || readKey == defaultKey {
 			return defaultKey, nil
 		} else if strings.Contains(otherKeys, string(readKey)) {
 			return readKey, nil
