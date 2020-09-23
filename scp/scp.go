@@ -77,7 +77,13 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	}
 
-	ansibleDir := filepath.Join(cfg.SourceDir, "dp-setup", "ansible")
+	var ansibleDir string
+	var isDir bool
+	if ansibleDir, _, isDir, err = cfg.FindDirElseFromURI(filepath.Join("dp-setup", "ansible"), ""); err != nil {
+		return err
+	} else if !isDir {
+		return errors.New("no dp-setup repo found locally")
+	}
 	flags := "-p"
 	for v := 0; v < *opts.Verbosity; v++ {
 		flags += "v"

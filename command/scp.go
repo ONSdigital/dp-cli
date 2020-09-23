@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 
 	"github.com/ONSdigital/dp-cli/ansible"
@@ -71,13 +70,18 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([
 }
 
 // create an array of environment group sub-commands available to `scp env`
-func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
-	groups, err := ansible.GetGroupsForEnvironment(filepath.Join(cfg.SourceDir, "dp-setup"), env.Name)
-	if err != nil {
+func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, scpOpts scp.Options) (commands []*cobra.Command, err error) {
+	var setupPath string
+	var isDir bool
+	if setupPath, _, isDir, err = cfg.FindDirElseFromURI("dp-setup", ""); err != nil {
+		return nil, err
+	} else if !isDir {
+		return nil, errors.WithMessage(err, "no dp-setup repo found locally")
+	}
+	var groups []string
+	if groups, err = ansible.GetGroupsForEnvironment(setupPath, env.Name); err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
 	}
-
-	commands := make([]*cobra.Command, 0)
 
 	for _, grp := range groups {
 		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp)

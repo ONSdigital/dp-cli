@@ -15,7 +15,7 @@ import (
 )
 
 // Launch an ssh connection to the specified environment
-func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) error {
+func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) (err error) {
 	if len(cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh user", "spew config")
 		return errors.New("missing `ssh user` in config file")
@@ -26,13 +26,19 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 
-	ansibleDir := filepath.Join(cfg.SourceDir, "dp-setup", "ansible")
+	var ansibleDir string
+	var isDir bool
+	if ansibleDir, _, isDir, err = cfg.FindDirElseFromURI(filepath.Join("dp-setup", "ansible"), ""); err != nil {
+		return
+	} else if !isDir {
+		return errors.New("could not find dp-setup/ansible dir")
+	}
 	args := []string{"-F", "ssh.cfg"}
 	if portArgs != nil {
 		for _, portArg := range *portArgs {
-			sshPortArgs, err := getSSHPortArguments(portArg)
-			if err != nil {
-				return err
+			var sshPortArgs []string
+			if sshPortArgs, err = getSSHPortArguments(portArg); err != nil {
+				return
 			}
 			args = append(args, sshPortArgs...)
 		}

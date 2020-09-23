@@ -20,14 +20,16 @@ var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
 
+// Config holds the config file contents
 type Config struct {
-	CMD          CMD                `yaml:"cmd"`
-	Environments []Environment      `yaml:"environments"`
-	SSHUser      string             `yaml:"ssh-user"`
-	SourcePath   []string           `yaml:"dp-source-path"`
-	Services     map[string]Service `yaml:"services"`
+	CMD          CMD           `yaml:"cmd"`
+	Environments []Environment `yaml:"environments"`
+	SSHUser      string        `yaml:"ssh-user"`
+	SourcePath   []string      `yaml:"dp-source-path"`
+	Services     ServiceWrap   `yaml:"services"`
 }
 
+// CMD has some data related info
 type CMD struct {
 	MongoURL    string   `yaml:"mongo-url"`
 	Neo4jURL    string   `yaml:"neo4j-url"`
@@ -50,27 +52,46 @@ type ExtraPorts struct {
 	Web        []int64 `yaml:"web"`
 }
 
-// Service allows individual configuration of a service
-type Service struct {
-	Path    string            `yaml:"path"`
-	RepoURI string            `yaml:"repo_uri"`
-	Once    bool              `yaml:"once"`
-	Subnet  map[string]Subnet `yaml:"subnet"`
+// Tag is really a journey tag
+type Tag string
+
+// Subnet should be web,publishing (maybe management)
+type Subnet string
+
+// ServiceWrap is the services section of config
+type ServiceWrap struct {
+	Defaults []Service            `yaml:"defaults"`
+	Apps     map[string][]Service `yaml:"apps"`
 }
 
-type Subnet struct {
-	Ignore   bool   `yaml:"ignore"`
-	Priority int    `yaml:"priority"`
-	StartCmd string `yaml:"start-command"`
+// Service allows individual configuration of a service for the given tags
+type Service struct {
+	Tags         []Tag    `yaml:"tags"`
+	Path         string   `yaml:"path"`
+	RepoURI      string   `yaml:"repo_uri"`
+	Count        *int     `yaml:"count"`
+	Max          *int     `yaml:"max"`
+	Priority     *int     `yaml:"priority"`
+	InitCmds     []string `yaml:"init_commands"`
+	LateInitCmds []string `yaml:"late_init_commands"`
+	StartCmd     []string `yaml:"start_command"`
+	StopCmd      []string `yaml:"stop_command"`
+	Ignore       []string `yaml:"ignore"`
+	Subnet       Subnet
 }
 
 // WithOpts is used to pass cmdline opts to commands
 type WithOpts struct {
+	AppVersion      string
 	ForUser         *string
 	HTTPOnly        *bool
 	Interactive     *bool
+	Itermaton       *bool
 	LimitWeb        *bool
 	LimitPublishing *bool
+	PanesPerTag     *int
+	Skip            *[]string
+	Tags            *[]string
 	Verbose         *int
 }
 
@@ -95,58 +116,107 @@ func Get() (*Config, error) {
 		return nil, err
 	}
 
+	if len(cfg.SourcePath) == 0 {
+		return nil, errors.New("need dp-source-path in config")
+	}
 	// convert ~ to home dir in paths, or prepend SourceDir if relative
 	for idx := range cfg.SourcePath {
-		cfg.SourcePath[idx] = cfg.expandPath(cfg.SourcePath[idx])
+		if cfg.SourcePath[idx], _, _, err = cfg.expandPath(cfg.SourcePath[idx]); err != nil {
+			return nil, err
+		}
 	}
-	for svcName, svc := range cfg.Services {
-		svc.Path = cfg.FindOrFromURI(cfg.Services[svcName].Path, cfg.Services[svcName].RepoURI)
+	for svcName, svcs := range cfg.Services.Apps {
+		for sIdx, svc := range svcs {
+			for _, path := range []string{svc.Path, svcName} {
+				if path != "" {
+					var newPath string
+					if newPath, _, _, err = cfg.FindDirElseFromURI(path, svc.RepoURI); err != nil {
+						return nil, err
+					}
+					cfg.Services.Apps[svcName][sIdx].Path = newPath
+					if cfg.Services.Apps[svcName][sIdx].Path != "" {
+						break
+					}
+				}
+			}
+		}
 	}
 	return &cfg, nil
 }
 
-func IsDir(dir string) (isDir bool, err error) {
-	if s, err := os.Stat(dir); err != nil {
+// IsExistDir returns existance and isDir for `dir`
+func IsExistDir(dir string) (exists, isDir bool, err error) {
+	var s os.FileInfo
+	if s, err = os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
 		}
 	} else {
+		exists = true
 		isDir = s.IsDir()
 	}
 	return
 }
 
-func FindPath(dir string, path []string) string {
+// FindDirInPath returns empty string if no dir `dir` exists in `path` (and isExist is true when `dir` exists in `path`)
+func FindDirInPath(dir string, path []string) (fullPath string, isExist bool, err error) {
 	for _, d := range path {
-		fullPath := filepath.Join(d, dir)
-		if isDir, err := IsDir(fullPath); err == nil && isDir {
-			return fullPath
+		var isDir bool
+		fullPath = filepath.Join(d, dir)
+		if isExist, isDir, err = IsExistDir(fullPath); err != nil {
+			return // err
+		} else if isDir {
+			return // fullPath, true
+		} else if isExist {
+			return "", isExist, nil // "",true => non-dir exists!
 		}
 	}
-	return ""
+	return
 }
 
-func (cfg *Config) FindOrFromURI(path, uri string) string {
+// FindDirElseFromURI expands path or (if path empty) URI converted into full path
+func (cfg *Config) FindDirElseFromURI(path, uri string) (string, bool, bool, error) {
 	if path == "" {
 		if uri != "" {
-			if lastSlashAt := strings.LastIndex(uri, "/"); lastSlashAt != -1 {
-				path = uri[lastSlashAt:]
+			lastSlashAt := strings.LastIndex(uri, "/")
+			if lastSlashAt == -1 {
+				return "", false, false, fmt.Errorf("Bad uri %s", uri)
 			}
+			path = uri[lastSlashAt:]
 		}
 	}
 	return cfg.expandPath(path)
 }
 
-func (cfg *Config) expandPath(path string) string {
+// expandPath
+// - return "" if path is ""
+// - expands leading ~
+// - returns `path` if starts with / (no check for existance)
+// - returns `SourcePath[N]/path` when that exists and is a dir
+// - returns `SourcePath[0]/path` (no check)
+func (cfg *Config) expandPath(path string) (newPath string, isExist, isDir bool, err error) {
+	if path == "" {
+		return "", false, false, nil
+	}
 	if strings.HasPrefix(path, "~/") {
 		path = os.Getenv("HOME") + path[1:]
 	}
-	if !strings.HasPrefix(path, "/") {
-		newPath := FindPath(path, cfg.SourcePath)
-		if newPath != "" {
-			path = newPath
-		}
+	if strings.HasPrefix(path, "/") {
+		return path, false, false, nil
+	}
+	if newPath, isExist, err = FindDirInPath(path, cfg.SourcePath); err != nil {
+		return "", false, false, err
+	} else if newPath != "" {
+		return newPath, true, true, nil
+	}
+	return filepath.Join(cfg.SourcePath[0], path), false, false, nil
+}
 
+// ShellifyPath converts home dir to ~ again for display
+func ShellifyPath(path string) string {
+	home := os.Getenv("HOME") + "/"
+	if strings.HasPrefix(path, home) {
+		path = `~/` + path[len(home):]
 	}
 	return path
 }
@@ -159,6 +229,7 @@ func getDefaultConfigPath() (string, error) {
 	return filepath.Join(usr.HomeDir, ".dp-cli-config.yml"), nil
 }
 
+// Dump returns the stringified config
 func Dump() ([]byte, error) {
 	c, err := Get()
 	if err != nil {
@@ -205,4 +276,35 @@ func GetMyIP() (string, error) {
 	}
 
 	return string(b), nil
+}
+
+// OverrideFrom merges prioritySvc into receiver, where non-nil
+func (svc *Service) OverrideFrom(svcName string, prioritySvc Service) {
+	if len(prioritySvc.Path) > 0 {
+		svc.Path = prioritySvc.Path
+	}
+	if len(prioritySvc.InitCmds) > 0 {
+		svc.InitCmds = append(svc.InitCmds, prioritySvc.InitCmds...)
+	}
+	if len(prioritySvc.LateInitCmds) > 0 {
+		svc.LateInitCmds = append(svc.LateInitCmds, prioritySvc.LateInitCmds...)
+	}
+	if len(prioritySvc.StartCmd) > 0 {
+		svc.StartCmd = prioritySvc.StartCmd
+	}
+	if len(prioritySvc.StopCmd) > 0 {
+		svc.StopCmd = prioritySvc.StopCmd
+	}
+	if prioritySvc.Priority != nil {
+		svc.Priority = prioritySvc.Priority
+	}
+	if len(prioritySvc.RepoURI) > 0 {
+		svc.RepoURI = prioritySvc.RepoURI
+	}
+	if prioritySvc.Count != nil {
+		svc.Count = prioritySvc.Count
+	}
+	if prioritySvc.Max != nil {
+		svc.Max = prioritySvc.Max
+	}
 }

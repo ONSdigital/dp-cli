@@ -3,6 +3,8 @@ package out
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/ONSdigital/dp-cli/config"
@@ -59,13 +61,13 @@ func WriteF(lvl Level, msg string, args ...interface{}) {
 func Highlight(lvl Level, msg string, args ...interface{}) {
 	c := getColor(lvl)
 	cliPrefix(c)
-	highlight(c, msg, true, args...)
+	highlight(c, os.Stdout, true, msg, args...)
 }
 
 func HighlightRaw(lvl Level, msg string, args ...interface{}) {
 	c := getColor(lvl)
 	cliPrefix(c)
-	highlight(c, msg, false, args...)
+	highlight(c, os.Stdout, false, msg, args...)
 }
 
 type Log func(msg string, args ...interface{})
@@ -100,30 +102,47 @@ func Error(err error) {
 
 func InfoFHighlight(msg string, args ...interface{}) {
 	cliPrefix(infoBoldC)
-	highlight(infoC, msg, true, args...)
+	highlight(infoC, os.Stdout, true, msg, args...)
 }
 
 func WarnFHighlight(msg string, args ...interface{}) {
 	cliPrefix(warningBoldC)
-	highlight(warningC, msg, true, args...)
+	highlight(warningC, os.Stdout, true, msg, args...)
 }
 
 func ErrorFHighlight(msg string, args ...interface{}) {
 	cliPrefix(errorBoldC)
-	highlight(errorC, msg, true, args...)
+	highlight(errorC, os.Stdout, true, msg, args...)
 }
 
-func highlight(c *color.Color, formattedMsg string, newline bool, args ...interface{}) {
+func highlight(c *color.Color, file io.Writer, newline bool, formattedMsg string, args ...interface{}) {
 	var highlighted []interface{}
 
 	for _, val := range args {
 		highlighted = append(highlighted, c.SprintFunc()(val))
 	}
 
-	fmt.Printf(formattedMsg, highlighted...)
+	fmt.Fprintf(file, formattedMsg, highlighted...)
 	if newline {
 		fmt.Println("")
 	}
+}
+
+func InfoE(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "INFO "+format+"\n", args...)
+}
+
+func WarnE(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "WARN "+format+"\n", args...)
+}
+
+func ErrorE(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "ERROR "+format+"\n", args...)
+}
+
+func FatalE(rc int, format string, args ...interface{}) {
+	ErrorE(format, args...)
+	os.Exit(rc)
 }
 
 func YesOrNo(msg string, args ...interface{}) (byte, error) {
@@ -150,7 +169,7 @@ func YesOrNo(msg string, args ...interface{}) (byte, error) {
 	}
 }
 
-// returns a byte
+// returns a typed byte
 func getChar() (b byte, err error) {
 	var t *term.Term
 	if t, err = term.Open("/dev/tty"); err != nil {

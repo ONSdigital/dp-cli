@@ -7,6 +7,7 @@ import (
 	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
+	"github.com/pkg/errors"
 
 	bolt "github.com/johnnadratowski/golang-neo4j-bolt-driver"
 )
@@ -34,10 +35,10 @@ func DropNeo4jData(cfg *config.Config) error {
 	return nil
 }
 
-func ImportGenericHierarchies(cfg *config.Config) error {
+func ImportGenericHierarchies(cfg *config.Config) (err error) {
 	if len(cfg.CMD.Hierarchies) == 0 {
 		out.Info("no hierarchies defined in config skipping step")
-		return nil
+		return
 	}
 
 	out.Info(fmt.Sprintf("building generic hierarchies: %+v", cfg.CMD.Hierarchies))
@@ -47,20 +48,26 @@ func ImportGenericHierarchies(cfg *config.Config) error {
 
 	for _, script := range cfg.CMD.Hierarchies {
 		command := fmt.Sprintf("cypher-shell < %s", script)
-
-		if err := cli.ExecCommand(command, filepath.Join(cfg.SourceDir, "dp-hierarchy-builder", "cypher-scripts")); err != nil {
+		var builderPath string
+		var isDir bool
+		if builderPath, _, isDir, err = cfg.FindDirElseFromURI(filepath.Join("dp-hierarchy-builder", "cypher-scripts"), ""); err != nil {
+			return
+		} else if !isDir {
+			return errors.WithMessage(err, "no dp-hierarchy-builder repo found locally")
+		}
+		if err = cli.ExecCommand(command, builderPath); err != nil {
 			stopC <- true
-			return err
+			return
 		}
 	}
 
 	stopC <- true
 
 	out.Info("generic hierarchies built successfully")
-	return nil
+	return
 }
 
-func ImportCodeLists(cfg *config.Config) error {
+func ImportCodeLists(cfg *config.Config) (err error) {
 	if len(cfg.CMD.Codelists) == 0 {
 		out.Info("no code lists defined in config skipping step")
 		return nil
@@ -73,10 +80,17 @@ func ImportCodeLists(cfg *config.Config) error {
 
 	for _, codelist := range cfg.CMD.Codelists {
 		command := fmt.Sprintf("./load -q=%s -f=%s", "cypher", codelist)
+		var scriptsPath string
+		var isDir bool
+		if scriptsPath, _, isDir, err = cfg.FindDirElseFromURI(filepath.Join("dp-code-list-scripts", "code-list-scripts"), ""); err != nil {
+			return
+		} else if !isDir {
+			return errors.WithMessage(err, "no dp-code-list-scripts repo found locally")
 
-		if err := cli.ExecCommand(command, filepath.Join(cfg.SourceDir, "dp-code-list-scripts", "code-list-scripts")); err != nil {
+		}
+		if err = cli.ExecCommand(command, scriptsPath); err != nil {
 			stopC <- true
-			return err
+			return
 		}
 	}
 	stopC <- true

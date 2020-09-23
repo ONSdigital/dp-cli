@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 
 	"github.com/ONSdigital/dp-cli/ansible"
@@ -64,13 +63,19 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 }
 
 // create a array of environment group sub commands available to ssh to.
-func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string, verboseCount *int) ([]*cobra.Command, error) {
-	groups, err := ansible.GetGroupsForEnvironment(filepath.Join(cfg.SourceDir, "dp-setup"), env.Name)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
+func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string, verboseCount *int) (commands []*cobra.Command, err error) {
+	var setupPath string
+	var isDir bool
+	if setupPath, _, isDir, err = cfg.FindDirElseFromURI("dp-setup", ""); err != nil {
+		return
+	} else if !isDir {
+		return nil, errors.New("no dp-setup dir found")
 	}
-
-	commands := make([]*cobra.Command, 0)
+	var groups []string
+	if groups, err = ansible.GetGroupsForEnvironment(setupPath, env.Name); err != nil {
+		err = errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
+		return
+	}
 
 	for _, grp := range groups {
 		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp)
