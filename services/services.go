@@ -86,7 +86,7 @@ func getTagOverlap(tagsMaybeWild []config.Tag, tags []config.Tag) (overlap []con
 	return
 }
 
-// filter services from manifests and config
+// filter services from manifests, config and opts
 func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serviceMap, error) {
 	if len(svcCache) > 0 {
 		return svcCache, nil
@@ -142,8 +142,8 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 		}
 
 		// skip if cmdline opt ask to do so
-		if opts.Skip != nil && isIn(svcName, *opts.Skip) {
-			warnAt(3, opts, "non-arg %q", svcName)
+		if opts.Skips != nil && isIn(svcName, *opts.Skips) {
+			warnAt(3, opts, "skip-arg %q", svcName)
 			return nil
 		}
 
@@ -300,7 +300,11 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 	// add any config items not already in svcCache
 	for svcName, cfgSvcsByTag := range cfg.Services.Apps {
 		if len(*opts.Svcs) > 0 && !isIn(svcName, *opts.Svcs) {
-			warnAt(3, opts, "config: skipping %q arg %v", svcName, *opts.Svcs)
+			warnAt(3, opts, "config: skipping %q not in args %v", svcName, *opts.Svcs)
+			continue
+		}
+		if len(*opts.Skips) > 0 && !isIn(svcName, *opts.Skips) {
+			warnAt(3, opts, "config: skipping %q arg %v", svcName, *opts.Skips)
 			continue
 		}
 		// warnAt(3, opts, "ook %q", svcName)

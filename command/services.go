@@ -20,7 +20,7 @@ func servicesCommand(cfg *config.Config, appVersion string) *cobra.Command {
 		Verbose:         cmd.PersistentFlags().CountP("verbose", "v", "increase verbosity"),
 		Tags:            cmd.PersistentFlags().StringArrayP("tag", "t", nil, "limit services by tag(s)"),
 		Svcs:            cmd.PersistentFlags().StringArrayP("svc", "s", nil, "limit service(s) by name"),
-		Skip:            cmd.PersistentFlags().StringArrayP("skip", "S", nil, "skip service(s) by name"),
+		Skips:           cmd.PersistentFlags().StringArrayP("skip", "S", nil, "skip service(s) by name"),
 		AppVersion:      appVersion,
 	}
 
