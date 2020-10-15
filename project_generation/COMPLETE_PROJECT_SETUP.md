@@ -11,7 +11,7 @@ It is always beneficial to ensure you are using the most up to date version of t
 To update pull the latest changes and rebuild the tool like so:
 
 ```shell script
-git pull && make install
+$ git pull && make install
 ```
 
 ### Have required access
@@ -27,7 +27,7 @@ There are three ways of creating a repository and using the boilerplate generati
 (note that `y` is also accepted - this is not case sensitive).
 
 ```shell script
-dp generate-project --create-repository yes
+$ dp generate-project --create-repository yes
 ```
 
 If this method is chosen then there wil be numerous prompts such as the name of the application,
@@ -36,13 +36,28 @@ ____
 
 ### Second method - use command-line arguments
 
-The second way to use this tool is to provide information via the command-line as options like so
+The second way to use this tool is to provide information via the command-line as options like so:
 
 ```shell script
-dp generate-project --create-repository yes --name {name-of-repository} --project-location {location} --type {project-type}
+$ dp generate-project --create-repository yes --name {name-of-repository} --project-location {location} --type {project-type}
 ```
 
-If this method is chosen then there will be less prompts during the creation of the project
+For example `dp-topic-api` was created with:
+
+`
+$ dp generate-project --create-repository yes --description "Enables greater flexibility in creating journeys through the website" --go-version 1.13 --name dp-topic-api --port 25300 --project-location . --strategy git --type api
+`
+
+**NOTE:** In the above example `--project-location .` uses a full stop to create the project within the current directory, for example:
+
+    ~/src/github.com/ONSdigital
+
+The newly-generated project: `dp-topic-api` is then found in the directory:
+
+    ~/src/github.com/ONSdigital/dp-topic-api
+
+If this method is chosen then there will be fewer prompts during the creation of the project.
+
 ____
 
 ### Third method - use repo-creation tool then boilerplate generation tool
@@ -54,13 +69,13 @@ project - however this should be avoided.
 Note: _`generate-project` can also be called after `create-repo` the order does not matter_
 
 ```shell script
-dp generate-project
+$ dp generate-project
 ```
 
-After running follow the prompts then run the repo-creation tool
+After running follow the prompts then run the repo-creation tool:
 
 ```shell script
-dp create-repo github
+$ dp create-repo github
 ```
 
 And follow the prompts, alternatively provide command-line arguments.
