@@ -2,8 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/ONSdigital/log.go/log"
 	"net/http"
+
+	"github.com/ONSdigital/log.go/log"
 )
 
 const helloMessage = "Hello, World!"

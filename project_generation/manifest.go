@@ -200,6 +200,42 @@ var apiFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "api/service/service_test.go",
+		outputPath:   "service/service_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/service/initialise.go",
+		outputPath:   "service/initialise",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/service/interfaces.go",
+		outputPath:   "service/interfaces",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/service/mock/healthCheck.go",
+		outputPath:   "service/mock/healthCheck",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/service/mock/initialiser.go",
+		outputPath:   "service/mock/initialiser",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/service/mock/server.go",
+		outputPath:   "service/mock/server",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "api/main.go",
 		outputPath:   "main",
 		extension:    ".go",
