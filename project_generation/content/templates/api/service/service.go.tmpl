@@ -91,11 +91,7 @@ func (svc *Service) Close(ctx context.Context) error {
 			hasShutdownError = true
 		}
 
-		// close API
-		if err := svc.Api.Close(ctx); err != nil {
-			log.Event(ctx, "error closing API", log.Error(err), log.ERROR)
-			hasShutdownError = true
-		}
+		// ADD CODE HERE: Close other dependencies, in the expected order
 	}()
 
 	// wait for shutdown success (via cancel) or failure (timeout)

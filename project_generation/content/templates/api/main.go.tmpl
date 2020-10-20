@@ -63,6 +63,8 @@ func run(ctx context.Context) error {
 	// blocks until an os interrupt or a fatal error occurs
 	select {
 	case err := <-svcErrors:
+		// ADD CODE HERE : call svc.Close(ctx) (or something specific)
+		//  if there are any service connections like Kafka that you need to shut down
 		return errors.Wrap(err, "service error received")
 	case sig := <-signals:
 		log.Event(ctx, "os signal received", log.Data{"signal": sig}, log.INFO)
