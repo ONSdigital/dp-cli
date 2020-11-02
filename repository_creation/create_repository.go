@@ -17,9 +17,9 @@ import (
 const (
 	org = "ONSdigital"
 	// Team: "DigitalPublishing", slug: "digitalpublishing", id: 779417
-	dpTeamSlug   = "DigitalPublishing"
-	teamID       = int64(779417)
-	masterBranch = "master"
+	dpTeamSlug = "DigitalPublishing"
+	teamID     = int64(779417)
+	mainBranch = "main"
 )
 
 func RunGenerateRepo(cmd *cobra.Command, args []string) error {
@@ -61,7 +61,7 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 		Name:          github.String(repoName),
 		Description:   github.String(repoDescription),
 		DefaultBranch: github.String(defaultBranch),
-		MasterBranch:  github.String(masterBranch),
+		MasterBranch:    github.String(mainBranch),
 		Private:       github.Bool(false),
 		HasWiki:       github.Bool(false),
 		HasProjects:   github.Bool(false),
@@ -132,7 +132,7 @@ func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoNa
 	return err
 }
 
-// setBranchProtections sets the protections for both master and develop branches
+// setBranchProtections sets the protections for both main and develop branches
 func setBranchProtections(ctx context.Context, client *github.Client, repoName, branchStrategy string) error {
 	requiredStatusChecks := github.RequiredStatusChecks{
 		Strict:   true,
@@ -161,9 +161,9 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 		EnforceAdmins:              true,
 		Restrictions:               &branchRestrictions,
 	}
-	_, resp, err := client.Repositories.UpdateBranchProtection(ctx, org, repoName, "master", &protectionRequest)
+	_, resp, err := client.Repositories.UpdateBranchProtection(ctx, org, repoName, "main", &protectionRequest)
 	if err != nil {
-		log.Event(ctx, "update branch protection failed for master", log.Error(err))
+		log.Event(ctx, "update branch protection failed for main", log.Error(err))
 		return err
 	}
 
@@ -174,9 +174,9 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 			return err
 		}
 	}
-	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "master")
+	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "main")
 	if err != nil {
-		log.Event(ctx, "adding protection, require signatures failed on branch master", log.Error(err), log.Data{"response": resp})
+		log.Event(ctx, "adding protection, require signatures failed on branch main", log.Error(err), log.Data{"response": resp})
 		return err
 	}
 	if branchStrategy == "git" {
@@ -199,11 +199,11 @@ func setDevelopAsDefaultBranch(ctx context.Context, client *github.Client, repoN
 	return err
 }
 
-// createDevelopBranch will create a new branch named /develop, based on the last ref on master branch
+// createDevelopBranch will create a new branch named /develop, based on the last ref on main branch
 func createDevelopBranch(ctx context.Context, client *github.Client, repoName string) error {
-	ref, resp, err := client.Git.GetRef(ctx, org, repoName, "heads/master")
+	ref, resp, err := client.Git.GetRef(ctx, org, repoName, "heads/main")
 	if err != nil {
-		log.Event(ctx, "get reference to master commit failed", log.Error(err), log.Data{"response": resp})
+		log.Event(ctx, "get reference to main commit failed", log.Error(err), log.Data{"response": resp})
 		return err
 	}
 	developBranch := "heads/develop"
@@ -262,7 +262,7 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 		branchStrategy = strings.Replace(branchStrategy, " flow", "", -1)
 	}
 	if projType == "generic-project" || branchStrategy == "github" {
-		defaultBranch = "master"
+		defaultBranch = "main"
 	}
 	return accessToken, repoName, repoDescription, defaultBranch
 }
