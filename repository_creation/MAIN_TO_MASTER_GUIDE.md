@@ -19,7 +19,6 @@ Ensure that you have the `main` branch checked out locally by running the follow
 git checkout main
 ```
 
-
 Locally rename the `main` branch to `master` by running the following command in your terminal  
 ```bash
 git branch -m main master
