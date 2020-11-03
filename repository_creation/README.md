@@ -6,6 +6,7 @@ Interim actions required after completion of generating a repository
 - Change branch name `main` to `master`
 - Update security settings for the `master` branch to match that of `main`
 
+For exact instructions on how to complete this please read the following guide [MAIN_TO_MASTER](MAIN_TO_MASTER.md). 
 These steps should be removed once CI has been updated to use `main` as the leading branch.
 
 ### Usage prerequisite 
