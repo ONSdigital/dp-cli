@@ -49,7 +49,7 @@ Check desired version of `go` is on your PATH with `echo $PATH` and if not, eith
 
  The following are only required for some functionality of this tool.
 
-In order to use the `dp ssh` subcommand you will need:
+In order to use the `dp ssh` sub-command you will need:
 
 - [`dp-setup`](https://github.com/ONSdigital/dp-setup) cloned locally:
 
@@ -57,7 +57,7 @@ In order to use the `dp ssh` subcommand you will need:
   git clone git@github.com:ONSdigital/dp-setup
   ```
 
-In order to use the `dp import cmd` subcommand you will need:
+In order to use the `dp import cmd` sub-command (e.g. when you are using Neo4j; `import` is currently *not needed* if you are using Neptune) you will need:
 
 - [`dp-code-list-scripts`](https://github.com/ONSdigital/dp-code-list-scripts) cloned locally:
 
