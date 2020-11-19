@@ -60,7 +60,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	}
 
-	lvl := out.GetLevel(env)
+	lvl := out.GetLevel(env.Name)
 	out.Highlight(lvl, "SCP %s for %s (%s -> %s)", verb, env.Name, srcFile, destFile)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
 

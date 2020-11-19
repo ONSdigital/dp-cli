@@ -13,15 +13,13 @@ func servicesCommand(cfg *config.Config, appVersion string) *cobra.Command {
 		Short: "Manage services",
 	}
 	opts := config.WithOpts{
-		Interactive:     cmd.PersistentFlags().BoolP("interactive", "i", false, "interactive prompting"),
-		Itermaton:       cmd.PersistentFlags().Bool("itermaton", false, "use iTermaton output"),
-		LimitWeb:        cmd.PersistentFlags().BoolP("web", "w", false, "limit to web services"),
-		LimitPublishing: cmd.PersistentFlags().BoolP("pub", "p", false, "limit to publishing services"),
-		Verbose:         cmd.PersistentFlags().CountP("verbose", "v", "increase verbosity"),
-		Tags:            cmd.PersistentFlags().StringArrayP("tag", "t", nil, "limit services by tag(s)"),
-		Svcs:            cmd.PersistentFlags().StringArrayP("svc", "s", nil, "limit service(s) by name"),
-		Skips:           cmd.PersistentFlags().StringArrayP("skip", "S", nil, "skip service(s) by name"),
-		AppVersion:      appVersion,
+		Interactive: cmd.PersistentFlags().BoolP("interactive", "i", false, "interactive prompting"),
+		Itermaton:   cmd.PersistentFlags().Bool("itermaton", false, "use iTermaton output"),
+		Verbose:     cmd.PersistentFlags().CountP("verbose", "v", "increase verbosity"),
+		Tags:        cmd.PersistentFlags().StringArrayP("tag", "t", nil, "limit services by tag(s)"),
+		Svcs:        cmd.PersistentFlags().StringArrayP("svc", "s", nil, "limit service(s) by name"),
+		Skips:       cmd.PersistentFlags().StringArrayP("skip", "S", nil, "skip service(s) by name"),
+		AppVersion:  appVersion,
 	}
 
 	subCommands := []*cobra.Command{

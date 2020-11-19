@@ -48,7 +48,7 @@ func allowCommand(envs []config.Environment, opts config.WithOpts) *cobra.Comman
 			Use:   e.Name,
 			Short: "allow access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				lvl := out.GetLevel(env)
+				lvl := out.GetLevel(env.Name)
 				if !*skipDeny {
 					out.Highlight(lvl, "removing existing access to %s", env.Name)
 					aws.DenyIPForEnvironment(env.Name, env.Profile, env.ExtraPorts, opts)
@@ -78,7 +78,7 @@ func denyCommand(envs []config.Environment, opts config.WithOpts) *cobra.Command
 			Use:   e.Name,
 			Short: "deny access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				lvl := out.GetLevel(env)
+				lvl := out.GetLevel(env.Name)
 				out.Highlight(lvl, "denying access to %s", env.Name)
 				return aws.DenyIPForEnvironment(env.Name, env.Profile, env.ExtraPorts, opts)
 			},

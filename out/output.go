@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ONSdigital/dp-cli/config"
 	"github.com/fatih/color"
 	"github.com/pkg/term"
 )
@@ -41,8 +40,8 @@ func getColor(lvl Level) *color.Color {
 	}
 }
 
-func GetLevel(env config.Environment) Level {
-	if env.Name == "production" {
+func GetLevel(env string) Level {
+	if env == "production" {
 		return ERROR
 	}
 	return INFO

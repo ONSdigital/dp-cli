@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ONSdigital/dp-cli/out"
 	"gopkg.in/yaml.v2"
 )
 
@@ -27,6 +28,7 @@ type Config struct {
 	SSHUser      string        `yaml:"ssh-user"`
 	SourcePath   []string      `yaml:"dp-source-path"`
 	Services     ServiceWrap   `yaml:"services"`
+	Itermaton    Itermatons    `yaml:"itermaton"`
 }
 
 // CMD has some data related info
@@ -80,20 +82,25 @@ type Service struct {
 	Subnet       Subnet
 }
 
+// Itermatons are config options for itermatons output
+type Itermatons struct {
+	MaxTabs      *int  `yaml:"max_tabs"`
+	MaxColumns   *int  `yaml:"max_columns"`
+	MaxRows      *int  `yaml:"max_rows"`
+	WinPerSubnet *bool `yaml:"window_per_subnet"`
+}
+
 // WithOpts is used to pass cmdline opts to commands
 type WithOpts struct {
-	AppVersion      string
-	ForUser         *string
-	HTTPOnly        *bool
-	Interactive     *bool
-	Itermaton       *bool
-	LimitWeb        *bool
-	LimitPublishing *bool
-	PanesPerTag     *int
-	Svcs            *[]string
-	Skips           *[]string
-	Tags            *[]string
-	Verbose         *int
+	AppVersion  string
+	ForUser     *string
+	HTTPOnly    *bool
+	Interactive *bool
+	Itermaton   *bool
+	Svcs        *[]string
+	Skips       *[]string
+	Tags        *[]string
+	Verbose     *int
 }
 
 // Get returns the config struct by parsing the YML file
@@ -307,5 +314,20 @@ func (svc *Service) OverrideFrom(svcName string, prioritySvc Service) {
 	}
 	if prioritySvc.Max != nil {
 		svc.Max = prioritySvc.Max
+	}
+}
+
+// WarnAt will warn if minLevel <= opts.Verbose
+func (opts WithOpts) WarnAt(minLevel int, fmt string, fmtArgs ...interface{}) {
+	if *opts.Verbose >= minLevel {
+		out.WarnE(fmt, fmtArgs...)
+	}
+}
+
+// WarnAtSvc will warn in particular format if minLevel <= opts.Verbose
+func (opts WithOpts) WarnAtSvc(minLevel int, pre, svc interface{}, fmt string, fmtArgs ...interface{}) {
+	if *opts.Verbose >= minLevel {
+		fmtArgs = append([]interface{}{pre, svc}, fmtArgs...)
+		out.WarnE("%-12s %-30q "+fmt, fmtArgs...)
 	}
 }

@@ -21,7 +21,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		return errors.New("missing `ssh user` in config file")
 	}
 
-	lvl := out.GetLevel(env)
+	lvl := out.GetLevel(env.Name)
 	fmt.Println("")
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)

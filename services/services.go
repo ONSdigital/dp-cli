@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ONSdigital/dp-cli/config"
@@ -39,21 +40,25 @@ type ManifestClass struct {
 // Profile holds - but we are not currently interested in - cpu/mem/etc
 // type Profile map[string]interface{}
 
-// map [service-name][subnet]
+// map [service-name]->services
 type serviceMap map[string][]config.Service
 
 const (
 	listIntro = iota
 	listServiceIntro
+	listServiceExtro
 	listSubnetExtro
 	listExtro
 )
 
-var svcCache = serviceMap{}
-var priorityCache = map[int]bool{}
-var zeroPriority = 0
-var repoRegex = regexp.MustCompile("https?://([^/]+)/([^/]+)/([^/]+)")
-var optsTags []config.Tag
+var (
+	svcCache               = serviceMap{}
+	tagsRequestedPerSubnet = map[config.Subnet]map[string][]config.Tag{}
+	priorityCache          = map[int]bool{}
+	zeroPriority           = 0
+	repoRegex              = regexp.MustCompile("https?://([^/]+)/([^/]+)/([^/]+)")
+	optsTags               []config.Tag
+)
 
 func isIn(str string, strs []string) bool {
 	for _, str1 := range strs {
@@ -64,9 +69,9 @@ func isIn(str string, strs []string) bool {
 	return false
 }
 
-// wildcardLiteral==true requires `strs` to contain literal "*" when str=="*"
-func isTagIn(tag config.Tag, tags []config.Tag, wildcardLiteral bool) bool {
-	if !wildcardLiteral && tag == "*" && len(tags) > 0 {
+// tagWildcardLiteral==true requires `tags` to contain literal "*" when tag=="*"
+func isTagIn(tag config.Tag, tags []config.Tag, tagWildcardLiteral bool) bool {
+	if !tagWildcardLiteral && tag == "*" && len(tags) > 0 {
 		return true
 	}
 	for _, tag1 := range tags {
@@ -92,29 +97,28 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 		return svcCache, nil
 	}
 
-	// convert to Tags
+	// convert Tags to Tag type
 	for _, tag := range *opts.Tags {
 		optsTags = append(optsTags, config.Tag(tag))
 	}
 
-
 	tagSubnetCount := map[config.Tag]map[config.Subnet]int{}
 
-	var manDir string
+	var manifestDir string
 	var isDir bool
 	var err error
-	if manDir, _, isDir, err = cfg.FindDirElseFromURI(filepath.Join("dp-configs", "manifests"), ""); err != nil {
+	if manifestDir, _, isDir, err = cfg.FindDirElseFromURI(filepath.Join("dp-configs", "manifests"), ""); err != nil {
 		return nil, err
 	} else if !isDir {
 		return nil, errors.New("no dp-configs repo found locally")
 	}
-	err = filepath.Walk(manDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(manifestDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			out.WarnE("prevent panic by handling failure accessing a path %q: %v", path, err)
+			out.WarnE("walk error with path %q: %v", path, err)
 			return err
 		}
 		if info.IsDir() {
-			if path == manDir {
+			if path == manifestDir {
 				return nil
 			}
 			return filepath.SkipDir
@@ -135,22 +139,21 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 
 		svcName := manifest.Name
 
-		// limit svcName to those on cmdline, if any
+		// limit svcName to those opted for on cmdline, if any
 		if len(*opts.Svcs) > 0 && !isIn(svcName, *opts.Svcs) {
-			warnAt(3, opts, "non-opt %q", svcName)
+			opts.WarnAtSvc(3, "non-opt", svcName, "")
 			return nil
 		}
 
-		// skip if cmdline opt ask to do so
+		// skip cmdline opts
 		if opts.Skips != nil && isIn(svcName, *opts.Skips) {
-			warnAt(3, opts, "skip-arg %q", svcName)
+			opts.WarnAtSvc(3, "skip-arg", svcName, "")
 			return nil
 		}
 
 		// build svcCache per class/subnet/tag from tags in manifest
 
 		// build list of subnets=>[]tags valid for svcName
-		tagsRequestedPerSubnet := map[config.Subnet][]config.Tag{}
 		for _, grp := range manifest.Nomad.Groups {
 			subnet := grp.Class // web, publishing, management
 
@@ -162,32 +165,37 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 				}
 				tagSubnetCount[tag][subnet]++
 
-				// see if cfg ignore svcName exists for this tag or '*'
+				// see if cfg defaults.ignore[svcName] exists for this tag or '*'
 				for _, svcDefault := range cfg.Services.Defaults {
 					if isIn(svcName, svcDefault.Ignore) &&
 						(isTagIn(tag, svcDefault.Tags, false) || isTagIn("*", svcDefault.Tags, true)) {
 
-						warnAt(3, opts, "man ignore   %-30q in %-12q because manifest tag %-18q is in cfg default tags: %v", svcName, subnet, tag, svcDefault.Tags)
-						break ALLTAGS // ignore rest of group
+						opts.WarnAtSvc(3, "man ignore", svcName, "in %-12q because manifest tag %-18q is in cfg default tags: %v", subnet, tag, svcDefault.Tags)
+						break ALLTAGS // ignore rest of group(subnet)
 					}
 				}
 
-				// check if this manifest tag is in requested (cmdline) tags
+				// skip unless this manifest tag is in requested cmdline tags
 				if len(optsTags) > 0 && !isTagIn(tag, optsTags, true) {
-					warnAt(3, opts, "skip man     %-30q in %-12q because tag %-18q not requested", svcName, subnet, tag)
+					opts.WarnAtSvc(3, "skip man", svcName, "in %-12q because tag %-18q not requested", subnet, tag)
 					continue
 				}
 
-				tagsRequestedPerSubnet[subnet] = append(tagsRequestedPerSubnet[subnet], tag)
-				break
+				if _, ok := tagsRequestedPerSubnet[subnet]; !ok {
+					tagsRequestedPerSubnet[subnet] = make(map[string][]config.Tag)
+				}
+				tagsRequestedPerSubnet[subnet][svcName] = append(tagsRequestedPerSubnet[subnet][svcName], tag)
+				// break
 			}
 		}
 
-		warnAt(3, opts, "%d tags       %-30q -               valyd %+v", len(tagsRequestedPerSubnet), svcName, tagsRequestedPerSubnet)
+		opts.WarnAtSvc(3, strconv.Itoa(len(tagsRequestedPerSubnet))+" tags", svcName, "-               valyd %+v", tagsRequestedPerSubnet)
 
 		for subnet := range tagsRequestedPerSubnet {
-			// for _, tag := range tagsRequestedPerSubnet[subnet] {
-			// warnAt(3, opts, "manifest for %q in %q", svcName, subnet)
+
+			if _, ok := tagsRequestedPerSubnet[subnet][svcName]; !ok {
+				continue
+			}
 
 			var svcPath string
 			if svcPath, _, _, err = cfg.FindDirElseFromURI(svcName, manifest.RepoURI); err != nil {
@@ -205,22 +213,18 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 				RepoURI:  manifest.RepoURI,
 				Priority: &zeroPriority,
 				Subnet:   subnet,
-				Tags:     tagsRequestedPerSubnet[subnet],
+				Tags:     tagsRequestedPerSubnet[subnet][svcName],
 			}
-			// if svcName == "zebedee" || svcName == "dp-dataset-api" {
-			// 	warnAt(2, opts, "new\t%s\t%s\tp%3d cmd %s -- %+v", svcName, subnet, *svc.Priority, svc.StartCmd, svc)
-			// }
 
 			cfgSvcOverrides := []config.Service{}
 			hasPerTagOrPerSvcMods := false
 
 			// is cfg defaults[no-tag,tag='*' or overlap-with-wanted], then override
 			for _, cfgSvcDefForTags := range cfg.Services.Defaults {
-				overlapDef := getTagOverlap(tagsRequestedPerSubnet[subnet], cfgSvcDefForTags.Tags)
-				if isTagIn("*", cfgSvcDefForTags.Tags, true) ||
-					len(overlapDef) > 0 {
+				overlapDef := getTagOverlap(tagsRequestedPerSubnet[subnet][svcName], cfgSvcDefForTags.Tags)
+				if isTagIn("*", cfgSvcDefForTags.Tags, true) || len(overlapDef) > 0 {
 
-					warnAt(3, opts, "cfgOverDef   %-30q in %-12q cos cfg tags: %v", svcName, subnet, cfgSvcDefForTags.Tags)
+					opts.WarnAtSvc(3, "cfgOverDef", svcName, "in %-12q cos cfg tags: %v", subnet, cfgSvcDefForTags.Tags)
 					cfgSvcOverrides = append(cfgSvcOverrides, cfgSvcDefForTags)
 
 					if len(overlapDef) > 0 {
@@ -232,22 +236,25 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 			// is svcName[tag] in cfg apps, then override
 			if cfgSvcs, ok := cfg.Services.Apps[svcName]; ok {
 				for _, cfgSvcForTags := range cfgSvcs {
-					// is svcName[tag='*',tag from svc] in cfg apps, then override
-					overlap := getTagOverlap(tagsRequestedPerSubnet[subnet], cfgSvcForTags.Tags)
+					if cfgSvcForTags.Subnet != "" && cfgSvcForTags.Subnet != subnet {
+						opts.WarnAtSvc(3, "noOverSubnet", svcName, "in %-12q cos cfg subnet: %v", subnet, cfgSvcForTags.Subnet)
+						continue
+					}
 
-					// if len(cfgSvcForTags.Tags) == 0 && len(overlap) > 0 ||
+					// is svcName[tag='*',tag from svc] in cfg apps, then override
+					overlap := getTagOverlap(tagsRequestedPerSubnet[subnet][svcName], cfgSvcForTags.Tags)
 					overrideType := ""
 					if len(cfgSvcForTags.Tags) == 0 {
-						overrideType = "Any "
+						overrideType = "cfgOverAny"
 					} else if isTagIn("*", cfgSvcForTags.Tags, true) {
-						overrideType = "Wild"
+						overrideType = "cfgOverWild"
 					} else if len(overlap) > 0 {
-						overrideType = "Tag "
+						overrideType = "cfgOverTag"
 						hasPerTagOrPerSvcMods = true
 					} else {
 						continue
 					}
-					warnAt(3, opts, "cfgOver"+overrideType+"  %-30q in %-12q cos cfg tags: %v", svcName, subnet, cfgSvcForTags.Tags)
+					opts.WarnAtSvc(3, overrideType, svcName, "in %-12q cos cfg tags: %v", subnet, cfgSvcForTags.Tags)
 					cfgSvcOverrides = append(cfgSvcOverrides, cfgSvcForTags)
 				}
 			}
@@ -255,111 +262,103 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 			for _, cfgSvcOverride := range cfgSvcOverrides {
 				svc.OverrideFrom(svcName, cfgSvcOverride)
 				if svcName == "babbage" || svcName == "zdp-dataset-api" {
-					warnAt(3, opts, "1a           %-30q in %-12q\tp%3d cmd %v", svcName, subnet, *svc.Priority, svc.StartCmd)
+					opts.WarnAtSvc(3, "1a", svcName, "in %-12q\tp%3d cmd %v", subnet, *svc.Priority, svc.StartCmd)
 				}
 			}
 
 			if _, ok := svcCache[svcName]; !ok {
 				svcCache[svcName] = make([]config.Service, 0)
 			} else if !hasPerTagOrPerSvcMods {
-				warnAt(2, opts, "cache---     %-30q in %12q %+v", svcName, svc.Subnet, svc)
+				opts.WarnAtSvc(2, "cache---", svcName, "in %12q %+v", svc.Subnet, svc)
 				continue
 			} else if svc.Max != nil && *svc.Max == 1 {
-				warnAt(2, opts, "caMax---     %-30q in %12q %+v", svcName, svc.Subnet, svc)
+				opts.WarnAtSvc(2, "caMax---", svcName, "in %12q %+v", svc.Subnet, svc)
 				continue
 			}
 			svcCache[svcName] = append(svcCache[svcName], *svc)
-			warnAt(3, opts, "cache+++     %-30q in %12q %+v", svcName, svc.Subnet, svc)
+			opts.WarnAtSvc(3, "cache+++", svcName, "in %12q %+v", svc.Subnet, svc)
 			priorityCache[*svc.Priority] = true
 
-			// seenSubnets[subnet] = true
-			// if svcName == "zebedee" || svcName == "dp-dataset-api" {
-			// 	warnAt(3, opts, "3            %-30q in %-12q\tp%3d cmd %v", svcName, subnet, *svc.Priority, svc.StartCmd)
-			// }
-			// }
-
-			// if svc.Max != nil && *svc.Max == 1 {
-			// 	break // add to first found tag and no more
-			// }
 		}
 		return nil
 	})
 	if err != nil {
-		out.WarnE("error walking the path %q: %v", manDir, err)
+		out.WarnE("error walking the path %q: %v", manifestDir, err)
 		return nil, err
 	}
 
-	// warnAt(5, opts, "svcs %+v", svcCache)
-	// warnAt(5, opts, "cfgSvcs %+v", cfg.Services)
-	// var popularSubnet config.Subnet
-	// for subnet := range seenSubnets {
-	// 	popularSubnet = subnet
-	// 	break
-	// }
+	opts.WarnAt(5, "svcs %+v", svcCache)
+	opts.WarnAt(5, "cfgSvcs %+v", cfg.Services)
 
 	// add any config items not already in svcCache
 	for svcName, cfgSvcsByTag := range cfg.Services.Apps {
 		if len(*opts.Svcs) > 0 && !isIn(svcName, *opts.Svcs) {
-			warnAt(3, opts, "config: skipping %q not in args %v", svcName, *opts.Svcs)
+			opts.WarnAtSvc(3, "config", svcName, "skipping - not in svcs %v", *opts.Svcs)
 			continue
 		}
-		if len(*opts.Skips) > 0 && !isIn(svcName, *opts.Skips) {
-			warnAt(3, opts, "config: skipping %q arg %v", svcName, *opts.Skips)
+		if len(*opts.Skips) > 0 && isIn(svcName, *opts.Skips) {
+			opts.WarnAtSvc(3, "config", svcName, "skipping arg %v", *opts.Skips)
 			continue
 		}
-		// warnAt(3, opts, "ook %q", svcName)
+
 		// first check for tag "*" (other tags later)
-
-		// xref_new_svc
-		var newSvc = &config.Service{
-			Priority: &zeroPriority,
-		}
-		// warnAt(2, opts, "newSvc for   %-30q - %+v", svcName, newSvc)
-
-		// is defaults[tag='*'] in cfg, then override
+		// is defaults[tag='*'] in cfg, then override first
+		var defaultOverride *config.Service = nil
 		for _, cfgSvcDefForTags := range cfg.Services.Defaults {
 			overlapDef := getTagOverlap(optsTags, cfgSvcDefForTags.Tags)
 			if len(overlapDef) != 0 || isTagIn("*", cfgSvcDefForTags.Tags, true) {
-				warnAt(3, opts, "cfgOverDef   %-30q in %-12q for tags: %v", svcName, cfgSvcDefForTags.Subnet, cfgSvcDefForTags.Tags)
-				newSvc.OverrideFrom(svcName, cfgSvcDefForTags)
+				opts.WarnAtSvc(3, "cfgOverDef", svcName, "in %-12q for tags: %v", cfgSvcDefForTags.Subnet, cfgSvcDefForTags.Tags)
+				defaultOverride = &cfgSvcDefForTags
 			}
 		}
 
 		for _, cfgSvc := range cfgSvcsByTag {
 
-			// opts asked for tags for this service, or cfgSvc has wildcard
-			overlap := getTagOverlap(optsTags, cfgSvc.Tags)
-			if len(overlap) == 0 && !isTagIn("*", cfgSvc.Tags, true) {
-				warnAt(3, opts, "no-overlap   %-30q in %-12q has %+v want %+v", svcName, cfgSvc.Subnet, cfgSvc.Tags, optsTags)
-				continue
+			// xref_new_svc
+			var newSvc = &config.Service{
+				Priority: &zeroPriority,
 			}
-			newSvc.Tags = overlap
+			if defaultOverride != nil {
+				newSvc.OverrideFrom(svcName, *defaultOverride)
+			}
 
-			// warnAt(1, opts, "all-checking %q for tag %v", svcName, wantedTag)
-			// find if manifest exists (and was dealt with with "cfgSvcAll")
+			// opts asked for tags for this service, or cfgSvc has wildcard
+			var overlap []config.Tag
+			if isTagIn("*", cfgSvc.Tags, true) || // want cfgSvc if has tag "*"
+				(len(optsTags) == 0 && len(cfgSvc.Tags) > 0) { // want cfgSvc if no optsTags and cfgSvc has tags
 
-			// do we already have svcCache for one of these requested? if so, skip adding again
+				overlap = cfgSvc.Tags
 
-			// if wantedTag == "*" && seenAlls[svcName][nonAllTag] {
-			// 	warnAt(1, opts, "seen-all %q in %q", svcName, nonAllTag)
-			// 	continue
-			// }
+			} else if len(optsTags) > 0 {
+				if len(cfgSvc.Tags) == 0 {
+					opts.WarnAtSvc(3, "notOverlap", svcName, "in %-12q has %+v want %+v", cfgSvc.Subnet, cfgSvc.Tags, optsTags)
+					continue
+				}
+				// both opts and cfgSvc have tags
+				overlap = getTagOverlap(optsTags, cfgSvc.Tags)
+				if len(overlap) == 0 {
+					opts.WarnAtSvc(3, "not-overlap", svcName, "in %-12q has %+v want %+v", cfgSvc.Subnet, cfgSvc.Tags, optsTags)
+					continue
+				}
+			}
 
-			// already exists in svcCache?
+			// cfgSvc already exists in svcCache?
 			gotSvcForSubnet := false
 			for _, svcCached := range svcCache[svcName] {
-				// if svcCached.Subnet == subnet {
-				if len(getTagOverlap(overlap, svcCached.Tags)) > 0 {
-					warnAt(3, opts, "     non-new %-30q in %-12q with tags %v", svcName, svcCached.Subnet, cfgSvc.Tags)
+				if svcCached.Subnet == cfgSvc.Subnet ||
+					len(getTagOverlap(overlap, svcCached.Tags)) > 0 {
+
+					opts.WarnAtSvc(3, "non-new", svcName, "in %-12q with tags %v", svcCached.Subnet, cfgSvc.Tags)
 					gotSvcForSubnet = true
 					break
 				}
-				// }
 			}
 			if gotSvcForSubnet {
-				warnAt(3, opts, "cfgRepSkip   %-30q in %-12q has %+v", svcName, cfgSvc.Subnet, cfgSvc.Tags)
+				opts.WarnAtSvc(3, "cfgRepSkip", svcName, "in %-12q has %+v", cfgSvc.Subnet, cfgSvc.Tags)
 				continue
 			}
+
+			newSvc.Tags = overlap
 
 			// override from this config
 			newSvc.OverrideFrom(svcName, cfgSvc)
@@ -368,35 +367,45 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 				if newSvc.Path, _, _, err = cfg.FindDirElseFromURI(svcName, ""); err != nil {
 					return nil, err
 				}
-				warnAt(2, opts, "found       %-30q a path %s", newSvc.Path)
+				opts.WarnAtSvc(3, "found", svcName, "a path %s", newSvc.Path)
 			}
 
-			var popularSubnet config.Subnet
-			var subnetScore = -1
-			for tagForSubnet := range tagSubnetCount {
-				for subnetForTag := range tagSubnetCount[tagForSubnet] {
-					if tagSubnetCount[tagForSubnet][subnetForTag] > subnetScore {
-						subnetScore = tagSubnetCount[tagForSubnet][subnetForTag]
-						popularSubnet = subnetForTag
+			// find the right subnet for svcName tags
+			if cfgSvc.Subnet != "" {
+				newSvc.Subnet = cfgSvc.Subnet
+			} else {
+				var popularSubnet config.Subnet
+				var subnetScore = -1
+				for tagForSubnet := range tagSubnetCount {
+					for subnetForTag := range tagSubnetCount[tagForSubnet] {
+						if tagSubnetCount[tagForSubnet][subnetForTag] > subnetScore {
+							subnetScore = tagSubnetCount[tagForSubnet][subnetForTag]
+							popularSubnet = subnetForTag
+						}
 					}
 				}
+				newSvc.Subnet = popularSubnet
 			}
-			newSvc.Subnet = popularSubnet
 
 			if _, ok := svcCache[svcName]; !ok {
 				svcCache[svcName] = make([]config.Service, 0)
 			} else if newSvc.Max != nil && *newSvc.Max == 1 {
-				warnAt(3, opts, "cfgMax--     %-30q in %-12q with tags %v", svcName, newSvc.Subnet, cfgSvc.Tags)
+				opts.WarnAtSvc(3, "cfgMax--", svcName, "in %-12q with tags %v", newSvc.Subnet, cfgSvc.Tags)
 				break // add to first found tag and no more
 			}
 
-			warnAt(3, opts, "cfg+++++     %-30q in %-12q with tags %v", svcName, newSvc.Subnet, cfgSvc.Tags)
+			opts.WarnAtSvc(3, "cfg+++++", svcName, "in %-12q with tags %v", newSvc.Subnet, cfgSvc.Tags)
 			svcCache[svcName] = append(svcCache[svcName], *newSvc)
 			priorityCache[*newSvc.Priority] = true
 
+			if _, ok := tagsRequestedPerSubnet[newSvc.Subnet]; !ok {
+				tagsRequestedPerSubnet[newSvc.Subnet] = make(map[string][]config.Tag, 0)
+			}
+			tagsRequestedPerSubnet[newSvc.Subnet][svcName] = newSvc.Tags
+
 		}
 	}
-	warnAt(3, opts, "cache from manifest %+v", svcCache["zebedee"])
+	opts.WarnAt(3, "cache from manifest %+v", svcCache["zebedee"])
 	return svcCache, nil
 }
 
@@ -412,100 +421,64 @@ func List(cfg *config.Config, opts config.WithOpts, args []string) (err error) {
 		spew.Dump(svcs)
 	}
 
-	if *opts.Itermaton {
-		itermaton(listIntro, "", "", nil, opts, nil, nil)
-	}
+	itermaton(listIntro, "", cfg, "", nil, opts, nil, nil)
+
 	counts := map[string]int{"wins": 0, "tabs": 0, "tabs_in_win": 0, "panes": 0, "panes_in_tab": 0}
 
-	// collect svcName(s) by tag, so we can sort within that tag
-	svcNamesOrderBySubnetTag := map[config.Subnet]map[string][]string{}
-	subnets := []string{}
-	for svcName, svcsByTag := range svcs {
-		// fmt.Printf("%-40s isWeb %5v isPub %5v isMan %5v\n", svc.name, svc.IsWeb, svc.IsPublishing, svc.IsManagement)
-
-		for _, svcByTag := range svcsByTag {
-			var tagList []string
-			doAppend := false
-			if len(svcByTag.Tags) == 0 {
-				warnAt(3, opts, "noTag        %-30q", svcName)
-				doAppend = true
-				tagList = append(tagList, "*")
-			} else {
-				for _, tag := range svcByTag.Tags {
-					if len(optsTags) == 0 ||
-						tag == "*" || isTagIn(tag, optsTags, true) {
-
-						doAppend = true
-						tagList = append(tagList, string(tag))
-					}
-				}
-			}
-			if doAppend {
-				sort.Strings(tagList)
-				tagListStr := strings.Join(tagList, ",")
-				if _, ok := svcNamesOrderBySubnetTag[svcByTag.Subnet]; !ok {
-					svcNamesOrderBySubnetTag[svcByTag.Subnet] = make(map[string][]string)
-				}
-				svcNamesOrderBySubnetTag[svcByTag.Subnet][tagListStr] = append(svcNamesOrderBySubnetTag[svcByTag.Subnet][tagListStr], svcName)
-				if !isIn(string(svcByTag.Subnet), subnets) {
-					subnets = append(subnets, string(svcByTag.Subnet))
-				}
-			}
+	for subnet := range tagsRequestedPerSubnet {
+		svcNames := make([]string, len(tagsRequestedPerSubnet[subnet]))
+		for svcName := range tagsRequestedPerSubnet[subnet] {
+			svcNames = append(svcNames, svcName)
 		}
-	}
-	warnAt(4, opts, "ordered tags %+v", svcNamesOrderBySubnetTag)
-	sort.Strings(subnets)
+		sort.Strings(svcNames)
 
-	for _, subnetStr := range subnets {
-		subnet := config.Subnet(subnetStr)
+		for _, svcName := range svcNames {
+			tagListStrings := []string{}
+			for _, tag := range tagsRequestedPerSubnet[subnet][svcName] {
+				tagListStrings = append(tagListStrings, string(tag))
+			}
+			tagListStr := string(subnet) + "[" + strings.Join(tagListStrings, ",") + "]"
 
-		for tagListStr, svcNames := range svcNamesOrderBySubnetTag[subnet] {
-			// for tag, svcNames := range svcs {
-			sort.Strings(svcNames)
+			for _, svc := range svcs[svcName] {
+				if svc.Subnet != subnet {
+					continue
+				}
 
-			for _, svcName := range svcNames {
-				// for svcName := range svcs {
-				for _, svc := range svcs[svcName] {
-					// if !isTagIn(tag, svc.Tags, false) {
-					// 	continue
-					// }
-					if svc.Subnet != subnet {
-						continue
-					}
+				opts.WarnAtSvc(3, "got svcName", svcName, "for tags %v for list %q", svc.Tags, tagListStr)
 
-					warnAt(3, opts, "got svcName  %-30q for tags %v for list %q", svcName, svc.Tags, tagListStr)
+				if *opts.Itermaton {
+					itermaton(listServiceIntro, svcName, cfg, tagListStr, &svc, opts, counts, &subnet)
 
-					if *opts.Itermaton {
-						itermaton(listServiceIntro, svcName, tagListStr, &svc, opts, counts, &subnet)
+				} else if *opts.Verbose == 0 {
+					fmt.Printf("%-40s %s\n", svcName, tagListStr)
 
-					} else if *opts.Verbose == 0 {
-						fmt.Printf("%-40s %s\n", svcName, tagListStr)
+				} else {
+					moreArgs := []interface{}{svcName, tagListStr, *svc.Priority}
+					moreFormats := []string{"%-40s %-20s", "%3d"}
 
-					} else {
-						moreArgs := []interface{}{svcName, tagListStr, *svc.Priority}
-						moreFormats := []string{"%-40s %-20s", "%3d"}
-
-						if *opts.Verbose > 1 {
-							moreFormats = append(moreFormats, "%-60s %v %v")
-							moreArgs = append(moreArgs, config.ShellifyPath(svc.Path), svc.StartCmd, svc.StopCmd)
-							if *opts.Verbose > 2 {
-								moreFormats = append(moreFormats, "%v %v")
-								moreArgs = append(moreArgs, svc.InitCmds, svc.LateInitCmds)
-							}
+					if *opts.Verbose > 1 {
+						moreFormats = append(moreFormats, "%-60s %v %v")
+						moreArgs = append(moreArgs, config.ShellifyPath(svc.Path), svc.StartCmd, svc.StopCmd)
+						if *opts.Verbose > 4 {
+							moreFormats = append(moreFormats, "%v %v")
+							moreArgs = append(moreArgs, svc.InitCmds, svc.LateInitCmds)
 						}
-						fmt.Printf(strings.Join(moreFormats, " ")+"\n", moreArgs...)
 					}
-					break
+					fmt.Printf(strings.Join(moreFormats, " ")+"\n", moreArgs...)
 				}
+
+				itermaton(listServiceExtro, svcName, cfg, tagListStr, &svc, opts, counts, &subnet)
+
+				break
 			}
 		}
-		if *opts.Itermaton {
-			itermaton(listSubnetExtro, "", "", nil, opts, counts, &subnet)
+		if *opts.Itermaton && cfg.Itermaton.WinPerSubnet != nil && *cfg.Itermaton.WinPerSubnet {
+			itermaton(listSubnetExtro, "", cfg, "", nil, opts, counts, &subnet)
 		}
 	}
 
 	if *opts.Itermaton {
-		itermaton(listExtro, "", "", nil, opts, counts, nil)
+		itermaton(listExtro, "", cfg, "", nil, opts, counts, nil)
 	}
 
 	return nil
@@ -573,14 +546,16 @@ func execOrClone(isClone bool, cfg *config.Config, opts config.WithOpts, args []
 
 		for subnet := range svc {
 			if _, ok := seenRepos[svc[subnet].RepoURI]; ok {
-				warnAt(2, opts, "Skipping seen %s in %s\n", svcName, svc[subnet].RepoURI)
+				opts.WarnAtSvc(3, "Skipping", svcName, "in %s - seen", svc[subnet].RepoURI)
 				continue
 			}
 			seenRepos[svc[subnet].RepoURI] = true
 
 			// XXX isClone needs parent (and bail if is sub-dir)
 			// !isClone needs repo dir (and check for dir)
+
 			path := svc[subnet].Path
+
 			var githubOrg, repo, cwd string
 			var cmd []string
 			var isExist, isDir bool
@@ -673,12 +648,6 @@ func execCommand(wrkDir, command string, arg ...string) error {
 	return nil
 }
 
-func warnAt(minLevel int, opts config.WithOpts, fmt string, fmtArgs ...interface{}) {
-	if *opts.Verbose >= minLevel {
-		out.WarnE(fmt, fmtArgs...)
-	}
-}
-
 func jsonSafe(str string, enQuote bool) string {
 	q := ``
 	if enQuote {
@@ -687,10 +656,20 @@ func jsonSafe(str string, enQuote bool) string {
 	return q + strings.ReplaceAll(str, `"`, `\"`) + q
 }
 
-func itermaton(do int, svcName, tagListStr string, svc *config.Service, opts config.WithOpts, counts map[string]int, subnet *config.Subnet) {
-	panesPerTab := 8
-	if opts.PanesPerTag != nil {
-		panesPerTab = *opts.PanesPerTag
+func itermaton(do int, svcName string, cfg *config.Config, tagListStr string, svc *config.Service, opts config.WithOpts, counts map[string]int, subnet *config.Subnet) {
+	if !*opts.Itermaton {
+		return
+	}
+	shapeInts := []int{3, 4, 2}
+	shape := config.Itermatons{MaxTabs: &shapeInts[0], MaxColumns: &shapeInts[1], MaxRows: &shapeInts[2]}
+	if cfg.Itermaton.MaxTabs != nil {
+		shape.MaxTabs = cfg.Itermaton.MaxTabs
+	}
+	if cfg.Itermaton.MaxColumns != nil {
+		shape.MaxColumns = cfg.Itermaton.MaxColumns
+	}
+	if cfg.Itermaton.MaxRows != nil {
+		shape.MaxRows = cfg.Itermaton.MaxRows
 	}
 
 	if do == listIntro {
@@ -729,7 +708,7 @@ func itermaton(do int, svcName, tagListStr string, svc *config.Service, opts con
 
 		// build pane
 		extra := ""
-		if counts["panes_in_tab"] == panesPerTab/2 {
+		if counts["panes_in_tab"] == *shape.MaxColumns**shape.MaxRows {
 			extra = `,"startsNextRow":true`
 		}
 
@@ -767,11 +746,12 @@ func itermaton(do int, svcName, tagListStr string, svc *config.Service, opts con
 		counts["panes"]++
 		counts["panes_in_tab"]++
 
-		if counts["panes_in_tab"] == panesPerTab {
+		if counts["panes_in_tab"] == *shape.MaxColumns**shape.MaxRows {
 			fmt.Print("\n    ]}") // end panes
 			counts["panes_in_tab"] = 0
 		}
-	} else if do == listSubnetExtro {
+	} else if (do == listSubnetExtro && cfg.Itermaton.WinPerSubnet != nil && *cfg.Itermaton.WinPerSubnet) ||
+		(do == listServiceExtro && cfg.Itermaton.MaxTabs != nil && *cfg.Itermaton.MaxTabs >= counts["tabs_in_win"]) {
 
 		if counts["panes_in_tab"] > 0 {
 			fmt.Print("\n    ]}") // end panes
