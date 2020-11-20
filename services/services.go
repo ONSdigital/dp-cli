@@ -448,6 +448,7 @@ func List(cfg *config.Config, opts config.WithOpts, args []string) (err error) {
 
 				if *opts.Itermaton {
 					itermaton(listServiceIntro, svcName, cfg, tagListStr, &svc, opts, counts, &subnet)
+					itermaton(listServiceExtro, svcName, cfg, tagListStr, &svc, opts, counts, &subnet)
 
 				} else if *opts.Verbose == 0 {
 					fmt.Printf("%-40s %s\n", svcName, tagListStr)
@@ -467,14 +468,12 @@ func List(cfg *config.Config, opts config.WithOpts, args []string) (err error) {
 					fmt.Printf(strings.Join(moreFormats, " ")+"\n", moreArgs...)
 				}
 
-				itermaton(listServiceExtro, svcName, cfg, tagListStr, &svc, opts, counts, &subnet)
-
-				break
+				break // done service for this subnet
 			}
 		}
-		if *opts.Itermaton && cfg.Itermaton.WinPerSubnet != nil && *cfg.Itermaton.WinPerSubnet {
-			itermaton(listSubnetExtro, "", cfg, "", nil, opts, counts, &subnet)
-		}
+
+		itermaton(listSubnetExtro, "", cfg, "", nil, opts, counts, &subnet)
+
 	}
 
 	if *opts.Itermaton {
@@ -750,18 +749,19 @@ func itermaton(do int, svcName string, cfg *config.Config, tagListStr string, sv
 			fmt.Print("\n    ]}") // end panes
 			counts["panes_in_tab"] = 0
 		}
+
 	} else if (do == listSubnetExtro && cfg.Itermaton.WinPerSubnet != nil && *cfg.Itermaton.WinPerSubnet) ||
-		(do == listServiceExtro && cfg.Itermaton.MaxTabs != nil && *cfg.Itermaton.MaxTabs >= counts["tabs_in_win"]) {
+		(do == listServiceExtro && cfg.Itermaton.MaxTabs != nil && counts["tabs_in_win"] >= *cfg.Itermaton.MaxTabs) ||
+		do == listExtro {
 
 		if counts["panes_in_tab"] > 0 {
 			fmt.Print("\n    ]}") // end panes
 		}
-		// counts["tabs"]++
 		fmt.Print("\n  ]}") // end tabs
 		counts["tabs_in_win"] = 0
 
-	} else if do == listExtro {
-		fmt.Println("\n]}") // end windows
-
+		if do == listExtro {
+			fmt.Println("\n]}") // end windows
+		}
 	}
 }

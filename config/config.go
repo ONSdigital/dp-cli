@@ -179,7 +179,7 @@ func FindDirInPath(dir string, path []string) (fullPath string, isExist bool, er
 			return "", isExist, nil // "",true => non-dir exists!
 		}
 	}
-	return
+	return "", false, nil
 }
 
 // FindDirElseFromURI expands path or (if path empty) URI converted into full path
