@@ -18,6 +18,7 @@ func Setup(ctx context.Context, r *mux.Router) *API {
 		Router: r,
 	}
 
+	log.Event(ctx, "remove hello endpoint")
 	r.HandleFunc("/hello", HelloHandler()).Methods("GET")
 	return api
 }
