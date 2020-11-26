@@ -40,7 +40,7 @@ type ManifestClass struct {
 // Profile holds - but we are not currently interested in - cpu/mem/etc
 // type Profile map[string]interface{}
 
-// map [service-name]->services
+// serviceMap[service-name] -> []Service
 type serviceMap map[string][]config.Service
 
 const (
@@ -54,7 +54,6 @@ const (
 var (
 	svcCache               = serviceMap{}
 	tagsRequestedPerSubnet = map[config.Subnet]map[string][]config.Tag{}
-	priorityCache          = map[int]bool{}
 	zeroPriority           = 0
 	repoRegex              = regexp.MustCompile("https?://([^/]+)/([^/]+)/([^/]+)")
 	optsTags               []config.Tag
@@ -194,6 +193,7 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 		for subnet := range tagsRequestedPerSubnet {
 
 			if _, ok := tagsRequestedPerSubnet[subnet][svcName]; !ok {
+				opts.WarnAtSvc(3, "cfgNoSubnt", svcName, "in %-12q SKIP", subnet)
 				continue
 			}
 
@@ -261,9 +261,7 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 
 			for _, cfgSvcOverride := range cfgSvcOverrides {
 				svc.OverrideFrom(svcName, cfgSvcOverride)
-				if svcName == "babbage" || svcName == "zdp-dataset-api" {
-					opts.WarnAtSvc(3, "1a", svcName, "in %-12q\tp%3d cmd %v", subnet, *svc.Priority, svc.StartCmd)
-				}
+				opts.WarnAtSvc(4, "1a", svcName, "in %-12q\tp%3d cmd %v", subnet, *svc.Priority, svc.StartCmd)
 			}
 
 			if _, ok := svcCache[svcName]; !ok {
@@ -276,8 +274,7 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 				continue
 			}
 			svcCache[svcName] = append(svcCache[svcName], *svc)
-			opts.WarnAtSvc(3, "cache+++", svcName, "in %12q %+v", svc.Subnet, svc)
-			priorityCache[*svc.Priority] = true
+			opts.WarnAtSvc(3, "cache+++", svcName, "in %12q %d %+v", svc.Subnet, len(svcCache[svcName]), svc)
 
 		}
 		return nil
@@ -301,24 +298,29 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 			continue
 		}
 
-		// first check for tag "*" (other tags later)
-		// is defaults[tag='*'] in cfg, then override first
-		var defaultOverride *config.Service = nil
+		// first check for tag "*" in defaults (other tags later)
+		// if defaults[tag='*'] exists in cfg, then use that as override first (more specific later)
+		defaultOverrides := []*config.Service{}
 		for _, cfgSvcDefForTags := range cfg.Services.Defaults {
 			overlapDef := getTagOverlap(optsTags, cfgSvcDefForTags.Tags)
 			if len(overlapDef) != 0 || isTagIn("*", cfgSvcDefForTags.Tags, true) {
-				opts.WarnAtSvc(3, "cfgOverDef", svcName, "in %-12q for tags: %v", cfgSvcDefForTags.Subnet, cfgSvcDefForTags.Tags)
-				defaultOverride = &cfgSvcDefForTags
+				opts.WarnAtSvc(3, "cfgOverDEF", svcName, "in %-12q for tags: %v", cfgSvcDefForTags.Subnet, cfgSvcDefForTags.Tags)
+				defaultOverrides = append(defaultOverrides, &cfgSvcDefForTags)
 			}
 		}
 
 		for _, cfgSvc := range cfgSvcsByTag {
 
+			if len(cfgSvc.Tags) == 0 {
+				opts.WarnAtSvc(3, "cfgNoTags", svcName, "in %-12q", cfgSvc.Subnet)
+				continue
+			}
+
 			// xref_new_svc
 			var newSvc = &config.Service{
 				Priority: &zeroPriority,
 			}
-			if defaultOverride != nil {
+			for _, defaultOverride := range defaultOverrides {
 				newSvc.OverrideFrom(svcName, *defaultOverride)
 			}
 
@@ -330,10 +332,7 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 				overlap = cfgSvc.Tags
 
 			} else if len(optsTags) > 0 {
-				if len(cfgSvc.Tags) == 0 {
-					opts.WarnAtSvc(3, "notOverlap", svcName, "in %-12q has %+v want %+v", cfgSvc.Subnet, cfgSvc.Tags, optsTags)
-					continue
-				}
+
 				// both opts and cfgSvc have tags
 				overlap = getTagOverlap(optsTags, cfgSvc.Tags)
 				if len(overlap) == 0 {
@@ -343,17 +342,17 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 			}
 
 			// cfgSvc already exists in svcCache?
-			gotSvcForSubnet := false
+			seenSvcForSubnet := false
 			for _, svcCached := range svcCache[svcName] {
 				if svcCached.Subnet == cfgSvc.Subnet ||
 					len(getTagOverlap(overlap, svcCached.Tags)) > 0 {
 
 					opts.WarnAtSvc(3, "non-new", svcName, "in %-12q with tags %v", svcCached.Subnet, cfgSvc.Tags)
-					gotSvcForSubnet = true
+					seenSvcForSubnet = true
 					break
 				}
 			}
-			if gotSvcForSubnet {
+			if seenSvcForSubnet {
 				opts.WarnAtSvc(3, "cfgRepSkip", svcName, "in %-12q has %+v", cfgSvc.Subnet, cfgSvc.Tags)
 				continue
 			}
@@ -385,6 +384,7 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 					}
 				}
 				newSvc.Subnet = popularSubnet
+				opts.WarnAtSvc(3, "cfgSubnet!", svcName, "in %-12q with tags %v", newSvc.Subnet, cfgSvc.Tags)
 			}
 
 			if _, ok := svcCache[svcName]; !ok {
@@ -394,9 +394,8 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 				break // add to first found tag and no more
 			}
 
-			opts.WarnAtSvc(3, "cfg+++++", svcName, "in %-12q with tags %v", newSvc.Subnet, cfgSvc.Tags)
 			svcCache[svcName] = append(svcCache[svcName], *newSvc)
-			priorityCache[*newSvc.Priority] = true
+			opts.WarnAtSvc(3, "cfg+++++", svcName, "in %-12q %d with tags %v", newSvc.Subnet, len(svcCache[svcName]), cfgSvc.Tags)
 
 			if _, ok := tagsRequestedPerSubnet[newSvc.Subnet]; !ok {
 				tagsRequestedPerSubnet[newSvc.Subnet] = make(map[string][]config.Tag, 0)
@@ -600,6 +599,7 @@ func execOrClone(isClone bool, cfg *config.Config, opts config.WithOpts, args []
 				cmd = []string{"git", "clone", fmt.Sprintf("git@%s/%s", githubOrg, repo), path}
 			}
 
+			out.InfoFHighlight("In %s\t\t%s", config.ShellifyPath(path), svc[subnet].RepoURI)
 			if err = execCommandWrap(svcName, opts, cwd, cmd...); err != nil {
 				return
 			}
