@@ -146,7 +146,7 @@ func (a application) createAPIContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service/mock"), os.ModePerm)
 	if err != nil {
 		return err
 	}
