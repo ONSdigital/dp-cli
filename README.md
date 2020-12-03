@@ -26,21 +26,21 @@ Check you have a suitable version of `go` installed with:
 
 `go version`
 
-(Ideally 1.13)
+(Ideally 1.15)
 
-[ The following will ensure version 1.13
+[ The following will ensure version 1.15
 
   ```sh
-  brew install go@1.13
+  brew install go@1.15
   brew unlink go
-  brew link —force go@1.13
+  brew link —force go@1.15
   ```
 
 Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
 
   ```sh
   echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export PATH="/usr/local/opt/go@1.13/bin:$PATH"' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.15/bin:$PATH"' >> ~/.zshrc
   ```
 
   and restart the terminal ]
@@ -87,7 +87,7 @@ vi ~/.dp-cli-config.yml
     dp-setup-path:
     dp-hierarchy-builder-path:
     dp-code-list-scripts-path:
-  
+
    set your `ssh-user:`
 
 and if this is a first time setup, comment out production from environments, thus:
