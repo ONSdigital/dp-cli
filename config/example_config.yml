@@ -27,5 +27,3 @@ environments:
     profile: production
   - name: develop
     profile: development
-  - name: cmd-dev
-    profile: development

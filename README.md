@@ -167,8 +167,6 @@ environments:
     profile:
   - name: develop
     profile:
-  - name: cmd-dev
-    profile:
 ```
 
 #### SSH/SCP command fails
