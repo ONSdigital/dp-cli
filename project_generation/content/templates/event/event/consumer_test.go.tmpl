@@ -82,7 +82,8 @@ func TestConsume(t *testing.T) {
 			Convey("When consume messages is called", func() {
 
 				handlerWg.Add(1)
-				consumer.Consume(testCtx, mockConsumer, mockEventHandler)
+				numWorkers := 1
+				event.Consume(testCtx, mockConsumer, mockEventHandler, numWorkers)
 				handlerWg.Wait()
 
 				Convey("Only the valid event is sent to the mockEventHandler ", func() {
