@@ -7,6 +7,7 @@ This tool can be used to create projects of the following categories:
         - api 
         - controller 
         - event-driven
+        - library
 
 ## How to use
 It is always beneficial to ensure you are using the most up to date version of the dp-cli tool. 
@@ -27,7 +28,7 @@ Although these flags are optional, for most, if they are not provided then the u
 - --go-version :        The version of Go the application should use (Not used on generic-projects)
 - --project-location :  Location to generate project in
 - --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
-- --type :              Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
+- --type :              Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
 
 ### Example output
 The project generation command has been used to create example outputs of the various types of project. These can be found
