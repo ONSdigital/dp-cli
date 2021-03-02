@@ -377,12 +377,6 @@ var eventFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
-		templatePath: "event/service/mock/kafka.go",
-		outputPath:   "service/mock/kafka",
-		extension:    ".go",
-		filePrefix:   "",
-	},
-	{
 		templatePath: "event/service/mock/server.go",
 		outputPath:   "service/mock/server",
 		extension:    ".go",

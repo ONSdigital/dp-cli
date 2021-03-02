@@ -32,7 +32,7 @@ var kafkaStubConsumer = &kafkatest.IConsumerGroupMock{
 
 func TestConsume(t *testing.T) {
 
-	Convey("Given an event consumer", t, func() {
+	Convey("Given kafka consumer and event handler mocks", t, func() {
 
 		cgChannels := &kafka.ConsumerGroupChannels{Upstream: make(chan kafka.Message, 2)}
 		mockConsumer := &kafkatest.IConsumerGroupMock{
@@ -46,7 +46,6 @@ func TestConsume(t *testing.T) {
 				return nil
 			},
 		}
-		consumer := event.NewConsumer()
 
 		Convey("And a kafka message with the valid schema being sent to the Upstream channel", func() {
 
@@ -56,7 +55,8 @@ func TestConsume(t *testing.T) {
 			Convey("When consume message is called", func() {
 
 				handlerWg.Add(1)
-				consumer.Consume(testCtx, mockConsumer, mockEventHandler)
+				numWorkers := 1
+				event.Consume(testCtx, mockConsumer, mockEventHandler, numWorkers)
 				handlerWg.Wait()
 
 				Convey("An event is sent to the mockEventHandler ", func() {
@@ -82,7 +82,8 @@ func TestConsume(t *testing.T) {
 			Convey("When consume messages is called", func() {
 
 				handlerWg.Add(1)
-				consumer.Consume(testCtx, mockConsumer, mockEventHandler)
+				numWorkers := 1
+				event.Consume(testCtx, mockConsumer, mockEventHandler, numWorkers)
 				handlerWg.Wait()
 
 				Convey("Only the valid event is sent to the mockEventHandler ", func() {
@@ -94,7 +95,7 @@ func TestConsume(t *testing.T) {
 					<-validMessage.UpstreamDone()
 					<-invalidMessage.UpstreamDone()
 					So(len(validMessage.CommitCalls()), ShouldEqual, 1)
-					So(len(invalidMessage.CommitCalls()), ShouldEqual, 0)
+					So(len(invalidMessage.CommitCalls()), ShouldEqual, 1)
 					So(len(validMessage.ReleaseCalls()), ShouldEqual, 1)
 					So(len(invalidMessage.ReleaseCalls()), ShouldEqual, 1)
 				})
@@ -112,7 +113,8 @@ func TestConsume(t *testing.T) {
 			Convey("When consume message is called", func() {
 
 				handlerWg.Add(1)
-				consumer.Consume(testCtx, mockConsumer, mockEventHandler)
+				numWorkers := 1
+				event.Consume(testCtx, mockConsumer, mockEventHandler, numWorkers)
 				handlerWg.Wait()
 
 				Convey("An event is sent to the mockEventHandler ", func() {
@@ -125,22 +127,6 @@ func TestConsume(t *testing.T) {
 					So(len(message.CommitCalls()), ShouldEqual, 1)
 					So(len(message.ReleaseCalls()), ShouldEqual, 1)
 				})
-			})
-		})
-	})
-}
-
-func TestClose(t *testing.T) {
-
-	Convey("Given a consumer", t, func() {
-		consumer := event.NewConsumer()
-		consumer.Consume(testCtx, kafkaStubConsumer, &mock.HandlerMock{})
-
-		Convey("When close is called", func() {
-			err := consumer.Close(context.Background())
-
-			Convey("Then no error is returned", func() {
-				So(err, ShouldBeNil)
 			})
 		})
 	})

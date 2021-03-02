@@ -15,6 +15,7 @@ type Config struct {
 	KafkaAddr                  []string      `envconfig:"KAFKA_ADDR"                     json:"-"`
 	KafkaVersion               string        `envconfig:"KAFKA_VERSION"`
 	KafkaOffsetOldest          bool          `envconfig:"KAFKA_OFFSET_OLDEST"`
+	KafkaNumWorkers            int           `envconfig:"KAFKA_NUM_WORKERS"`
 	HelloCalledGroup           string        `envconfig:"HELLO_CALLED_GROUP"`
 	HelloCalledTopic           string        `envconfig:"HELLO_CALLED_TOPIC"`
 }
@@ -36,6 +37,7 @@ func Get() (*Config, error) {
 		KafkaAddr:                  []string{"localhost:9092"},
 		KafkaVersion:               "1.0.2",
 		KafkaOffsetOldest:          true,
+		KafkaNumWorkers:            1,
 		HelloCalledGroup:           "{{.Name}}",
 		HelloCalledTopic:           "hello-called",
 	}
