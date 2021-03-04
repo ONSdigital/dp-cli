@@ -1,6 +1,8 @@
 # Repo creation with project templating
 
-The project templating tool can be used to also create a repository.
+If you do not have a folder structure for your project, and one doesn't exist on GitHub for your project, then this project templating tool will do this for you.  If you wish, it will also create the repo on Github for you.
+
+A project can be
 ____
 
 ## WARNING
