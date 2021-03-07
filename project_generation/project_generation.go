@@ -146,7 +146,7 @@ func (a application) createAPIContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service/mock"), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,24 @@ func (a application) createControllerContentDirectoryStructure() error {
 
 // createEventDrivenContentDirectoryStructure will create child directories for Event Driven content at a given path
 func (a application) createEventDrivenContentDirectoryStructure() error {
-	return os.MkdirAll(filepath.Join(a.pathToRepo, "event"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(a.pathToRepo, "cmd/producer"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "event/mock"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "schema"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service/mock"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // generateGenericContent will create all files for Generic content

@@ -250,11 +250,125 @@ var apiFiles = []fileGen{
 }
 
 var eventFiles = []fileGen{
-	//{
-	// Todo event/
-	// TODO Event
-	// TODO Consumer
-	// TODO Consumer_test
-	// TODO handler
-	//},
+	{
+		templatePath: "event/cmd/producer/main.go",
+		outputPath:   "cmd/producer/main",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/config/config.go",
+		outputPath:   "config/config",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/config/config_test.go",
+		outputPath:   "config/config_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/event/mock/handler.go",
+		outputPath:   "event/mock/handler",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/event/consumer.go",
+		outputPath:   "event/consumer",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/event/consumer_test.go",
+		outputPath:   "event/consumer_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/event/event.go",
+		outputPath:   "event/event",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/event/handler.go",
+		outputPath:   "event/handler",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/event/handler_test.go",
+		outputPath:   "event/handler_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/schema/schema.go",
+		outputPath:   "schema/schema",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/service/mock/healthCheck.go",
+		outputPath:   "service/mock/healthCheck",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/service/mock/initialiser.go",
+		outputPath:   "service/mock/initialiser",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/service/mock/server.go",
+		outputPath:   "service/mock/server",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+
+	{
+		templatePath: "event/service/initialise.go",
+		outputPath:   "service/initialise",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/service/interfaces.go",
+		outputPath:   "service/interfaces",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/service/service.go",
+		outputPath:   "service/service",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/service/service_test.go",
+		outputPath:   "service/service_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/main.go",
+		outputPath:   "main",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/README.md",
+		outputPath:   "README",
+		extension:    ".md",
+		filePrefix:   "",
+	},
 }

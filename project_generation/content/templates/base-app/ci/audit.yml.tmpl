@@ -1,7 +1,15 @@
-#!/bin/bash -eux
+---
+platform: linux
 
-export cwd=$(pwd)
+image_resource:
+  type: docker-image
+  source:
+    repository: onsdigital/dp-concourse-tools-nancy
+    tag: latest
 
-pushd $cwd/{{.Name}}
-  make audit
-popd 
+inputs:
+  - name: {{.Name}}
+    path: {{.Name}}
+
+run:
+  path: {{.Name}}/ci/scripts/audit.sh
