@@ -220,7 +220,9 @@ $ dp ssh develop web 1 -- ls -la
 
 #### Manually configuring your IP
 
-Optionally, (e.g. to avoid the program looking up your IP), you can use an environment variable `MY_IP` to force the IP used when running `dp remote allow`, for example:
+Optionally, (e.g. to avoid the program looking up your IP, or in the event of the lookup timing out),
+you can use an environment variable `MY_IP` to force the IP used when running `dp remote allow`,
+for example:
 
 ```sh
 MY_IP=192.168.11.22 dp remote allow develop

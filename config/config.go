@@ -54,7 +54,7 @@ type ExtraPorts struct {
 	Web        []int64 `yaml:"web"`
 }
 
-// Tag is really a journey tag
+// Tag is a journey, e.g. "pst", "public", etc
 type Tag string
 
 // Subnet should be web,publishing (maybe management)
@@ -68,18 +68,19 @@ type ServiceWrap struct {
 
 // Service allows individual configuration of a service for the given tags
 type Service struct {
-	Tags         []Tag    `yaml:"tags"`
-	Path         string   `yaml:"path"`
-	RepoURI      string   `yaml:"repo_uri"`
-	Count        *int     `yaml:"count"`
-	Max          *int     `yaml:"max"`
-	Priority     *int     `yaml:"priority"`
-	InitCmds     []string `yaml:"init_commands"`
-	LateInitCmds []string `yaml:"late_init_commands"`
-	StartCmd     []string `yaml:"start_command"`
-	StopCmd      []string `yaml:"stop_command"`
-	Ignore       []string `yaml:"ignore"`
-	Subnet       Subnet
+	Tags         []Tag     `yaml:"tags"`
+	Path         string    `yaml:"path"`
+	RepoURI      string    `yaml:"repo_uri"`
+	Count        *int      `yaml:"count"`
+	Max          *int      `yaml:"max"`
+	Priority     *int      `yaml:"priority"`
+	InitCmds     []string  `yaml:"init_commands"`
+	LateInitCmds []string  `yaml:"late_init_commands"`
+	StartCmd     []string  `yaml:"start_command"`
+	StopCmd      []string  `yaml:"stop_command"`
+	Ignore       []string  `yaml:"ignore"`
+	Subnet       Subnet    `yaml:"class"`
+	Groups       []Service `yaml:"groups"`
 }
 
 // Itermatons are config options for itermatons output
@@ -135,21 +136,28 @@ func Get() (*Config, error) {
 	}
 	for svcName, svcs := range cfg.Services.Apps {
 		for sIdx, svc := range svcs {
-			for _, path := range []string{svc.Path, svcName} {
-				if path != "" {
-					var newPath string
-					if newPath, _, _, err = cfg.FindDirElseFromURI(path, svc.RepoURI); err != nil {
-						return nil, err
-					}
-					cfg.Services.Apps[svcName][sIdx].Path = newPath
-					if cfg.Services.Apps[svcName][sIdx].Path != "" {
-						break
-					}
-				}
+			newPath, err := cfg.GetDirFromPaths(svc.RepoURI, svc.Path, svcName)
+			if err != nil {
+				return nil, err
 			}
+			cfg.Services.Apps[svcName][sIdx].Path = newPath
 		}
 	}
 	return &cfg, nil
+}
+
+// GetDirFromPaths find or expand paths into a dir
+func (cfg Config) GetDirFromPaths(repoURI string, paths ...string) (newPath string, err error) {
+	for _, path := range paths {
+		if newPath, _, _, err = cfg.FindDirElseFromURI(path, repoURI); err != nil {
+			return
+		}
+		// out.WarnE("getDirFromPaths %q\t%q ->\t%q", repoURI, path, newPath)
+		if newPath != "" {
+			break
+		}
+	}
+	return
 }
 
 // IsExistDir returns existance and isDir for `dir`
@@ -190,7 +198,7 @@ func (cfg *Config) FindDirElseFromURI(path, uri string) (string, bool, bool, err
 			if lastSlashAt == -1 {
 				return "", false, false, fmt.Errorf("Bad uri %s", uri)
 			}
-			path = uri[lastSlashAt:]
+			path = uri[lastSlashAt+1:]
 		}
 	}
 	return cfg.expandPath(path)

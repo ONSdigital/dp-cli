@@ -23,6 +23,7 @@ type Manifest struct {
 	Name    string         `yaml:"name"`
 	RepoURI string         `yaml:"repo_uri"`
 	Nomad   ManifestGroups `yaml:"nomad"`
+	Svcs    config.Service `yaml:"dp_services"`
 }
 
 // ManifestGroups has each group e.g. web, publishing
@@ -33,7 +34,6 @@ type ManifestGroups struct {
 // ManifestClass has class (web, publishing, management) and tags
 type ManifestClass struct {
 	Class config.Subnet `yaml:"class"`
-	Tags  []config.Tag  `yaml:"tags"`
 	//Profiles Profile `yaml:"profiles"`
 }
 
@@ -138,6 +138,30 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 
 		svcName := manifest.Name
 
+		// sanity check manifest
+
+		// - fix (expand) any Path in manifest
+		if manifest.Svcs.Path, err = cfg.GetDirFromPaths(manifest.RepoURI, manifest.Svcs.Path, svcName); err != nil {
+			return err
+		}
+		for gIdx, mSvc := range manifest.Svcs.Groups {
+			if mSvc.Path == "" && manifest.Svcs.Path != "" {
+				manifest.Svcs.Groups[gIdx].Path = manifest.Svcs.Path
+			}
+			if manifest.Svcs.Groups[gIdx].Path, err = cfg.GetDirFromPaths(manifest.RepoURI, mSvc.Path, svcName); err != nil {
+				return err
+			}
+			if len(mSvc.Groups) > 0 {
+				return fmt.Errorf("Cannot have groups inside groups in manifest %q", path)
+			}
+		}
+
+		// done with sanity check
+
+		if svcName != "xdp-dataset-api" {
+			opts.WarnAtSvc(3, "manif", svcName, "%+v", manifest)
+		}
+
 		// limit svcName to those opted for on cmdline, if any
 		if len(*opts.Svcs) > 0 && !isIn(svcName, *opts.Svcs) {
 			opts.WarnAtSvc(3, "non-opt", svcName, "")
@@ -150,44 +174,51 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 			return nil
 		}
 
-		// build svcCache per class/subnet/tag from tags in manifest
+		// build svcCache per subnet/tag from tags in manifest
 
 		// build list of subnets=>[]tags valid for svcName
 		for _, grp := range manifest.Nomad.Groups {
-			subnet := grp.Class // web, publishing, management
+			// grp is a per-subnet nomad config, we only want the subnet from it
 
-		ALLTAGS:
-			for _, tag := range grp.Tags {
-
-				if _, ok := tagSubnetCount[tag]; !ok {
-					tagSubnetCount[tag] = make(map[config.Subnet]int)
-				}
-				tagSubnetCount[tag][subnet]++
-
-				// see if cfg defaults.ignore[svcName] exists for this tag or '*'
-				for _, svcDefault := range cfg.Services.Defaults {
-					if isIn(svcName, svcDefault.Ignore) &&
-						(isTagIn(tag, svcDefault.Tags, false) || isTagIn("*", svcDefault.Tags, true)) {
-
-						opts.WarnAtSvc(3, "man ignore", svcName, "in %-12q because manifest tag %-18q is in cfg default tags: %v", subnet, tag, svcDefault.Tags)
-						break ALLTAGS // ignore rest of group(subnet)
-					}
-				}
-
-				// skip unless this manifest tag is in requested cmdline tags
-				if len(optsTags) > 0 && !isTagIn(tag, optsTags, true) {
-					opts.WarnAtSvc(3, "skip man", svcName, "in %-12q because tag %-18q not requested", subnet, tag)
+			subnet := grp.Class
+			// subnet is one of: web, publishing, management(?)
+			for _, manifestSvcForSubnet := range manifest.Svcs.Groups {
+				if manifestSvcForSubnet.Subnet != grp.Class {
 					continue
 				}
 
-				if _, ok := tagsRequestedPerSubnet[subnet]; !ok {
-					tagsRequestedPerSubnet[subnet] = make(map[string][]config.Tag)
+			ALLTAGS:
+				for _, tag := range manifestSvcForSubnet.Tags {
+
+					if _, ok := tagSubnetCount[tag]; !ok {
+						tagSubnetCount[tag] = make(map[config.Subnet]int)
+					}
+					tagSubnetCount[tag][subnet]++
+
+					// see if cfg defaults.ignore[svcName] exists for this tag or '*'
+					for _, svcDefault := range cfg.Services.Defaults {
+						if isIn(svcName, svcDefault.Ignore) &&
+							(isTagIn(tag, svcDefault.Tags, false) || isTagIn("*", svcDefault.Tags, true)) {
+
+							opts.WarnAtSvc(3, "man ignore", svcName, "in %-12q because manifest tag %-18q is in cfg default tags: %v", subnet, tag, svcDefault.Tags)
+							break ALLTAGS // ignore rest of subnet
+						}
+					}
+
+					// skip unless this manifest tag is in requested cmdline tags
+					if len(optsTags) > 0 && !isTagIn(tag, optsTags, true) {
+						opts.WarnAtSvc(3, "skip man", svcName, "in %-12q because tag %-18q not requested", subnet, tag)
+						continue
+					}
+
+					// add this tag to this subnet/svcName
+					if _, ok := tagsRequestedPerSubnet[subnet]; !ok {
+						tagsRequestedPerSubnet[subnet] = make(map[string][]config.Tag)
+					}
+					tagsRequestedPerSubnet[subnet][svcName] = append(tagsRequestedPerSubnet[subnet][svcName], tag)
 				}
-				tagsRequestedPerSubnet[subnet][svcName] = append(tagsRequestedPerSubnet[subnet][svcName], tag)
-				// break
 			}
 		}
-
 		opts.WarnAtSvc(3, strconv.Itoa(len(tagsRequestedPerSubnet))+" tags", svcName, "-               valyd %+v", tagsRequestedPerSubnet)
 
 		for subnet := range tagsRequestedPerSubnet {
@@ -218,6 +249,18 @@ func listServices(cfg *config.Config, opts config.WithOpts, args []string) (serv
 
 			cfgSvcOverrides := []config.Service{}
 			hasPerTagOrPerSvcMods := false
+
+			// add manifest defaults (all subnets, then per-this-subnet)
+			cfgSvcOverrides = append(cfgSvcOverrides, manifest.Svcs)
+			for _, manifestSvcForSubnet := range manifest.Svcs.Groups {
+				if manifestSvcForSubnet.Subnet != subnet {
+					continue
+				}
+				overlapDef := getTagOverlap(tagsRequestedPerSubnet[subnet][svcName], manifestSvcForSubnet.Tags)
+				if isTagIn("*", manifestSvcForSubnet.Tags, true) || len(overlapDef) > 0 {
+					cfgSvcOverrides = append(cfgSvcOverrides, manifestSvcForSubnet)
+				}
+			}
 
 			// is cfg defaults[no-tag,tag='*' or overlap-with-wanted], then override
 			for _, cfgSvcDefForTags := range cfg.Services.Defaults {
