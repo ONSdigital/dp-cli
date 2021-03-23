@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// TODO: remove hello world example handler route
 // Setup registers routes for the service
 func Setup(ctx context.Context, r *mux.Router, cfg *config.Config, hc health.HealthCheck) {
     log.Event(ctx, "adding routes")
