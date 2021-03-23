@@ -13,7 +13,7 @@ import (
 func TestUnitMapper(t *testing.T) {
 	ctx := context.Background()
 
-	Convey("test CreateFilterOverview correctly maps item to filterOverview page model", t, func() {
+	Convey("test mapper adds emphasis to hello world string when set in config", t, func() {
 		cfg := config.Config{
 			BindAddr:                   "1234",
 			GracefulShutdownTimeout:    0,
