@@ -1,16 +1,13 @@
 # Project Generation 
 
 ## What
-If you do not have a folder structure for your project, and one doesn't exist on GitHub for your project, then this project templating tool will do this for you. If you wish, it will also create the repo on Github for you.
-
-This tool can be used to create projects of the following types:
-- [generic-project](#generic-project)
-- [base-application](#base-application)
-- [api](#api)
-- [controller](#controller)
-- [event-driven](#event-driven)
-- [library](#library)
-
+This tool can be used to create projects of the following categories:
+- generic-project
+    - base-application 
+        - api 
+        - controller 
+        - event-driven
+        - library
 
 ## How to use
 It is always beneficial to ensure you are using the most up to date version of the dp-cli tool. 
@@ -30,7 +27,7 @@ Although these flags are optional, for most, if they are not provided then the u
 - --name :              The name of the application, if Digital specific application it should be prepended with 'dp-'
 - --go-version :        The version of Go the application should use (Not used on generic-projects)
 - --project-location :  Location to generate project in
-- --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO
+- --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
 - --type :              Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
 
 ### Example output

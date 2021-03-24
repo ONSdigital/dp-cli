@@ -23,7 +23,7 @@ func generateProjectSubCommand() *cobra.Command {
 	command.Flags().String("go-version", "", "The version of Go the application should use")
 	command.Flags().String("project-location", "", "Location to generate project in")
 	command.Flags().String("create-repository", "n", "Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
-	command.Flags().String("type", "", "Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven'")
+	command.Flags().String("type", "", "Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
 	command.Flags().String("port", "", "The port this application will run on")
 	command.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
 
