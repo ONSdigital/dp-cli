@@ -236,8 +236,32 @@ var apiFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "api/features/helloworld.feature",
+		outputPath:   "features/helloworld",
+		extension:    ".feature",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/features/steps/example_component.go",
+		outputPath:   "features/steps/example_component",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/features/steps/steps.go",
+		outputPath:   "features/steps/steps",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "api/main.go",
 		outputPath:   "main",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "api/main_test.go",
+		outputPath:   "main_test",
 		extension:    ".go",
 		filePrefix:   "",
 	},

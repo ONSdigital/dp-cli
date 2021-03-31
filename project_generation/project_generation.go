@@ -136,6 +136,7 @@ func (a application) createGenericContentDirectoryStructure() error {
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createApplicationContentDirectoryStructure() error {
 	os.MkdirAll(filepath.Join(a.pathToRepo, "config"), os.ModePerm)
+	os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm)
 	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
 	return nil
 }
