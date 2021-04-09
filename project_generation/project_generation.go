@@ -191,6 +191,10 @@ func (a application) createEventDrivenContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

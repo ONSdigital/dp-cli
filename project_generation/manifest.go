@@ -242,13 +242,13 @@ var apiFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
-		templatePath: "api/features/steps/example_component.go",
+		templatePath: "api/features/steps/example_component.go.tmpl",
 		outputPath:   "features/steps/example_component",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "api/features/steps/steps.go",
+		templatePath: "api/features/steps/steps.go.tmpl",
 		outputPath:   "features/steps/steps",
 		extension:    ".go",
 		filePrefix:   "",
@@ -352,7 +352,6 @@ var eventFiles = []fileGen{
 		extension:    ".go",
 		filePrefix:   "",
 	},
-
 	{
 		templatePath: "event/service/initialise.go",
 		outputPath:   "service/initialise",
@@ -378,8 +377,32 @@ var eventFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "event/features/helloworld.feature",
+		outputPath:   "features/helloworld",
+		extension:    ".feature",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/features/steps/example_component.go",
+		outputPath:   "features/steps/example_component",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/features/steps/steps.go",
+		outputPath:   "features/steps/steps",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "event/main.go",
 		outputPath:   "main",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/main_test.go",
+		outputPath:   "main_test",
 		extension:    ".go",
 		filePrefix:   "",
 	},

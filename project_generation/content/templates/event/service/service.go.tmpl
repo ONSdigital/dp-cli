@@ -45,7 +45,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	}
 
 	// Event Handler for Kafka Consumer
-	event.Consume(ctx, consumer, &event.HelloCalledHandler{}, cfg.KafkaNumWorkers)
+	event.Consume(ctx, consumer, &event.HelloCalledHandler{}, cfg)
 
 	// Kafka error logging go-routine
 	consumer.Channels().LogErrors(ctx, "kafka consumer")

@@ -18,6 +18,7 @@ type Config struct {
 	KafkaNumWorkers            int           `envconfig:"KAFKA_NUM_WORKERS"`
 	HelloCalledGroup           string        `envconfig:"HELLO_CALLED_GROUP"`
 	HelloCalledTopic           string        `envconfig:"HELLO_CALLED_TOPIC"`
+	OutputFilePath             string        `envconfig:"OUTPUT_FILE_PATH"`
 }
 
 var cfg *Config
@@ -40,6 +41,7 @@ func Get() (*Config, error) {
 		KafkaNumWorkers:            1,
 		HelloCalledGroup:           "{{.Name}}",
 		HelloCalledTopic:           "hello-called",
+		OutputFilePath:             "/tmp/helloworld.txt",
 	}
 
 	return cfg, envconfig.Process("", cfg)
