@@ -131,7 +131,7 @@ func ValidateAppDescription(ctx context.Context, description string) (string, er
 func ValidateProjectType(ctx context.Context, projectType string) (validatedProjectType string, err error) {
 	if projectType == "" {
 		prompt := "Please specify the project type"
-		options := []string{"generic-project", "base-application", "api", "controller", "event-driven"}
+		options := []string{"generic-project", "base-application", "api", "controller", "event-driven", "library"}
 		projectType, err = OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			return "", err
@@ -155,9 +155,8 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 	return goVer, nil
 }
 
-func ValidatePortNumber(ctx context.Context, port string) (string, error) {
-	var err error = nil
-	for port == "" {
+func ValidatePortNumber(ctx context.Context, port string) (validatedPort string, err error) {
+	if port == "" {
 		port, err = PromptForInput(ctx, "Please specify the port number for this app, or leave blank for a library:")
 		if err != nil {
 			return "", err

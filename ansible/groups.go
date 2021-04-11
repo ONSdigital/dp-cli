@@ -11,7 +11,6 @@ import (
 
 var (
 	groupPrefix    = "["
-	groupSeparator = ":"
 	groupSuffix    = "]"
 )
 
@@ -48,7 +47,7 @@ func parseFile(fileBytes []byte) ([]string, error) {
 		s = strings.TrimSpace(s)
 
 		if isGroupLine(s) {
-			name := s[1:strings.Index(s, groupSeparator)]
+			name := s[1:len(s)-1]
 			groups = append(groups, name)
 		}
 	}
@@ -57,5 +56,5 @@ func parseFile(fileBytes []byte) ([]string, error) {
 }
 
 func isGroupLine(s string) bool {
-	return strings.HasPrefix(s, groupPrefix) && strings.Contains(s, groupSeparator) && strings.HasSuffix(s, groupSuffix)
+	return strings.HasPrefix(s, groupPrefix) && strings.HasSuffix(s, groupSuffix)
 }
