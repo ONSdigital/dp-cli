@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,10 +9,12 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var ctx = context.Background()
+
 func TestHelloHandler(t *testing.T) {
 
 	Convey("Given a Hello handler ", t, func() {
-		helloHandler := HelloHandler()
+		helloHandler := HelloHandler(ctx)
 
 		Convey("when a good response is returned", func() {
 			req := httptest.NewRequest("GET", "http://localhost:8080/hello", nil)

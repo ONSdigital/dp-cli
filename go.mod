@@ -9,6 +9,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-github/v28 v28.1.1
+	github.com/gorilla/mux v1.8.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e // indirect
 	github.com/johnnadratowski/golang-neo4j-bolt-driver v0.0.0-20181101021923-6b24c0085aae
 	github.com/mattn/go-colorable v0.1.4 // indirect
