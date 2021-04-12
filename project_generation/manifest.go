@@ -53,6 +53,12 @@ var applicationFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "base-app/ci/component.yml",
+		outputPath:   "ci/component",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "base-app/ci/audit.yml",
 		outputPath:   "ci/audit",
 		extension:    ".yml",
@@ -68,6 +74,13 @@ var applicationFiles = []fileGen{
 	{
 		templatePath: "base-app/ci/scripts/unit.sh",
 		outputPath:   "ci/scripts/unit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "base-app/ci/scripts/component.sh",
+		outputPath:   "ci/scripts/component",
 		extension:    ".sh",
 		filePrefix:   "",
 		executable:   true,
