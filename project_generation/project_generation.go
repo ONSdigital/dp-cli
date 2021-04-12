@@ -43,6 +43,7 @@ const (
 	API             ProjectType = "api"
 	Controller      ProjectType = "controller"
 	EventDriven     ProjectType = "event-driven"
+	Library         ProjectType = "library"
 )
 
 // To be replaced by `make install` with the user's own templates path
@@ -120,6 +121,17 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 		}
 		FinaliseModules(ctx, newApp.pathToRepo)
 		FormatGoFiles(ctx, newApp.pathToRepo)
+	case Library:
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		if err != nil {
+			return err
+		}
+		err = newApp.generateLibraryContent()
+		if err != nil {
+			return err
+		}
+		FinaliseModules(ctx, newApp.pathToRepo)
+		FormatGoFiles(ctx, newApp.pathToRepo)
 	default:
 		log.Event(ctx, "unable to generate project due to unknown project type given", log.Error(err))
 	}
@@ -137,6 +149,12 @@ func (a application) createGenericContentDirectoryStructure() error {
 func (a application) createApplicationContentDirectoryStructure() error {
 	os.MkdirAll(filepath.Join(a.pathToRepo, "config"), os.ModePerm)
 	os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm)
+	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
+	return nil
+}
+
+// createApplicationContentDirectoryStructure will create child directories for Application content at a given path
+func (a application) createLibraryContentDirectoryStructure() error {
 	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
 	return nil
 }
@@ -228,6 +246,27 @@ func (a application) generateApplicationContent() error {
 	}
 
 	err = a.generateBatchOfFileTemplates(applicationFiles)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// generateLibraryContent will create all files for Application content
+func (a application) generateLibraryContent() error {
+	applyFilePrefixesToManifest(applicationFiles, a.name)
+	err := a.generateGenericContent()
+	if err != nil {
+		return err
+	}
+
+	err = a.createLibraryContentDirectoryStructure()
+	if err != nil {
+		return err
+	}
+
+	err = a.generateBatchOfFileTemplates(libraryFiles)
 	if err != nil {
 		return err
 	}

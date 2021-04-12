@@ -157,7 +157,7 @@ Use the available commands for more info on the functionality available.
 
 `error creating group commands for env: develop: error fetching ec2: {"develop" "development"}: NoCredentialProviders: no valid providers in chain. Deprecated.`
 
-[Ensure you have AWS credentials set up](https://github.com/ONSdigital/dp/blob/master/guides/AWS_CREDENTIALS.md).
+[Ensure you have AWS credentials set up](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md).
 
 If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
 

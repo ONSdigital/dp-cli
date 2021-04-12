@@ -130,6 +130,60 @@ var applicationFiles = []fileGen{
 	},
 }
 
+var libraryFiles = []fileGen{
+	{
+		templatePath: "library/ci/build.yml",
+		outputPath:   "ci/build",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/ci/unit.yml",
+		outputPath:   "ci/unit",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/ci/audit.yml",
+		outputPath:   "ci/audit",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/ci/scripts/build.sh",
+		outputPath:   "ci/scripts/build",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/ci/scripts/unit.sh",
+		outputPath:   "ci/scripts/unit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/ci/scripts/audit.sh",
+		outputPath:   "ci/scripts/audit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/README.md",
+		outputPath:   "README",
+		extension:    ".md",
+		filePrefix:   "",
+	},
+}
+
 var controllerFiles = []fileGen{
 	{
 		templatePath: "controller/config/config.go",
