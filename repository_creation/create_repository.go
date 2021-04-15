@@ -61,7 +61,7 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 		Name:          github.String(repoName),
 		Description:   github.String(repoDescription),
 		DefaultBranch: github.String(defaultBranch),
-		MasterBranch:    github.String(mainBranch),
+		MasterBranch:  github.String(mainBranch),
 		Private:       github.Bool(false),
 		HasWiki:       github.Bool(false),
 		HasProjects:   github.Bool(false),
@@ -236,7 +236,7 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 		if exists {
 			accessToken = token
 		} else {
-			accessToken = PromptForInput("Please provide your personal access token (to create one follow this guide https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line):")
+			accessToken = PromptForInput("Please provide your personal access token (to create one follow this guide https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token):")
 		}
 	} else {
 		accessToken = personalAccessToken
