@@ -25,6 +25,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error) {
 	w.WriteHeader(status)
 }
 
+// TODO: remove hello world example handler
 // HelloWorld Handler
 func HelloWorld(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {

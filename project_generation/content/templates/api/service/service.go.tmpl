@@ -27,12 +27,12 @@ func Run(ctx context.Context, cfg *config.Config, serviceList *ExternalServiceLi
 
 	log.Event(ctx, "using service configuration", log.Data{"config": cfg}, log.INFO)
 
-	// Get HTTP Server and ... // ADD CODE: Add any middleware that your service requires
+	// Get HTTP Server and ... // TODO: Add any middleware that your service requires
 	r := mux.NewRouter()
 
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
-	// ADD CODE: Add other(s) to serviceList here
+	// TODO: Add other(s) to serviceList here
 
 	// Setup the API
 	a := api.Setup(ctx, r)
@@ -91,7 +91,7 @@ func (svc *Service) Close(ctx context.Context) error {
 			hasShutdownError = true
 		}
 
-		// ADD CODE HERE: Close other dependencies, in the expected order
+		// TODO: Close other dependencies, in the expected order
 	}()
 
 	// wait for shutdown success (via cancel) or failure (timeout)
@@ -117,7 +117,7 @@ func (svc *Service) Close(ctx context.Context) error {
 func registerCheckers(ctx context.Context,
 	hc HealthChecker) (err error) {
 
-	// ADD CODE: add other health checks here, as per dp-upload-service
+	// TODO: add other health checks here, as per dp-upload-service
 
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/log.go/log"
 )
-
+// TODO: remove hello called example handler
 // HelloCalledHandler ...
 type HelloCalledHandler struct {
 }
@@ -20,7 +20,6 @@ func (h *HelloCalledHandler) Handle(ctx context.Context, cfg *config.Config, eve
 	}
 	log.Event(ctx, "event handler called", log.INFO, logData)
 
-	//TODO Replace with actual event handler logic…
 	greeting := fmt.Sprintf("Hello, %s!", event.RecipientName)
 	err = ioutil.WriteFile(cfg.OutputFilePath, []byte(greeting), 0644)
 	if err != nil {

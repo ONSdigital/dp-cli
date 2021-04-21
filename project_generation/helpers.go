@@ -63,20 +63,14 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 			Context:   ctx,
 			Validator: ValidateGoVersion,
 		}
-		gv = listOfArguments["goVersion"].OutputVal
 	} else {
 		gv = goVersion
 	}
 
-	if port == "" {
-		listOfArguments["port"] = &Argument{
-			InputVal:  port,
-			Context:   ctx,
-			Validator: ValidatePortNumber,
-		}
-		prt = listOfArguments["port"].OutputVal
-	} else {
-		prt = port
+	listOfArguments["port"] = &Argument{
+		InputVal:  port,
+		Context:   ctx,
+		Validator: ValidatePortNumber,
 	}
 
 	listOfArguments, err = ValidateArguments(listOfArguments)
@@ -84,7 +78,10 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 		log.Event(ctx, "validation error", log.Error(err))
 		return "", "", "", "", "", "", err
 	}
-
+	prt = listOfArguments["port"].OutputVal
+	if goVerUnset && ProjectType(pt) != GenericProject {
+		gv = listOfArguments["goVersion"].OutputVal
+	}
 	return an, ad, pt, pl, gv, prt, nil
 }
 
@@ -143,13 +140,14 @@ func ValidateProjectType(ctx context.Context, projectType string) (validatedProj
 	return projectType, err
 }
 
+//ValidateGoVersion will ensure that the golang docker hub image version provided by the user is valid
 func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 	var err error = nil
 	if ValidVersionNumber(goVer) {
 		return goVer, nil
 	}
 	for !ValidVersionNumber(goVer) {
-		goVer, err = PromptForInput(ctx, "Please specify the version of GO to use:")
+		goVer, err = PromptForInput(ctx, "Please specify the docker hub image version of GO to use:e.g.(1.x.x)")
 		if err != nil {
 			return "", err
 		}
@@ -157,16 +155,14 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 	return goVer, nil
 }
 
-func ValidatePortNumber(ctx context.Context, unvalidatedPort string) (validatedPort string, err error) {
-	if unvalidatedPort == "" {
-		validatedPort, err = PromptForInput(ctx, "Please specify the port number for this app, or leave blank for a library:")
+func ValidatePortNumber(ctx context.Context, port string) (validatedPort string, err error) {
+	if port == "" {
+		port, err = PromptForInput(ctx, "Please specify the port number for this app, or leave blank for a library:")
 		if err != nil {
 			return "", err
 		}
-	} else {
-		validatedPort = unvalidatedPort
 	}
-	return validatedPort, err
+	return port, nil
 }
 
 // ValidateProjectLocation will ensure that the projects location has been provided and is acceptable.
@@ -398,8 +394,20 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) error {
 	return nil
 }
 
+// runGoModTidy will download all the dependencies that are required for your source file and updates go mod with
+// that dependency.
+func runGoModTidy(ctx context.Context, pathToRepo string) {
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = pathToRepo
+	err := cmd.Run()
+	if err != nil {
+		log.Event(ctx, "error initialising go modules", log.Error(err))
+	}
+}
+
 // FinaliseModules will run go build ./... to generate go modules dependency management files
 func FinaliseModules(ctx context.Context, pathToRepo string) {
+	runGoModTidy(ctx, pathToRepo)
 	cmd := exec.Command("go", "build", "./...")
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
