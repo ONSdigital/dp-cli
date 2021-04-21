@@ -309,13 +309,13 @@ var apiFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
-		templatePath: "api/features/steps/example_component.go.tmpl",
+		templatePath: "api/features/steps/example_component.go",
 		outputPath:   "features/steps/example_component",
 		extension:    ".go",
 		filePrefix:   "",
 	},
 	{
-		templatePath: "api/features/steps/steps.go.tmpl",
+		templatePath: "api/features/steps/steps.go",
 		outputPath:   "features/steps/steps",
 		extension:    ".go",
 		filePrefix:   "",
