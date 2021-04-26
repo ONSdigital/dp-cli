@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
+const CONCOURSE_SSH_PORT = 22
+
 type secGroup struct {
 	id          string
 	name        string
@@ -137,7 +139,7 @@ func getELBWebSGForEnvironment(environment, profile, sshUser string, extraPorts 
 }
 
 func getConcourseWebSG(sshUser string) (secGroup, error) {
-	return getNamedSG("concourse-ci-web", "", "", sshUser, []int64{443})
+	return getNamedSG("concourse-ci-web", "", "", sshUser, []int64{CONCOURSE_SSH_PORT})
 }
 
 // AllowIPForEnvironment adds your IP to this environment
