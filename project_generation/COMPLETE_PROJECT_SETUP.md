@@ -5,7 +5,7 @@ ____
 
 ## WARNING
 
-Interim actions required after completion of generating a repository
+Interim actions required after completion of generating a repository, as most DP repo's are using `master` as their default branch; the exception are Libraries which should all be `main`.  This tooling will create a default branch of `main` for all types of repository.
 - Change branch name `main` to `master`
 - Update security settings for the `master` branch to match that of `main`
 
