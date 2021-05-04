@@ -142,6 +142,10 @@ func getConcourseWebSG(sshUser string) (secGroup, error) {
 	return getNamedSG("concourse-ci-web", "", "", sshUser, []int64{CONCOURSE_SSH_PORT})
 }
 
+func getConcourseWorkerSG(sshUser string) (secGroup, error) {
+	return getNamedSG("concourse-ci-worker", "", "", sshUser, []int64{CONCOURSE_SSH_PORT})
+}
+
 // AllowIPForEnvironment adds your IP to this environment
 func AllowIPForEnvironment(sshUser, environment, profile string, extraPorts config.ExtraPorts) error {
 	return changeIPsForEnvironment(true, sshUser, environment, profile, extraPorts)
@@ -174,6 +178,11 @@ func changeIPsForEnvironment(isAllow bool, sshUser, environment, profile string,
 	if environment == "concourse" {
 		ec2Svc = getEC2Service("", "")
 		if sg, err = getConcourseWebSG(sshUser); err != nil {
+			return err
+		}
+		secGroups = append(secGroups, sg)
+
+		if sg, err = getConcourseWorkerSG(sshUser); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
