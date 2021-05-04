@@ -116,17 +116,17 @@ func createInstanceSCPSubCommands(grp string, cfg *config.Config, env config.Env
 		index := strconv.Itoa(i + 1)
 
 		instanceC := &cobra.Command{
-			Use:   index + " <srcFile> <destFile>",
+			Use:   index + " <srcFiles...> <destFile>",
 			Short: fmt.Sprintf("scp on %q %q (%s)", grp, inst.Name, inst.IPAddress),
-			Long: fmt.Sprintf("scp on %q %q (%s) args: <srcFile> <destFile>\n"+
-				"By default, <srcFile> is local and pushed to <remoteHost>:<destFile>, "+
-				"(but if `scp --pull` was used, <remoteHost>:<srcFile> is pulled).\n"+
-				"The remote file can be a relative path (rel. to your remote home dir).",
+			Long: fmt.Sprintf("scp on %q %q (%s) args: <srcFiles...> <destFile>\n"+
+				"By default, <srcFiles> are local and pushed to <remoteHost>:<destFile>, "+
+				"(but if `scp --pull` was used, <remoteHost>:<srcFiles> are pulled).\n"+
+				"The remote files can be relative paths (rel. to your remote home dir).",
 				grp, inst.Name, inst.IPAddress,
 			),
-			Args: cobra.ExactValidArgs(2),
+			Args: cobra.MinimumNArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return scp.Launch(cfg, e, inst, scpOpts, args[0], args[1])
+				return scp.Launch(cfg, e, inst, scpOpts, args[:len(args)-1], args[len(args)-1])
 			},
 		}
 
