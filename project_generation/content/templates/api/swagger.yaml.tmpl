@@ -11,7 +11,7 @@ schemes:
   - http
 tags:
   - name: "hello"
-  - name: "Private"
+  - name: "private"
 paths:
   /hello:
     get:
@@ -32,7 +32,7 @@ paths:
   /health:
     get:
       tags:
-        - Private
+        - private
       summary: "Returns API's health status"
       description: "Returns health status of the API and checks on dependent services"
       produces:
