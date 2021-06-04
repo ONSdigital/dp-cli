@@ -1,12 +1,10 @@
-dp-cli
-======
+# dp-cli
 
 Command-line client providing *handy helper tools* for the ONS Digital Publishing software engineering team
 
 :warning: Still in active development. If you notice any bugs/issues please open a Github issue.
 
-Getting started
----------------
+## Getting started
 
 Clone the code
 
@@ -84,16 +82,21 @@ vi ~/.dp-cli-config.yml
 
 [ set paths for:
 
+```yaml
     dp-setup-path:
     dp-hierarchy-builder-path:
     dp-code-list-scripts-path:
 
    set your `ssh-user:`
+```
 
 and if this is a first time setup, comment out production from environments, thus:
 
+```yaml
     # - name: production
     #   profile: production
+```
+
 ]
 
 ### Build and run
@@ -104,15 +107,17 @@ Build, install and start the CLI:
 make install
 dp
 ```
+
 [
   If you get:
 
   `zsh: command not found: dp`
 
 Then either edit your .zshrc file have the correct path OR do:
-  ```sh
-  echo 'export PATH="$GOPATH/bin:$PATH"' >> ~/.zshrc
-  ```
+
+```sh
+echo 'export PATH="$GOPATH/bin:$PATH"' >> ~/.zshrc
+```
 
   and restart the terminal ]
 
@@ -210,12 +215,15 @@ You can run ssh commands from the command-line, for example to determine the tim
 
 ```sh
 $ dp ssh develop web 1 date
+[...motd banner...]
+[result of date command]
 ```
 
 :warning: However, if you wish to include *flags* in the (remote) command, you must tell `dp` to stop looking for flags - use the `--` flag:
 
 ```sh
 $ dp ssh develop web 1 -- ls -la
+[...]
 ```
 
 #### Manually configuring your IP
