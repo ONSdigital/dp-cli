@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ONSdigital/dp-cli/ansible"
 	"github.com/ONSdigital/dp-cli/aws"
@@ -70,6 +71,7 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 	}
 
 	commands := make([]*cobra.Command, 0)
+	seenIP := make(map[string]bool)
 
 	for _, grp := range groups {
 		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp)
@@ -94,6 +96,24 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 
 		grpC.AddCommand(instanceCommands...)
 		commands = append(commands, grpC)
+
+		for _, inst := range instances {
+			if _, ok := seenIP[inst.IPAddress]; ok {
+				continue
+			}
+			seenIP[inst.IPAddress] = true
+
+			e := env
+			instX := inst
+			ipC := &cobra.Command{
+				Use:   inst.IPAddress,
+				Short: fmt.Sprintf("ssh to %s %-15s [%s]", env.Name, inst.IPAddress, strings.Join(inst.GroupAKA, ", ")),
+				RunE: func(cmd *cobra.Command, args []string) error {
+					return ssh.Launch(cfg, e, instX, portArgs, verboseCount, args)
+				},
+			}
+			commands = append(commands, ipC)
+		}
 	}
 
 	return commands, nil

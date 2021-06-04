@@ -29,6 +29,7 @@ type EC2Result struct {
 	Environment   string
 	IPAddress     string
 	AnsibleGroups []string
+	GroupAKA      []string
 }
 
 var resultCache = make(map[string][]EC2Result)
@@ -335,12 +336,23 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 					IPAddress:     ipAddr,
 					Environment:   environment,
 					AnsibleGroups: strings.Split(ansibleGroup, ","),
+					GroupAKA:      []string{},
 				})
 			}
 		}
 	}
 
 	sort.Slice(resultCache[environment], func(i, j int) bool { return resultCache[environment][i].Name < resultCache[environment][j].Name })
+
+	// add (e.g.) "publishing 2" to GroupAKA field, now that the list is sorted
+	countGroup := make(map[string]int)
+	for i := range resultCache[environment] {
+		for _, grp := range resultCache[environment][i].AnsibleGroups {
+			countGroup[grp]++
+			resultCache[environment][i].GroupAKA = append(resultCache[environment][i].GroupAKA, fmt.Sprintf("%s %d", grp, countGroup[grp]))
+		}
+	}
+
 	return resultCache[environment], nil
 }
 
