@@ -81,7 +81,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 
 	lvl := out.GetLevel(env)
 	out.Highlight(lvl, "SCP %s for %s (%s -> %s)", verb, env.Name, strings.Join(srcFiles, ", "), target)
-	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups)
+	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s | AKA %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
 	if *opts.IsPull && env.Name == "production" && !*opts.IsConfirmed {
 		reader := bufio.NewReader(os.Stdin)
