@@ -1,6 +1,6 @@
 module github.com/ONSdigital/dp-cli
 
-go 1.12
+go 1.16
 
 require (
 	github.com/ONSdigital/go-ns v0.0.0-20191104121206-f144c4ec2e58 // indirect
