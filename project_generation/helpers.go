@@ -129,13 +129,19 @@ func ValidateAppDescription(ctx context.Context, description string) (string, er
 
 // ValidateProjectType will ensure that the project type provided by the users is one that can be boilerplate
 func ValidateProjectType(ctx context.Context, projectType string) (validatedProjectType string, err error) {
-	if projectType == "" {
-		prompt := "Please specify the project type"
-		options := []string{"generic-project", "base-application", "api", "controller", "event-driven", "library"}
-		projectType, err = OptionPromptInput(ctx, prompt, options...)
-		if err != nil {
-			return "", err
+	options := []string{"generic-project", "base-application", "api", "controller", "event-driven", "library"}
+
+	if projectType != "" {
+		for _, option := range options {
+			if projectType == option {
+				return projectType, err
+			}
 		}
+	}
+	prompt := "Please specify the project type"
+	projectType, err = OptionPromptInput(ctx, prompt, options...)
+	if err != nil {
+		return "", err
 	}
 	return projectType, err
 }
