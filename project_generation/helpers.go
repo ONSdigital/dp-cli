@@ -366,7 +366,7 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 			log.Event(ctx, "failed to convert user input to valid option", log.Error(err))
 			return "", scanner.Err()
 		}
-		if optionSelected > len(options) || optionSelected < 0 {
+		if optionSelected > len(options)-1 || optionSelected < 0 {
 			fmt.Println("\n selected option is not valid, please select from the range provided")
 		} else {
 			return options[optionSelected], nil
