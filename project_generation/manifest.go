@@ -65,6 +65,12 @@ var applicationFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "base-app/ci/lint.yml",
+		outputPath:   "ci/lint",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "base-app/ci/scripts/build.sh",
 		outputPath:   "ci/scripts/build",
 		extension:    ".sh",
@@ -88,6 +94,13 @@ var applicationFiles = []fileGen{
 	{
 		templatePath: "base-app/ci/scripts/audit.sh",
 		outputPath:   "ci/scripts/audit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "base-app/ci/scripts/lint.sh",
+		outputPath:   "ci/scripts/lint",
 		extension:    ".sh",
 		filePrefix:   "",
 		executable:   true,
@@ -150,6 +163,12 @@ var libraryFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "library/ci/lint.yml",
+		outputPath:   "ci/lint",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "library/ci/scripts/build.sh",
 		outputPath:   "ci/scripts/build",
 		extension:    ".sh",
@@ -166,6 +185,13 @@ var libraryFiles = []fileGen{
 	{
 		templatePath: "library/ci/scripts/audit.sh",
 		outputPath:   "ci/scripts/audit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/ci/scripts/lint.sh",
+		outputPath:   "ci/scripts/lint",
 		extension:    ".sh",
 		filePrefix:   "",
 		executable:   true,

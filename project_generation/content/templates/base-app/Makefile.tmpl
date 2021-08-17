@@ -13,6 +13,10 @@ all: audit test build
 audit:
 	go list -json -m all | nancy sleuth --exclude-vulnerability-file ./.nancy-ignore
 
+.PHONY: lint
+lint:
+	exit
+
 .PHONY: build
 build:
 	go build -tags 'production' $(LDFLAGS) -o $(BINPATH)/{{.Name}}
