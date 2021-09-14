@@ -30,6 +30,7 @@ type EC2Result struct {
 	IPAddress     string
 	AnsibleGroups []string
 	GroupAKA      []string
+	InstanceId    string
 }
 
 var resultCache = make(map[string][]EC2Result)
@@ -337,6 +338,7 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 					Environment:   environment,
 					AnsibleGroups: strings.Split(ansibleGroup, ","),
 					GroupAKA:      []string{},
+					InstanceId:    *i.InstanceId,
 				})
 			}
 		}
