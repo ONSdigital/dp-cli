@@ -27,11 +27,26 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
-	args := []string{}
+	var args []string
+	var userHost string
+	if env.Name != "sandbox" {
+		args = []string{"-F", "ssh.cfg"}
+		if portArgs != nil {
+			for _, portArg := range *portArgs {
+				sshPortArgs, err := getSSHPortArguments(portArg)
+				if err != nil {
+					return err
+				}
+				args = append(args, sshPortArgs...)
+			}
+		}
+		userHost = fmt.Sprintf("%s@%s", cfg.SSHUser, instance.IPAddress)
+	} else {
+		userHost = fmt.Sprintf("%s@%s", "ubuntu", instance.InstanceId)
+	}
 	for v := 0; v < *verboseCount; v++ {
 		args = append(args, "-v")
 	}
-	userHost := fmt.Sprintf("%s@%s", "ubuntu", instance.InstanceId)
 	args = append(args, userHost)
 	args = append(args, extraArgs...)
 	fmt.Println(args)
