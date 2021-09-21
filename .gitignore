@@ -6,3 +6,6 @@ dp-cli-config.yml
 dp-cli
 dp
 vendor/
+
+# Mac
+.DS_Store

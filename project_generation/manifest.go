@@ -218,6 +218,12 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "controller/config/config_test.go",
+		outputPath:   "config/config_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "controller/handlers/handlers.go",
 		outputPath:   "handlers/handlers",
 		extension:    ".go",
