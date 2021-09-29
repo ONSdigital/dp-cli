@@ -6,7 +6,7 @@ import (
 
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/mapper"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // ClientError is an interface that can be used to retrieve the status code if a client has errored
@@ -22,7 +22,7 @@ func setStatusCode(req *http.Request, w http.ResponseWriter, err error) {
 			status = err.Code()
 		}
 	}
-	log.Event(req.Context(), "setting-response-status", log.Error(err))
+	log.Error(req.Context(), "setting-response-status", err)
 	w.WriteHeader(status)
 }
 
@@ -47,7 +47,7 @@ func helloWorld(w http.ResponseWriter, req *http.Request, cfg config.Config) {
 
 	_, err = w.Write(b)
     	if err != nil {
-    		log.Event(ctx, "failed to write bytes for http response", log.Error(err))
+    		log.Error(ctx, "failed to write bytes for http response", err)
     		setStatusCode(req, w, err)
     		return
     	}

@@ -187,6 +187,10 @@ func (a application) createControllerContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service/mocks"), os.ModePerm)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
