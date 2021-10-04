@@ -302,6 +302,12 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "controller/Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "controller/README.md",
 		outputPath:   "README",
 		extension:    ".md",
