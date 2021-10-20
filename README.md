@@ -226,12 +226,22 @@ $ dp ssh develop web 1 -- ls -la
 [...]
 ```
 
-#### Manually configuring your IP
+#### Manually configuring your IP or user
 
-Optionally, (e.g. to avoid the program looking up your IP), you can use an environment variable `MY_IP` to force the IP used when running `dp remote allow`, for example:
+Optionally, (e.g. to avoid the program looking-up your IP),
+you can use the `--ip` flag (or an environment variable `MY_IP`) to force the IP used when running `dp remote allow`.
+For example:
 
 ```sh
+dp remote --ip 192.168.11.22 allow develop
+# or
 MY_IP=192.168.11.22 dp remote allow develop
+```
+
+Similarly, use the `--user` flag to change the label attached to the IP that is put into (or removed from) the _allow_ table.
+
+```sh
+dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow develop
 ```
 
 #### Remote allow extra ports

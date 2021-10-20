@@ -36,9 +36,9 @@ func withCWD(file string) (string, error) {
 
 // Launch an scp file copy to/from the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, opts Options, srcFiles []string, target string) (err error) {
-	if len(cfg.SSHUser) == 0 {
-		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh user", "spew config")
-		return errors.New("missing `ssh user` in config file")
+	if cfg.User == nil || len(*cfg.User) == 0 {
+		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh-user", "spew config")
+		return errors.New("missing `ssh-user` in config file")
 	}
 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
@@ -53,7 +53,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
-			srcFile = fmt.Sprintf("%s@%s:%s", cfg.SSHUser, instance.IPAddress, srcFile)
+			srcFile = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, srcFile)
 
 		} else {
 			if srcFile, err = withCWD(srcFile); err != nil {
@@ -75,7 +75,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			return err
 		}
 	} else {
-		target = fmt.Sprintf("%s@%s:%s", cfg.SSHUser, instance.IPAddress, target)
+		target = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, target)
 	}
 	cmdArgs = append(cmdArgs, target)
 

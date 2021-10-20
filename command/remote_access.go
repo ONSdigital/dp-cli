@@ -18,9 +18,22 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 		Short: "Allow or deny remote access to environment",
 	}
 
+	ipFlag := cmd.PersistentFlags().String("ip", "", "The IP for ssh,remote sub-commands")
+	if ipFlag != nil {
+		cfg.IPAddress = ipFlag
+	}
+	userDefault := ""
+	if cfg.User != nil {
+		userDefault = *cfg.User
+	}
+	userFlag := cmd.PersistentFlags().String("user", userDefault, "The user for access lists")
+	if userFlag != nil {
+		cfg.User = userFlag
+	}
+
 	subCommands := []*cobra.Command{
-		allowCommand(cfg.SSHUser, cfg.Environments),
-		denyCommand(cfg.SSHUser, cfg.Environments),
+		allowCommand(cfg.User, cfg.Environments, cfg),
+		denyCommand(cfg.User, cfg.Environments, cfg),
 	}
 
 	cmd.AddCommand(subCommands...)
@@ -28,13 +41,14 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 }
 
 // build the allow sub command - has a sub commands for each environment.
-func allowCommand(sshUser string, envs []config.Environment) *cobra.Command {
+func allowCommand(sshUser *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "allow",
 		Short: "allow access to environment",
 	}
 
 	skipDeny := c.PersistentFlags().BoolP("no-deny", "D", false, "Skip any 'deny' of existing IPs - allows >1 IP for user")
+	cfg.HttpOnly = c.PersistentFlags().BoolP("http-only", "H", false, "Allow only http-related ports (no ssh)")
 
 	cmds := make([]*cobra.Command, 0)
 
@@ -47,10 +61,10 @@ func allowCommand(sshUser string, envs []config.Environment) *cobra.Command {
 				lvl := out.GetLevel(env)
 				if !*skipDeny {
 					out.Highlight(lvl, "removing existing access to %s", env.Name)
-					aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts)
+					aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts, cfg)
 				}
 				out.Highlight(lvl, "allowing access to %s", env.Name)
-				return aws.AllowIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts)
+				return aws.AllowIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts, cfg)
 			},
 		})
 	}
@@ -60,7 +74,7 @@ func allowCommand(sshUser string, envs []config.Environment) *cobra.Command {
 }
 
 // build the deny sub command - has a sub command for each environment
-func denyCommand(sshUser string, envs []config.Environment) *cobra.Command {
+func denyCommand(sshUser *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "deny",
 		Short: "deny access to environment",
@@ -76,7 +90,7 @@ func denyCommand(sshUser string, envs []config.Environment) *cobra.Command {
 			RunE: func(cmd *cobra.Command, args []string) error {
 				lvl := out.GetLevel(env)
 				out.Highlight(lvl, "denying access to %s", env.Name)
-				return aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts)
+				return aws.DenyIPForEnvironment(sshUser, env.Name, env.Profile, env.ExtraPorts, cfg)
 			},
 		})
 	}

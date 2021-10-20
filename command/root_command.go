@@ -7,12 +7,8 @@ import (
 )
 
 var (
-	root *cobra.Command
-
-	onsDigitalPath       string
-	hierarchyBuilderPath string
-	codeListScriptsPath  string
-	appVersion           = "development"
+	root       *cobra.Command
+	appVersion = "development"
 )
 
 // Load will load the sub-commands
