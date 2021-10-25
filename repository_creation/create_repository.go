@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/ONSdigital/dp-cli/project_generation"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/google/go-github/v28/github"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -49,11 +49,11 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 
 	hasAccess, err := checkAccess(ctx, client)
 	if err != nil {
-		log.Event(ctx, "failed to check if had access", log.Error(err))
+		log.Error(ctx, "failed to check if had access", err)
 		return "", err
 	}
 	if !hasAccess {
-		log.Event(ctx, "user does not have access", log.Error(err))
+		log.Error(ctx, "user does not have access", err)
 		return cloneUrl, err
 	}
 
@@ -70,64 +70,64 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 
 	err = createRepo(ctx, client, repo)
 	if err != nil {
-		log.Event(ctx, "unable to create repository", log.Error(err))
+		log.Error(ctx, "unable to create repository", err)
 		return cloneUrl, err
 	}
 
 	if ProjectType != "generic-project" || branchStrategy == "git" {
 		err = createDevelopBranch(ctx, client, repoName)
 		if err != nil {
-			log.Event(ctx, "unable to create develop branch", log.Error(err))
+			log.Error(ctx, "unable to create develop branch", err)
 			return cloneUrl, err
 		}
 	}
 
 	err = setDevelopAsDefaultBranch(ctx, client, repoName, repo)
 	if err != nil {
-		log.Event(ctx, "failed to set default branch to develop", log.Error(err))
+		log.Error(ctx, "failed to set default branch to develop", err)
 		return cloneUrl, err
 	}
 
 	err = setBranchProtections(ctx, client, repoName, branchStrategy)
 	if err != nil {
-		log.Event(ctx, "unable to set all branch protections", log.Error(err))
+		log.Error(ctx, "unable to set all branch protections", err)
 		return cloneUrl, err
 	}
 
 	err = setTeamsAndCollaborators(ctx, client, repoName)
 	if err != nil {
-		log.Event(ctx, "unable to set team and collaborators", log.Error(err))
+		log.Error(ctx, "unable to set team and collaborators", err)
 		return cloneUrl, err
 	}
 	repositoryObj, _, err := client.Repositories.Get(ctx, org, repoName)
 	if err != nil {
-		log.Event(ctx, "unable to locate the the attempted newly created repository", log.Error(err))
+		log.Error(ctx, "unable to locate the the attempted newly created repository", err)
 		return cloneUrl, err
 	}
 	cloneUrl = repositoryObj.GetCloneURL()
 	// Notify user of completion and get them to turn off actions
-	log.Event(ctx, "repository has successfully been create please Disable Actions for this repository")
+	log.Info(ctx, "repository has successfully been create please Disable Actions for this repository")
 	return cloneUrl, nil
 }
 
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
 func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string) error {
 	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: "admin"}
-	resp, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
+	_, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
 	if err != nil {
-		log.Event(ctx, "unable to add collaborators", log.Error(err))
+		log.Error(ctx, "unable to add collaborators", err)
 		return err
 	}
 
 	user, resp, err := client.Users.Get(ctx, "")
 	if err != nil {
-		log.Event(ctx, "unable to get current github user", log.Error(err), log.Data{"response": resp})
+		log.Error(ctx, "unable to get current github user", err, log.Data{"response": resp})
 	}
 	userHandle := *user.Login
 
 	resp, err = client.Repositories.RemoveCollaborator(ctx, org, repoName, userHandle)
 	if err != nil {
-		log.Event(ctx, "unable to remove self as a collaborator", log.Error(err), log.Data{"response": resp})
+		log.Error(ctx, "unable to remove self as a collaborator", err, log.Data{"response": resp})
 	}
 	return err
 }
@@ -161,28 +161,29 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 		EnforceAdmins:              true,
 		Restrictions:               &branchRestrictions,
 	}
-	_, resp, err := client.Repositories.UpdateBranchProtection(ctx, org, repoName, "main", &protectionRequest)
+	_, _, err := client.Repositories.UpdateBranchProtection(ctx, org, repoName, "main", &protectionRequest)
 	if err != nil {
-		log.Event(ctx, "update branch protection failed for main", log.Error(err))
+		log.Error(ctx, "update branch protection failed for main", err)
 		return err
 	}
 
 	if branchStrategy == "git" {
-		_, resp, err = client.Repositories.UpdateBranchProtection(ctx, org, repoName, "develop", &protectionRequest)
+		_, _, err = client.Repositories.UpdateBranchProtection(ctx, org, repoName, "develop", &protectionRequest)
 		if err != nil {
-			log.Event(ctx, "update branch protection failed for develop", log.Error(err))
+			log.Error(ctx, "update branch protection failed for develop", err)
 			return err
 		}
 	}
+	var resp *github.Response
 	_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "main")
 	if err != nil {
-		log.Event(ctx, "adding protection, require signatures failed on branch main", log.Error(err), log.Data{"response": resp})
+		log.Error(ctx, "adding protection, require signatures failed on branch main", err, log.Data{"response": resp})
 		return err
 	}
 	if branchStrategy == "git" {
 		_, resp, err = client.Repositories.RequireSignaturesOnProtectedBranch(ctx, org, repoName, "develop")
 		if err != nil {
-			log.Event(ctx, "adding protection, require signatures failed on branch develop", log.Error(err), log.Data{"response": resp})
+			log.Error(ctx, "adding protection, require signatures failed on branch develop", err, log.Data{"response": resp})
 			return err
 		}
 	}
@@ -194,7 +195,7 @@ func setDevelopAsDefaultBranch(ctx context.Context, client *github.Client, repoN
 	repo.AutoInit = nil
 	_, resp, err := client.Repositories.Edit(ctx, org, repoName, repo)
 	if err != nil {
-		log.Event(ctx, "failed to set develop as the default branch", log.Error(err), log.Data{"response": resp})
+		log.Error(ctx, "failed to set develop as the default branch", err, log.Data{"response": resp})
 	}
 	return err
 }
@@ -203,7 +204,7 @@ func setDevelopAsDefaultBranch(ctx context.Context, client *github.Client, repoN
 func createDevelopBranch(ctx context.Context, client *github.Client, repoName string) error {
 	ref, resp, err := client.Git.GetRef(ctx, org, repoName, "heads/main")
 	if err != nil {
-		log.Event(ctx, "get reference to main commit failed", log.Error(err), log.Data{"response": resp})
+		log.Error(ctx, "get reference to main commit failed", err, log.Data{"response": resp})
 		return err
 	}
 	developBranch := "heads/develop"
@@ -211,7 +212,7 @@ func createDevelopBranch(ctx context.Context, client *github.Client, repoName st
 
 	_, resp, err = client.Git.CreateRef(ctx, org, repoName, ref)
 	if err != nil {
-		log.Event(ctx, "create Reference to new develop branch failed", log.Error(err), log.Data{"response": resp})
+		log.Error(ctx, "create Reference to new develop branch failed", err, log.Data{"response": resp})
 		return err
 	}
 	return nil
@@ -222,7 +223,7 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 	newRepo, _, err := client.Repositories.Create(ctx, org, repo)
 	fmt.Println(newRepo)
 	if err != nil {
-		log.Event(ctx, "repo creation failed", log.Error(err))
+		log.Error(ctx, "repo creation failed", err)
 		return err
 	}
 	return nil
@@ -257,7 +258,7 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 		ctx := context.Background()
 		branchStrategy, err := project_generation.OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
-			log.Event(ctx, "error getting branch strategy", log.Error(err))
+			log.Error(ctx, "error getting branch strategy", err)
 		}
 		branchStrategy = strings.Replace(branchStrategy, " flow", "", -1)
 	}
@@ -276,7 +277,7 @@ func PromptForInput(prompt string) string {
 	input = scanner.Text()
 	if scanner.Err() != nil {
 		ctx := context.Background()
-		log.Event(ctx, "repo creation failed", log.Error(scanner.Err()))
+		log.Error(ctx, "repo creation failed", scanner.Err())
 	}
 	return input
 }
@@ -285,7 +286,7 @@ func PromptForInput(prompt string) string {
 func checkAccess(ctx context.Context, client *github.Client) (bool, error) {
 	_, _, err := client.Repositories.List(ctx, "", nil)
 	if err != nil {
-		log.Event(ctx, "failed to get list of repos", log.Error(err))
+		log.Error(ctx, "failed to get list of repos", err)
 		return false, err
 	}
 	return true, nil

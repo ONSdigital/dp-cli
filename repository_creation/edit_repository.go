@@ -2,9 +2,10 @@ package repository_creation
 
 import (
 	"context"
-	"github.com/ONSdigital/log.go/log"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 // CloneRepository will clone a given repository at a given location,
@@ -14,12 +15,12 @@ func CloneRepository(ctx context.Context, cloneUrl, projectLocation, appName str
 	cmd.Dir = projectLocation
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error during git clone", log.Error(err))
+		log.Error(ctx, "error during git clone", err)
 		return err
 	}
 	err = switchRepoToSSH(ctx, projectLocation, appName)
 	if err != nil {
-		log.Event(ctx, "failed to switch repo to SSH", log.Error(err))
+		log.Error(ctx, "failed to switch repo to SSH", err)
 		return err
 	}
 	return nil
@@ -39,7 +40,7 @@ func PushToRepo(ctx context.Context, projectLocation, appName string) error {
 	cmd.Dir = filepath.Join(projectLocation, appName)
 	err = cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error during push", log.Error(err))
+		log.Error(ctx, "error during push", err)
 		return err
 	}
 	return nil
@@ -51,7 +52,7 @@ func switchRepoToSSH(ctx context.Context, projectLocation, appName string) error
 	cmd.Dir = filepath.Join(projectLocation, appName)
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "switching origin access protocols from HTTPS to SSH", log.Error(err))
+		log.Error(ctx, "switching origin access protocols from HTTPS to SSH", err)
 		return err
 	}
 	return nil
@@ -67,7 +68,7 @@ func createBoilerPlateBranch(ctx context.Context, projectLocation, appNme string
 	cmd.Dir = filepath.Join(projectLocation, appNme)
 	err = cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error committing", log.Error(err))
+		log.Error(ctx, "error committing", err)
 		return err
 	}
 	return nil
@@ -84,7 +85,7 @@ func commitProject(ctx context.Context, projectLocation, appNme string) error {
 	cmd.Dir = filepath.Join(projectLocation, appNme)
 	err = cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error committing", log.Error(err))
+		log.Error(ctx, "error committing", err)
 		return err
 	}
 	return nil
@@ -96,7 +97,7 @@ func stageAllFiles(ctx context.Context, projectLocation, appNme string) error {
 	cmd.Dir = filepath.Join(projectLocation, appNme)
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error staging files", log.Error(err))
+		log.Error(ctx, "error staging files", err)
 		return err
 	}
 	return nil
