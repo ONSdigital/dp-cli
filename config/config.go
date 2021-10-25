@@ -22,7 +22,9 @@ var httpClient = &http.Client{
 type Config struct {
 	CMD                    CMD           `yaml:"cmd"`
 	Environments           []Environment `yaml:"environments"`
-	SSHUser                string        `yaml:"ssh-user"`
+	User                   *string       `yaml:"ssh-user"`
+	IPAddress              *string       `yaml:"ip-address"`
+	HttpOnly               *bool         `yaml:"http-only"`
 	DPSetupPath            string        `yaml:"dp-setup-path"`
 	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
 	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
@@ -96,20 +98,35 @@ func Dump() ([]byte, error) {
 	return data, nil
 }
 
+func (cfg Config) checkGotIP() (bool, error) {
+	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, *cfg.IPAddress)
+}
+
 // GetMyIP fetches your external IP address
-func GetMyIP() (string, error) {
-	if ip := os.Getenv("MY_IP"); len(ip) > 0 {
-		isIP, err := regexp.Match(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, []byte(ip))
-		if err != nil {
-			return "", err
-		}
-		if !isIP {
-			return "", errors.New("unexpected format for var MY_IP")
-		}
-		return ip, nil
+func (cfg Config) GetMyIP() (string, error) {
+	if cfg.IPAddress == nil {
+		s := ""
+		cfg.IPAddress = &s
 	}
 
-	res, err := httpClient.Get("https://api.ipify.org")
+	// flag used?
+	if len(*cfg.IPAddress) > 0 {
+		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
+			return "", errors.New("unexpected IP format for flag")
+		}
+		return *cfg.IPAddress, nil
+	}
+
+	// env var used?
+	if *cfg.IPAddress = os.Getenv("MY_IP"); len(*cfg.IPAddress) > 0 {
+		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
+			return "", errors.New("unexpected format for var MY_IP")
+		}
+		return *cfg.IPAddress, nil
+	}
+
+	// use remote service to obtain IP
+	res, err := httpClient.Get("https://api64.ipify.org")
 	if err != nil {
 		return "", err
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/ONSdigital/dp-cli/project_generation"
 	"github.com/ONSdigital/dp-cli/repository_creation"
 
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/spf13/cobra"
 )
 
@@ -76,33 +76,33 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 		}
 		listOfArguments, err = project_generation.ValidateArguments(listOfArguments)
 		if err != nil {
-			log.Event(ctx, "input validation error", log.Error(err))
+			log.Error(ctx, "input validation error", err)
 			return err
 		}
 
 		err := project_generation.ValidateProjectDirectory(ctx, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
 		if err != nil {
-			log.Event(ctx, "error confirming project directory is valid", log.Error(err))
+			log.Error(ctx, "error confirming project directory is valid", err)
 			return err
 		}
 		cloneURL, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal)
 		if err != nil {
-			log.Event(ctx, "failed to generate project on github", log.Error(err))
+			log.Error(ctx, "failed to generate project on github", err)
 			return err
 		}
 		err = repository_creation.CloneRepository(ctx, cloneURL, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
 		if err != nil {
-			log.Event(ctx, "failed to clone repository", log.Error(err))
+			log.Error(ctx, "failed to clone repository", err)
 			return err
 		}
 		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, true)
 		if err != nil {
-			log.Event(ctx, "failed to generate project on github", log.Error(err))
+			log.Error(ctx, "failed to generate project on github", err)
 			return err
 		}
 		err = repository_creation.PushToRepo(ctx, listOfArguments["projectLocation"].OutputVal, listOfArguments["appName"].OutputVal)
 		if err != nil {
-			log.Event(ctx, "failed to push to repository", log.Error(err))
+			log.Error(ctx, "failed to push to repository", err)
 			return err
 		}
 		return nil
