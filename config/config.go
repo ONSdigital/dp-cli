@@ -126,7 +126,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	// use remote service to obtain IP
-	res, err := httpClient.Get("https://api64.ipify.org")
+	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
 		return "", err
 	}
