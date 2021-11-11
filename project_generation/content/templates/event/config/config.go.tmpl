@@ -8,7 +8,6 @@ import (
 
 const KafkaTLSProtocolFlag = "TLS"
 
-// TODO: remove hello call config options
 // Config represents service configuration for {{.Name}}
 type Config struct {
 	BindAddr                   string        `envconfig:"BIND_ADDR"`
@@ -20,6 +19,7 @@ type Config struct {
 }
 
 // KafkaConfig contains the config required to connect to Kafka
+// TODO: change "hello-called" to your topic (config field name, env var name, default value later)
 type KafkaConfig struct {
 	Brokers          []string `envconfig:"KAFKA_ADDR"`
 	Version          string   `envconfig:"KAFKA_VERSION"`
