@@ -40,7 +40,7 @@ func Consume(ctx context.Context, messageConsumer kafka.IConsumerGroup, handler 
 	}
 
 	// workers to consume messages in parallel
-	for w := 1; w <= cfg.KafkaNumWorkers; w++ {
+	for w := 1; w <= cfg.KafkaConfig.NumWorkers; w++ {
 		go consume(w)
 	}
 }

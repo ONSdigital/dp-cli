@@ -1,11 +1,11 @@
-## Converting 'main' branch to 'master'
+# Converting 'main' branch to 'master'
 
-### Description
- 
-ONSdigital is moving towards the convention of naming the previously known `master` branch to `main`. The 
-repo-generation tool in this repository now generates repositories with the branches `main` and `develop`. However, 
-our CI infrastructure requires a refactor for us to complete this migration of using `main`. In the interim 
-branches should use `master` instead of `main`. Below should act as a guide on how to complete this.
+## Description
+
+ONSdigital is moving towards the convention of naming the previously-known `master` branch to `main`. The
+repo-generation tool in this repository now generates repositories with the branches `main` and `develop`. However,
+our CI infrastructure requires a refactor for us to complete this migration to using `main`. In the interim,
+app repos should use `master` instead of `main`. The below is a guide on how to complete this.
 
 ### What needs changing
 
@@ -15,32 +15,38 @@ branches should use `master` instead of `main`. Below should act as a guide on h
 ### How
 
 Ensure that you have the `main` branch checked out locally by running the following command in your terminal
-```bash
+
+```shell
 git checkout main
 ```
 
 Locally rename the `main` branch to `master` by running the following command in your terminal  
-```bash
+
+```shell
 git branch -m main master
 ```
 
 Push the new `master` branch to the remote by running the following command in your terminal
-```bash
+
+```shell
 git push -u origin master
 ```
 
 Remove branch protections and set the default branch in GitHub
+
 1. Navigate to the GitHub repository `https://github.com/ONSdigital/{Repository-Name}` - where `{Repository-Name}` is replaced by the name of your repository
 2. Click 'Settings' - it will have an icon of a cog next to it and is located towards the top of the page
 3. Select 'Branches' from the left menu
 4. Under the section 'Branch protection rules' find the entry 'main' then to the right of it click delete
 
 Remove the branch `main` from the remote by running the following command in your terminal
-```bash
+
+```shell
 git push origin --delete main
 ```
 
-Finally, we need to update the `master` branches security settings
+Finally, we need to update the `master` branch's security settings
+
 1. Navigate to the GitHub repository `https://github.com/ONSdigital/{Repository-Name}` - where `{Repository-Name}` is replaced by the name of your repository
 2. Click 'Settings' - it will have an icon of a cog next to it and is located towards the top of the page
 3. Select 'Branches' from the left menu
