@@ -72,7 +72,7 @@ func (c *Component) DoGetHTTPServer(bindAddr string, router http.Handler) servic
 	return dphttp.NewServer(bindAddr, router)
 }
 
-func (c *Component) DoGetConsumer(ctx context.Context, cfg *config.Config) (kafkaConsumer kafka.IConsumerGroup, err error) {
+func (c *Component) DoGetConsumer(ctx context.Context, kafkaCfg *config.KafkaConfig) (kafkaConsumer kafka.IConsumerGroup, err error) {
 	return c.KafkaConsumer, nil
 }
 

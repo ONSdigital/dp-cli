@@ -25,8 +25,15 @@ An example event can be created using the helper script, `make produce`.
 | KAFKA_ADDR                   | "localhost:9092"                  | The address of Kafka (accepts list)
 | KAFKA_OFFSET_OLDEST          | true                              | Start processing Kafka messages in order from the oldest in the queue
 | KAFKA_NUM_WORKERS            | 1                                 | The maximum number of parallel kafka consumers
-| HELLO_CALLED_GROUP           | {{.Name}}              | The consumer group this application to consume ImageUploaded messages
+| KAFKA_SEC_PROTO              | _unset_                           | if set to `TLS`, kafka connections will use TLS ([kafka TLS doc])
+| KAFKA_SEC_CA_CERTS           | _unset_                           | CA cert chain for the server cert ([kafka TLS doc])
+| KAFKA_SEC_CLIENT_KEY         | _unset_                           | PEM for the client key ([kafka TLS doc])
+| KAFKA_SEC_CLIENT_CERT        | _unset_                           | PEM for the client certificate ([kafka TLS doc])
+| KAFKA_SEC_SKIP_VERIFY        | false                             | ignores server certificate issues if `true` ([kafka TLS doc])
+| HELLO_CALLED_GROUP           | {{.Name}}              | The consumer group this application to consume topic messages
 | HELLO_CALLED_TOPIC           | hello-called                      | The name of the topic to consume messages from
+
+[kafka TLS doc]: https://github.com/ONSdigital/dp-kafka/tree/main/examples#tls
 
 ### Healthcheck
 
