@@ -218,6 +218,12 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "controller/config/config_test.go",
+		outputPath:   "config/config_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "controller/handlers/handlers.go",
 		outputPath:   "handlers/handlers",
 		extension:    ".go",
@@ -232,6 +238,48 @@ var controllerFiles = []fileGen{
 	{
 		templatePath: "controller/routes/routes.go",
 		outputPath:   "routes/routes",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/initialise.go",
+		outputPath:   "service/initialise",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/interfaces.go",
+		outputPath:   "service/interfaces",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/service.go",
+		outputPath:   "service/service",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/service_test.go",
+		outputPath:   "service/service_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/mocks/healthcheck.go",
+		outputPath:   "service/mocks/healthcheck",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/mocks/initialiser.go",
+		outputPath:   "service/mocks/initialiser",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/service/mocks/server.go",
+		outputPath:   "service/mocks/server",
 		extension:    ".go",
 		filePrefix:   "",
 	},
@@ -251,6 +299,12 @@ var controllerFiles = []fileGen{
 		templatePath: "controller/main.go",
 		outputPath:   "main",
 		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
 		filePrefix:   "",
 	},
 	{

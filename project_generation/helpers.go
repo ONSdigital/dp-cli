@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 type ListOfArguments map[string]*Argument
@@ -48,7 +48,7 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	}
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
-		log.Event(ctx, "validation error", log.Error(err))
+		log.Error(ctx, "validation error", err)
 		return "", "", "", "", "", "", err
 	}
 	an = listOfArguments["appName"].OutputVal
@@ -75,7 +75,7 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
-		log.Event(ctx, "validation error", log.Error(err))
+		log.Error(ctx, "validation error", err)
 		return "", "", "", "", "", "", err
 	}
 	prt = listOfArguments["port"].OutputVal
@@ -90,7 +90,7 @@ func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, er
 	for key, value := range arguments {
 		arguments[key].OutputVal, err = value.Validator(value.Context, value.InputVal)
 		if err != nil {
-			log.Event(context.Background(), "validation error ", log.Error(err))
+			log.Error(context.Background(), "validation error ", err)
 			return nil, err
 		}
 	}
@@ -189,7 +189,7 @@ func ValidateProjectLocation(ctx context.Context, projectLocation string) (strin
 func ValidateProjectDirectory(ctx context.Context, path, projectName string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// File path to project does not exists
-		log.Event(ctx, "file path to project location does not exists - for safety assuming wrong location was provided")
+		log.Error(ctx, "file path to project location does not exists - for safety assuming wrong location was provided", err)
 		return err
 	}
 	projectPath := filepath.Join(path, projectName)
@@ -197,7 +197,7 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 		// File path to project does exists but project directory does not exist at the given path
 		err := os.Mkdir(projectPath, os.ModeDir|os.ModePerm)
 		if err != nil {
-			log.Event(ctx, "error creating project directory", log.Error(err))
+			log.Error(ctx, "error creating project directory", err)
 			return err
 		}
 		return nil
@@ -205,14 +205,14 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 	// File path to project does exists and there is a project with the given name already present
 	isEmptyDir, err := IsEmptyDir(projectPath)
 	if err != nil {
-		log.Event(ctx, "error checking if directory is empty", log.Error(err))
+		log.Error(ctx, "error checking if directory is empty", err)
 		return err
 	}
 	if !isEmptyDir {
 		// Project directory exists at the given file path and has content inside of it
 		err = OfferPurgeProjectDestination(ctx, projectPath)
 		if err != nil {
-			log.Event(ctx, "error during offer purge of directory", log.Error(err))
+			log.Error(ctx, "error during offer purge of directory", err)
 			return err
 		}
 	}
@@ -314,7 +314,7 @@ func PromptForConfirmation(ctx context.Context, prompt string, maxInputAttempts 
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			log.Event(ctx, "error reading user input ", log.Error(err))
+			log.Error(ctx, "error reading user input ", err)
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -337,7 +337,7 @@ func PromptForInput(ctx context.Context, prompt string) (string, error) {
 	scanner.Scan()
 	input = scanner.Text()
 	if scanner.Err() != nil {
-		log.Event(ctx, "Failed to read user input", log.Error(scanner.Err()))
+		log.Error(ctx, "Failed to read user input", scanner.Err())
 		return "", scanner.Err()
 	}
 	return input, nil
@@ -357,7 +357,7 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 		scanner.Scan()
 		input = scanner.Text()
 		if scanner.Err() != nil {
-			log.Event(ctx, "failed to read user input", log.Error(scanner.Err()))
+			log.Error(ctx, "failed to read user input", scanner.Err())
 			return "", scanner.Err()
 		}
 		// If user entered the text rather than number, it will be accepted
@@ -392,7 +392,7 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) error {
 	cmd.Dir = pathToRepo
 	err = cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error initialising go modules", log.Error(err))
+		log.Error(ctx, "error initialising go modules", err)
 	}
 	return nil
 }
@@ -404,7 +404,7 @@ func runGoModTidy(ctx context.Context, pathToRepo string) {
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error initialising go modules", log.Error(err))
+		log.Error(ctx, "error initialising go modules", err)
 	}
 }
 
@@ -415,7 +415,7 @@ func FinaliseModules(ctx context.Context, pathToRepo string) {
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error during go build step", log.Error(err))
+		log.Error(ctx, "error during go build step", err)
 	}
 }
 
@@ -425,7 +425,7 @@ func FormatGoFiles(ctx context.Context, pathToRepo string) {
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
-		log.Event(ctx, "error during go fmt step", log.Error(err))
+		log.Error(ctx, "error during go fmt step", err)
 	}
 }
 

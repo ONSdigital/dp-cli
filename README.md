@@ -24,21 +24,21 @@ Check you have a suitable version of `go` installed with:
 
 `go version`
 
-(Ideally 1.16)
+(Ideally 1.17)
 
-[ The following will ensure version 1.16
+[ The following will ensure version 1.17
 
   ```sh
-  brew install go@1.16
+  brew install go@1.17
   brew unlink go
-  brew link —force go@1.16
+  brew link —force go@1.17
   ```
 
 Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
 
   ```sh
   echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export PATH="/usr/local/opt/go@1.16/bin:$PATH"' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.17/bin:$PATH"' >> ~/.zshrc
   ```
 
   and restart the terminal ]
@@ -226,12 +226,22 @@ $ dp ssh develop web 1 -- ls -la
 [...]
 ```
 
-#### Manually configuring your IP
+#### Manually configuring your IP or user
 
-Optionally, (e.g. to avoid the program looking up your IP), you can use an environment variable `MY_IP` to force the IP used when running `dp remote allow`, for example:
+Optionally, (e.g. to avoid the program looking-up your IP),
+you can use the `--ip` flag (or an environment variable `MY_IP`) to force the IP used when running `dp remote allow`.
+For example:
 
 ```sh
+dp remote --ip 192.168.11.22 allow develop
+# or
 MY_IP=192.168.11.22 dp remote allow develop
+```
+
+Similarly, use the `--user` flag to change the label attached to the IP that is put into (or removed from) the _allow_ table.
+
+```sh
+dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow develop
 ```
 
 #### Remote allow extra ports

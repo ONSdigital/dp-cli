@@ -4,48 +4,40 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
 	"github.com/ONSdigital/dp-healthcheck/healthcheck"
 	"github.com/ONSdigital/{{.Name}}/config"
-	dpkafka "github.com/ONSdigital/dp-kafka/v2"
 	dphttp "github.com/ONSdigital/dp-net/http"
 )
 
 // ExternalServiceList holds the initialiser and initialisation state of external services.
 type ExternalServiceList struct {
-	HealthCheck   bool
-	KafkaConsumer bool
-	Init          Initialiser
+	HealthCheck bool
+	Init        Initialiser
 }
 
 // NewServiceList creates a new service list with the provided initialiser
 func NewServiceList(initialiser Initialiser) *ExternalServiceList {
 	return &ExternalServiceList{
-		HealthCheck:   false,
-		KafkaConsumer: false,
-		Init:          initialiser,
+		Init: initialiser,
 	}
 }
 
 // Init implements the Initialiser interface to initialise dependencies
 type Init struct{}
 
-// GetHTTPServer creates an http server and sets the Server flag to true
+// GetHTTPServer creates an http server
 func (e *ExternalServiceList) GetHTTPServer(bindAddr string, router http.Handler) HTTPServer {
 	s := e.Init.DoGetHTTPServer(bindAddr, router)
 	return s
 }
 
-// GetKafkaConsumer creates a Kafka consumer and sets the consumer flag to true
-func (e *ExternalServiceList) GetKafkaConsumer(ctx context.Context, cfg *config.Config) (dpkafka.IConsumerGroup, error) {
-	consumer, err := e.Init.DoGetKafkaConsumer(ctx, &cfg.KafkaConfig)
-	if err != nil {
-		return nil, err
-	}
-	e.KafkaConsumer = true
-	return consumer, nil
+// GetHealthClient returns a healthclient for the provided URL
+func (e *ExternalServiceList) GetHealthClient(name, url string) *health.Client {
+	return e.Init.DoGetHealthClient(name, url)
 }
 
-// GetHealthCheck creates a healthcheck with versionInfo and sets teh HealthCheck flag to true
+// GetHealthCheck creates a healthcheck with versionInfo and sets the HealthCheck flag to true
 func (e *ExternalServiceList) GetHealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (HealthChecker, error) {
 	hc, err := e.Init.DoGetHealthCheck(cfg, buildTime, gitCommit, version)
 	if err != nil {
@@ -62,38 +54,9 @@ func (e *Init) DoGetHTTPServer(bindAddr string, router http.Handler) HTTPServer 
 	return s
 }
 
-// DoGetKafkaConsumer returns a Kafka Consumer group
-func (e *Init) DoGetKafkaConsumer(ctx context.Context, kafkaCfg *config.KafkaConfig) (dpkafka.IConsumerGroup, error) {
-	cgChannels := dpkafka.CreateConsumerGroupChannels(1)
-	kafkaOffset := dpkafka.OffsetNewest
-	if kafkaCfg.OffsetOldest {
-		kafkaOffset = dpkafka.OffsetOldest
-	}
-	cgConfig := &dpkafka.ConsumerGroupConfig{
-		KafkaVersion: &kafkaCfg.Version,
-		Offset:       &kafkaOffset,
-	}
-	if kafkaCfg.SecProtocol == config.KafkaTLSProtocolFlag {
-		cgConfig.SecurityConfig = dpkafka.GetSecurityConfig(
-			kafkaCfg.SecCACerts,
-			kafkaCfg.SecClientCert,
-			kafkaCfg.SecClientKey,
-			kafkaCfg.SecSkipVerify,
-		)
-	}
-	kafkaConsumer, err := dpkafka.NewConsumerGroup(
-		ctx,
-		kafkaCfg.Brokers,
-		kafkaCfg.HelloCalledTopic,
-		kafkaCfg.HelloCalledGroup,
-		cgChannels,
-		cgConfig,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return kafkaConsumer, nil
+// DoGetHealthClient creates a new Health Client for the provided name and url
+func (e *Init) DoGetHealthClient(name, url string) *health.Client {
+	return health.NewClient(name, url)
 }
 
 // DoGetHealthCheck creates a healthcheck with versionInfo
@@ -104,4 +67,15 @@ func (e *Init) DoGetHealthCheck(cfg *config.Config, buildTime, gitCommit, versio
 	}
 	hc := healthcheck.New(versionInfo, cfg.HealthCheckCriticalTimeout, cfg.HealthCheckInterval)
 	return &hc, nil
+}
+
+// NewMockHTTPClient mocks HTTP Client
+func NewMockHTTPClient(r *http.Response, err error) *dphttp.ClienterMock {
+	return &dphttp.ClienterMock{
+		SetPathsWithNoRetriesFunc: func(paths []string) {},
+		GetPathsWithNoRetriesFunc: func() []string { return []string{} },
+		DoFunc: func(ctx context.Context, req *http.Request) (*http.Response, error) {
+			return r, err
+		},
+	}
 }

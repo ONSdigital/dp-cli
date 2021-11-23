@@ -7,7 +7,7 @@ import (
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/event"
 	kafka "github.com/ONSdigital/dp-kafka/v2"
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
@@ -24,14 +24,14 @@ type Service struct {
 
 // Run the service
 func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCommit, version string, svcErrors chan error) (*Service, error) {
-	log.Event(ctx, "running service", log.INFO)
+	log.Info(ctx, "running service")
 
 	// Read config
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to retrieve service configuration")
 	}
-	log.Event(ctx, "got service configuration", log.Data{"config": cfg}, log.INFO)
+	log.Info(ctx, "got service configuration", log.Data{"config": cfg})
 
 	// Get HTTP Server with collectionID checkHeader middleware
 	r := mux.NewRouter()
@@ -40,7 +40,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	// Get Kafka consumer
 	consumer, err := serviceList.GetKafkaConsumer(ctx, cfg)
 	if err != nil {
-		log.Event(ctx, "failed to initialise kafka consumer", log.FATAL, log.Error(err))
+		log.Fatal(ctx, "failed to initialise kafka consumer", err)
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	// Get HealthCheck
 	hc, err := serviceList.GetHealthCheck(cfg, buildTime, gitCommit, version)
 	if err != nil {
-		log.Event(ctx, "could not instantiate healthcheck", log.FATAL, log.Error(err))
+		log.Fatal(ctx, "could not instantiate healthcheck", err)
 		return nil, err
 	}
 
@@ -84,7 +84,7 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 // Close gracefully shuts the service down in the required order, with timeout
 func (svc *Service) Close(ctx context.Context) error {
 	timeout := svc.shutdownTimeout
-	log.Event(ctx, "commencing graceful shutdown", log.Data{"graceful_shutdown_timeout": timeout}, log.INFO)
+	log.Info(ctx, "commencing graceful shutdown", log.Data{"graceful_shutdown_timeout": timeout})
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 
 	// track shutdown gracefully closes up
@@ -103,28 +103,28 @@ func (svc *Service) Close(ctx context.Context) error {
 		// This will automatically stop the event consumer loops and no more messages will be processed.
 		// The kafka consumer will be closed after the service shuts down.
 		if svc.serviceList.KafkaConsumer {
-			log.Event(ctx, "stopping kafka consumer listener", log.INFO)
+			log.Info(ctx, "stopping kafka consumer listener")
 			if err := svc.consumer.StopListeningToConsumer(ctx); err != nil {
-				log.Event(ctx, "error stopping kafka consumer listener", log.ERROR, log.Error(err))
+				log.Error(ctx, "error stopping kafka consumer listener", err)
 				hasShutdownError = true
 			}
-			log.Event(ctx, "stopped kafka consumer listener", log.INFO)
+			log.Info(ctx, "stopped kafka consumer listener")
 		}
 
 		// stop any incoming requests before closing any outbound connections
 		if err := svc.server.Shutdown(ctx); err != nil {
-			log.Event(ctx, "failed to shutdown http server", log.Error(err), log.ERROR)
+			log.Error(ctx, "failed to shutdown http server", err)
 			hasShutdownError = true
 		}
 
 		// If kafka consumer exists, close it.
 		if svc.serviceList.KafkaConsumer {
-			log.Event(ctx, "closing kafka consumer", log.INFO)
+			log.Info(ctx, "closing kafka consumer")
             if err := svc.consumer.Close(ctx); err != nil {
-                log.Event(ctx, "error closing kafka consumer", log.ERROR, log.Error(err))
+                log.Error(ctx, "error closing kafka consumer", err)
                 hasShutdownError = true
             }
-			log.Event(ctx, "closed kafka consumer", log.INFO)
+			log.Info(ctx, "closed kafka consumer")
 		}
 
 		if !hasShutdownError {
@@ -137,11 +137,11 @@ func (svc *Service) Close(ctx context.Context) error {
 
 	if !gracefulShutdown {
 		err := errors.New("failed to shutdown gracefully")
-		log.Event(ctx, "failed to shutdown gracefully ", log.ERROR, log.Error(err))
+		log.Error(ctx, "failed to shutdown gracefully ", err)
 		return err
 	}
 
-	log.Event(ctx, "graceful shutdown was successful", log.INFO)
+	log.Info(ctx, "graceful shutdown was successful")
 	return nil
 }
 
@@ -153,7 +153,7 @@ func registerCheckers(ctx context.Context,
 
 	if err := hc.AddCheck("Kafka consumer", consumer.Checker); err != nil {
 		hasErrors = true
-		log.Event(ctx, "error adding check for Kafka", log.ERROR, log.Error(err))
+		log.Error(ctx, "error adding check for Kafka", err)
 	}
 
 	if hasErrors {

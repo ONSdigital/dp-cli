@@ -5,7 +5,8 @@ ____
 
 ## WARNING
 
-Interim actions required after completion of generating a repository, as most DP repo's are using `master` as their default branch; the exception are Libraries which should all be `main`.  This tooling will create a default branch of `main` for all types of repository.
+Interim actions required after completion of generating a repository, as most DP repo's are using `master` as their default branch; the exception are *libraries* which should all be `main`.  This tooling will create a default branch of `main` for all types of repository.
+
 - Change branch name `main` to `master`
 - Update security settings for the `master` branch to match that of `main`
 
@@ -53,17 +54,21 @@ $ dp generate-project --create-repository yes --name {name-of-repository} --proj
 
 For example `dp-topic-api` was created with:
 
-`
-$ dp generate-project --create-repository yes --description "Enables greater flexibility in creating journeys through the website" --go-version 1.13 --name dp-topic-api --port 25300 --project-location . --strategy git --type api
-`
+```shell
+$ dp generate-project --create-repository yes --description "Enables greater flexibility in creating journeys through the website" --go-version 1.17 --name dp-topic-api --port 25300 --project-location . --strategy git --type api
+```
 
 **NOTE:** In the above example `--project-location .` uses a full stop to create the project within the current directory, for example:
 
+```shell
     ~/src/github.com/ONSdigital
+```
 
 The newly-generated project: `dp-topic-api` is then found in the directory:
 
+```shell
     ~/src/github.com/ONSdigital/dp-topic-api
+```
 
 If this method is chosen then there will be fewer prompts during the creation of the project.
 

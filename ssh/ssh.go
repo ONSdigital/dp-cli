@@ -18,9 +18,9 @@ var awsbEnvs = []string{"dp-sandbox", "dp-prod"}
 
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) error {
-	if len(cfg.SSHUser) == 0 {
-		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh user", "spew config")
-		return errors.New("missing `ssh user` in config file")
+	if cfg.User == nil || len(*cfg.User) == 0 {
+		out.Highlight(out.WARN, "no %s is defined in configuration file (or `--user`) you can view the app configuration values using the %s command", "ssh-user", "spew config")
+		return errors.New("missing `ssh-user` in config file (or no `--user`)")
 	}
 
 	lvl := out.GetLevel(env)

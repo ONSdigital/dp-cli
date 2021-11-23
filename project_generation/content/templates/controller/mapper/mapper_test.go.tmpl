@@ -2,8 +2,9 @@ package mapper
 
 import (
 	"context"
-	"github.com/ONSdigital/{{.Name}}/config"
 	"testing"
+
+	"github.com/ONSdigital/{{.Name}}/config"
 
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -28,6 +29,6 @@ func TestUnitMapper(t *testing.T) {
 		}
 
 		hw := HelloWorld(ctx, hm, cfg)
-		So(hw, ShouldEqual, "Hello World!")
+		So(hw.HelloWho, ShouldEqual, "Hello World!")
 	})
 }

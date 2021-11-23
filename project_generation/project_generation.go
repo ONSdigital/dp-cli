@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/ONSdigital/log.go/log"
+	"github.com/ONSdigital/log.go/v2/log"
 )
 
 type templateModel struct {
@@ -56,7 +56,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 
 	an, ad, pt, pl, gv, prt, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, goVer, port)
 	if err != nil {
-		log.Event(ctx, "error configuring and validating arguments", log.Error(err))
+		log.Error(ctx, "error configuring and validating arguments", err)
 		return err
 	}
 	// If repository was created then this would have already been offered
@@ -133,10 +133,10 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 		FinaliseModules(ctx, newApp.pathToRepo)
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	default:
-		log.Event(ctx, "unable to generate project due to unknown project type given", log.Error(err))
+		log.Error(ctx, "unable to generate project due to unknown project type given", err)
 	}
 
-	log.Event(ctx, "Project creation complete. Project can be found at "+newApp.pathToRepo)
+	log.Info(ctx, "Project creation complete. Project can be found at "+newApp.pathToRepo)
 	return nil
 }
 
@@ -184,6 +184,10 @@ func (a application) createControllerContentDirectoryStructure() error {
 		return err
 	}
 	err = os.MkdirAll(filepath.Join(a.pathToRepo, "mapper"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service/mocks"), os.ModePerm)
 	if err != nil {
 		return err
 	}
