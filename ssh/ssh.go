@@ -42,7 +42,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 				args = append(args, sshPortArgs...)
 			}
 		}
-		userHost = fmt.Sprintf("%s@%s", cfg.SSHUser, instance.IPAddress)
+		userHost = fmt.Sprintf("%s@%s", *cfg.User, instance.IPAddress)
 	} else {
 		os.Setenv("AWS_PROFILE", env.Profile)
 		userHost = fmt.Sprintf("%s@%s", "ubuntu", instance.InstanceId)
