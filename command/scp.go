@@ -60,7 +60,8 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([
 
 		groupCommands, err := createEnvironmentGroupSCPSubCommands(env, cfg, scpOpts)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error creating group commands for env: %s", env.Name)
+			out.WarnFHighlight("warning: unable to create scp group commands for env: %s", err)
+			continue
 		}
 
 		envC.AddCommand(groupCommands...)

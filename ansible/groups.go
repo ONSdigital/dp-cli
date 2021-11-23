@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	groupPrefix    = "["
-	groupSuffix    = "]"
+	groupPrefix = "["
+	groupSuffix = "]"
 )
 
 // GetGroupsForEnvironment returns a list of ansible groups for the specified environment
@@ -47,7 +47,7 @@ func parseFile(fileBytes []byte) ([]string, error) {
 		s = strings.TrimSpace(s)
 
 		if isGroupLine(s) {
-			name := s[1:len(s)-1]
+			name := s[1 : len(s)-1]
 			groups = append(groups, name)
 		}
 	}

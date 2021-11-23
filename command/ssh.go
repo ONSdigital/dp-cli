@@ -54,7 +54,8 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 
 		groupCommands, err := createEnvironmentGroupSubCommands(env, cfg, portArgs, verboseCount)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error creating group commands for env: %s", env.Name)
+			out.WarnFHighlight("warning: unable to create ssh group commands for env: %s", err)
+			continue
 		}
 
 		envC.AddCommand(groupCommands...)
