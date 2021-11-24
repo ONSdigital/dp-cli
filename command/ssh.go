@@ -54,7 +54,8 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 
 		groupCommands, err := createEnvironmentGroupSubCommands(env, cfg, portArgs, verboseCount)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error creating group commands for env: %s", env.Name)
+			out.Warn(errors.WithMessagef(err, "error creating group commands for env: %s", env.Name).Error())
+			continue
 		}
 
 		envC.AddCommand(groupCommands...)
