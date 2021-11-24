@@ -29,10 +29,9 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
-	var args []string
 	var userHost string
+	args := []string{"-F", "ssh.cfg"}
 	if !contains(awsbEnvs, env.Profile) {
-		args = []string{"-F", "ssh.cfg"}
 		if portArgs != nil {
 			for _, portArg := range *portArgs {
 				sshPortArgs, err := getSSHPortArguments(portArg)
@@ -44,7 +43,6 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 		userHost = fmt.Sprintf("%s@%s", *cfg.User, instance.IPAddress)
 	} else {
-		args = []string{"-F", "ssh.cfg"}
 		os.Setenv("AWS_PROFILE", env.Profile)
 		userHost = fmt.Sprintf("%s@%s", "ubuntu", instance.InstanceId)
 	}
