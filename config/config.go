@@ -42,6 +42,7 @@ type CMD struct {
 type Environment struct {
 	Name       string     `yaml:"name"`
 	Profile    string     `yaml:"profile"`
+	User       string     `yaml:"user"`
 	ExtraPorts ExtraPorts `yaml:"extra-ports"`
 }
 

@@ -27,3 +27,6 @@ environments:
     profile: production
   - name: develop
     profile: development
+  - name: sandbox # New AWS platform
+    profile: dp-sandbox
+    user: ubuntu # This is required for all new AWS environments and has to be ubuntu
