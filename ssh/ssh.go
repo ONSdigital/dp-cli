@@ -14,8 +14,6 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 )
 
-var awsbEnvs = []string{"dp-sandbox", "dp-prod"}
-
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) error {
 	if cfg.User == nil || len(*cfg.User) == 0 {
@@ -31,7 +29,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
-	if !contains(awsbEnvs, env.Profile) {
+	if !contains(config.AwsbEnvs, env.Profile) {
 		if portArgs != nil {
 			for _, portArg := range *portArgs {
 				sshPortArgs, err := getSSHPortArguments(portArg)

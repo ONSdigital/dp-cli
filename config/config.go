@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var AwsbEnvs = []string{"dp-sandbox", "dp-prod"}
+
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
