@@ -31,9 +31,13 @@ environments:
   - name: sandbox # New AWS platform
     profile: dp-sandbox
     user: ubuntu # This is required for all new AWS environments and has to be ubuntu
+    tag: awsb
   - name: prod # New AWS platform
     profile: dp-production
     user: ubuntu # This is required for all new AWS environments and has to be ubuntu
+    tag: awsb
   - name: dp-ci # New AWS platform
     profile: dp-ci
     user: ubuntu # This is required for all new AWS environments and has to be ubuntu
+    tag: awsb
+    ci: true
