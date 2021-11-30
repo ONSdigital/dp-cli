@@ -21,6 +21,8 @@ var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
 
+var awsbEnvs = []string{"dp-sandbox", "dp-prod", "dp-ci"}
+
 type Config struct {
 	CMD                    CMD           `yaml:"cmd"`
 	Environments           []Environment `yaml:"environments"`
@@ -148,4 +150,17 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func (cfg Config) IsAWSB(env Environment) bool {
+	return contains(awsbEnvs, env.Profile)
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

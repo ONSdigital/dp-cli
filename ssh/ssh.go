@@ -29,7 +29,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
-	if !contains(config.AwsbEnvs, env.Profile) {
+	if cfg.IsAWSB(env) {
 		if portArgs != nil {
 			for _, portArg := range *portArgs {
 				sshPortArgs, err := getSSHPortArguments(portArg)
@@ -87,14 +87,4 @@ func getSSHPortArguments(portArg string) ([]string, error) {
 	}
 	sshPortArg := fmt.Sprintf("%s:%s:%s", localPort, host, remotePort)
 	return []string{"-L", sshPortArg}, nil
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
 }
