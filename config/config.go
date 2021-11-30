@@ -157,12 +157,8 @@ func (cfg Config) IsAWSB(env Environment) bool {
 	return env.Tag == AWSB_TAG
 }
 
-func (cfg Config) IsAWSBCI(env Environment) bool {
-	return env.CI
-}
-
 func (cfg Config) GetPath(env Environment) string {
-	if cfg.IsAWSBCI(env) {
+	if env.CI {
 		return cfg.DPCIPath
 	} else {
 		return cfg.DPSetupPath
@@ -170,7 +166,7 @@ func (cfg Config) GetPath(env Environment) string {
 }
 
 func (cfg Config) GetAnsibleDirectory(env Environment) string {
-	if cfg.IsAWSBCI(env) {
+	if env.CI {
 		return filepath.Join(cfg.DPCIPath, "ansible")
 	} else {
 		return filepath.Join(cfg.DPSetupPath, "ansible")
