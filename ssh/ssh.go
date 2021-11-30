@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -26,12 +25,8 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
-	var ansibleDir string
-	if env.Profile == "dp-ci" {
-		ansibleDir = filepath.Join(cfg.DPCIPath, "ansible")
-	} else {
-		ansibleDir = filepath.Join(cfg.DPSetupPath, "ansible")
-	}
+	ansibleDir := cfg.GetAnsibleDirectory(env)
+
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
 	if !cfg.IsAWSB(env) {

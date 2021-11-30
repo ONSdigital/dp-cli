@@ -66,14 +66,8 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 
 // create a array of environment group sub commands available to ssh to.
 func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string, verboseCount *int) ([]*cobra.Command, error) {
-	var groups []string
-	var err error
-
-	if env.Profile == "dp-ci" {
-		groups, err = ansible.GetGroupsForEnvironment(cfg.DPCIPath, env.Name)
-	} else {
-		groups, err = ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
-	}
+	path := cfg.GetPath(env)
+	groups, err := ansible.GetGroupsForEnvironment(path, env.Name)
 
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)

@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var awsbEnvs = []string{"dp-sandbox", "dp-prod", "dp-ci"}
+const AWSB_TAG = "awsb"
 
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
@@ -46,6 +46,8 @@ type Environment struct {
 	Name       string     `yaml:"name"`
 	Profile    string     `yaml:"profile"`
 	User       string     `yaml:"user"`
+	Tag        string     `yaml:"tag"`
+	CI         bool       `yaml:"ci"`
 	ExtraPorts ExtraPorts `yaml:"extra-ports"`
 }
 
@@ -152,14 +154,25 @@ func (cfg Config) GetMyIP() (string, error) {
 }
 
 func (cfg Config) IsAWSB(env Environment) bool {
-	return contains(awsbEnvs, env.Profile)
+	return env.Tag == AWSB_TAG
 }
 
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
+func (cfg Config) IsAWSBCI(env Environment) bool {
+	return env.CI
+}
+
+func (cfg Config) GetPath(env Environment) string {
+	if cfg.IsAWSBCI(env) {
+		return cfg.DPCIPath
+	} else {
+		return cfg.DPSetupPath
 	}
-	return false
+}
+
+func (cfg Config) GetAnsibleDirectory(env Environment) string {
+	if cfg.IsAWSBCI(env) {
+		return filepath.Join(cfg.DPCIPath, "ansible")
+	} else {
+		return filepath.Join(cfg.DPSetupPath, "ansible")
+	}
 }

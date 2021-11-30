@@ -42,8 +42,8 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	}
 
 	isAWSB := cfg.IsAWSB(env)
+	ansibleDir := cfg.GetAnsibleDirectory(env)
 
-	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	flags := "-p"
 	for v := 0; v < *opts.Verbosity; v++ {
 		flags += "v"
