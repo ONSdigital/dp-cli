@@ -26,6 +26,7 @@ type Config struct {
 	IPAddress              *string       `yaml:"ip-address"`
 	HttpOnly               *bool         `yaml:"http-only"`
 	DPSetupPath            string        `yaml:"dp-setup-path"`
+	DPCIPath               string        `yaml:"dp-ci-path"`
 	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
 	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
 }

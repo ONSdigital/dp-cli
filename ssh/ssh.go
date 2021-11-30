@@ -14,7 +14,7 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 )
 
-var awsbEnvs = []string{"dp-sandbox", "dp-prod"}
+var awsbEnvs = []string{"dp-sandbox", "dp-prod", "dp-ci"}
 
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) error {
@@ -28,7 +28,12 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
-	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
+	var ansibleDir string
+	if env.Profile == "dp-ci" {
+		ansibleDir = filepath.Join(cfg.DPCIPath, "ansible")
+	} else {
+		ansibleDir = filepath.Join(cfg.DPSetupPath, "ansible")
+	}
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
 	if !contains(awsbEnvs, env.Profile) {
