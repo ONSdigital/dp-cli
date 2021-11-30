@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var awsbEnvs = []string{"dp-sandbox", "dp-prod", "dp-ci"}
+
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
@@ -147,4 +149,17 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func (cfg Config) IsAWSB(env Environment) bool {
+	return contains(awsbEnvs, env.Profile)
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

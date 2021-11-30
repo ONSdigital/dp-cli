@@ -41,6 +41,8 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		return errors.New("missing `ssh-user` in config file")
 	}
 
+	isAWSB := cfg.IsAWSB(env)
+
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	flags := "-p"
 	for v := 0; v < *opts.Verbosity; v++ {
@@ -53,8 +55,12 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
-			srcFile = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, srcFile)
-
+			if !isAWSB {
+				srcFile = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, srcFile)
+			} else {
+				os.Setenv("AWS_PROFILE", env.Profile)
+				srcFile = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, srcFile)
+			}
 		} else {
 			if srcFile, err = withCWD(srcFile); err != nil {
 				out.Highlight(out.WARN, "could not determine your cwd")
@@ -75,7 +81,11 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			return err
 		}
 	} else {
-		target = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, target)
+		if !isAWSB {
+			target = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, target)
+		} else {
+			target = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, target)
+		}
 	}
 	cmdArgs = append(cmdArgs, target)
 
