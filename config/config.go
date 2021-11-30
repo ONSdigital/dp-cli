@@ -15,6 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// AWSB_TAG refers to dp-cli-config.yml and specifies which environments use the new AWS environments
 const AWSB_TAG = "awsb"
 
 var httpClient = &http.Client{
@@ -160,15 +161,13 @@ func (cfg Config) IsAWSB(env Environment) bool {
 func (cfg Config) GetPath(env Environment) string {
 	if env.CI {
 		return cfg.DPCIPath
-	} else {
-		return cfg.DPSetupPath
 	}
+	return cfg.DPSetupPath
 }
 
 func (cfg Config) GetAnsibleDirectory(env Environment) string {
 	if env.CI {
 		return filepath.Join(cfg.DPCIPath, "ansible")
-	} else {
-		return filepath.Join(cfg.DPSetupPath, "ansible")
 	}
+	return filepath.Join(cfg.DPSetupPath, "ansible")
 }
