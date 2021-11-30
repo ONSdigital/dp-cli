@@ -29,7 +29,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
-	if cfg.IsAWSB(env) {
+	if !cfg.IsAWSB(env) {
 		if portArgs != nil {
 			for _, portArg := range *portArgs {
 				sshPortArgs, err := getSSHPortArguments(portArg)

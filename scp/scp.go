@@ -41,10 +41,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		return errors.New("missing `ssh-user` in config file")
 	}
 
-	// Set AWS_PROFILE when using new AWS environments
-	if contains(config.AwsbEnvs, env.Profile) {
-		os.Setenv("AWS_PROFILE", env.Profile)
-	}
+	isAWSB := cfg.IsAWSB(env)
 
 	ansibleDir := filepath.Join(cfg.DPSetupPath, "ansible")
 	flags := "-p"
@@ -58,9 +55,10 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
-			if !contains(config.AwsbEnvs, env.Profile) {
+			if !isAWSB {
 				srcFile = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, srcFile)
 			} else {
+				os.Setenv("AWS_PROFILE", env.Profile)
 				srcFile = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, srcFile)
 			}
 		} else {
@@ -83,7 +81,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			return err
 		}
 	} else {
-		if !contains(config.AwsbEnvs, env.Profile) {
+		if !isAWSB {
 			target = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, target)
 		} else {
 			target = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, target)
@@ -122,14 +120,4 @@ func execCommand(wrkDir, command string, arg ...string) error {
 		return err
 	}
 	return nil
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
 }
