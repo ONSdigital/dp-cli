@@ -72,7 +72,9 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([
 
 // create an array of environment group sub-commands available to `scp env`
 func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
-	groups, err := ansible.GetGroupsForEnvironment(cfg.DPSetupPath, env.Name)
+	path := cfg.GetPath(env)
+
+	groups, err := ansible.GetGroupsForEnvironment(path, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
 	}

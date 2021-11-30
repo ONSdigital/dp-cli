@@ -67,8 +67,8 @@ func createEnvironmentSubCommands(cfg *config.Config, portArgs *[]string, verbos
 // create a array of environment group sub commands available to ssh to.
 func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, portArgs *[]string, verboseCount *int) ([]*cobra.Command, error) {
 	path := cfg.GetPath(env)
-	groups, err := ansible.GetGroupsForEnvironment(path, env.Name)
 
+	groups, err := ansible.GetGroupsForEnvironment(path, env.Name)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error loading ansible hosts for %s", env.Name)
 	}
