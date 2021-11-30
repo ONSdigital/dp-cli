@@ -15,13 +15,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var AwsbEnvs = []string{"dp-sandbox", "dp-prod"}
+var awsbEnvs = []string{"dp-sandbox", "dp-prod", "dp-ci"}
 
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
-
-var awsbEnvs = []string{"dp-sandbox", "dp-prod", "dp-ci"}
 
 type Config struct {
 	CMD                    CMD           `yaml:"cmd"`
