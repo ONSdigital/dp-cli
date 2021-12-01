@@ -29,16 +29,16 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
-	if !cfg.IsAWSB(env) {
-		if portArgs != nil {
-			for _, portArg := range *portArgs {
-				sshPortArgs, err := getSSHPortArguments(portArg)
-				if err != nil {
-					return err
-				}
-				args = append(args, sshPortArgs...)
+	if portArgs != nil {
+		for _, portArg := range *portArgs {
+			sshPortArgs, err := getSSHPortArguments(portArg)
+			if err != nil {
+				return err
 			}
+			args = append(args, sshPortArgs...)
 		}
+	}
+	if !cfg.IsAWSB(env) {
 		userHost = fmt.Sprintf("%s@%s", *cfg.User, instance.IPAddress)
 	} else {
 		os.Setenv("AWS_PROFILE", env.Profile)
