@@ -36,9 +36,7 @@ type RateLimit struct {
 }
 
 func GithubCall(version string) string {
-
 	version = strings.TrimSuffix(version, "-dirty")
-
 	latest, err := http.Get("https://api.github.com/repos/ONSdigital/dp-cli/releases/latest")
 	if err != nil {
 		out.WarnFHighlight("github api call to get latest release failed: %s", err)
@@ -63,7 +61,7 @@ func GithubCall(version string) string {
 		out.WarnFHighlight("rate limit exceeded: %s", rateLimited.Message)
 	}
 
-	current, err := http.Get(fmt.Sprintf("https://api.github.com/repos/ONSdigital/dp-cli/releases/tags/%s", "v0.38.0"))
+	current, err := http.Get(fmt.Sprintf("https://api.github.com/repos/ONSdigital/dp-cli/releases/tags/%s", version))
 	if err != nil {
 		out.WarnFHighlight("github api call to get current release failed: %s", err)
 	}
@@ -94,7 +92,7 @@ func versionSubCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Print the app version",
 		Run: func(cmd *cobra.Command, args []string) {
-			out.Info(appVersion)
+			out.Info(AppVersion)
 		},
 	}
 }

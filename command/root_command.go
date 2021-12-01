@@ -8,7 +8,7 @@ import (
 
 var (
 	root       *cobra.Command
-	appVersion = "development"
+	AppVersion = "development"
 )
 
 // Load will load the sub-commands
