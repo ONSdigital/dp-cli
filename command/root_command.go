@@ -13,10 +13,9 @@ var (
 
 // Load will load the sub-commands
 func Load(cfg *config.Config) (*cobra.Command, error) {
-
 	root = &cobra.Command{
 		Use:   "dp",
-		Short: "dp is a command-line client providing handy helper tools for ONS Digital Publishing software engineers",
+		Short: "dp is a command-line client providing handy helper tools for ONS Digital Publishing software engineers.",
 	}
 
 	// register the root sub-commands.

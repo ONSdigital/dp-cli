@@ -8,6 +8,8 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 )
 
+var appVersion = "development"
+
 func main() {
 	if err := run(os.Args); err != nil {
 		out.Error(err)
@@ -25,6 +27,11 @@ func run(args []string) error {
 	root, err := command.Load(cfg)
 	if err != nil {
 		return err
+	}
+
+	versionCheck := command.GithubCall(appVersion)
+	if versionCheck != "" {
+		out.Info(versionCheck)
 	}
 
 	return root.Execute()
