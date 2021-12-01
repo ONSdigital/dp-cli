@@ -5,6 +5,7 @@ import (
 
 	"github.com/ONSdigital/dp-cli/command"
 	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/github"
 	"github.com/ONSdigital/dp-cli/out"
 )
 
@@ -27,7 +28,7 @@ func run(args []string) error {
 		return err
 	}
 
-	versionCheck := command.GithubCall(command.AppVersion)
+	versionCheck := github.CheckApplicationVersion(command.AppVersion)
 	if versionCheck != "" {
 		out.WarnFHighlight(versionCheck)
 	}
