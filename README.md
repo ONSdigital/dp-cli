@@ -99,6 +99,18 @@ and if this is a first time setup, comment out production from environments, thu
 
 ]
 
+### Brew Installation
+If using a mac you can now install using brew
+
+- Create tap
+```sh
+brew tap ONSdigital/homebrew-dp-cli git@github.com:ONSdigital/homebrew-dp-cli
+```
+- Run brew install
+```sh
+brew install dp-cli
+```
+
 ### Build and run
 
 Build, install and start the CLI:
@@ -255,3 +267,7 @@ environments:
       publishing:
         - 80
 ```
+
+## Releases
+
+When creating new releases please be sure to update the brew formula [here](https://github.com/ONSdigital/homebrew-dp-cli)
