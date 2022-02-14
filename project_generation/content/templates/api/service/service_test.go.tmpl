@@ -153,7 +153,7 @@ func TestRun(t *testing.T) {
 			_, err := service.Run(ctx, cfg, svcList, testBuildTime, testGitCommit, testVersion, svcErrors)
 
 			Convey("Then service Run fails, but all checks try to register", func() {
-				So(err, ShouldBeNil)
+				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldResemble, fmt.Sprintf("unable to register checkers: %s", errAddheckFail.Error()))
 				So(svcList.HealthCheck, ShouldBeTrue)
 				// ADD CODE: add code to confirm checkers exist
