@@ -136,6 +136,12 @@ var applicationFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "base-app/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "base-app/README.md",
 		outputPath:   "README",
 		extension:    ".md",
@@ -200,6 +206,12 @@ var libraryFiles = []fileGen{
 		templatePath: "library/Makefile",
 		outputPath:   "Makefile",
 		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
 		filePrefix:   "",
 	},
 	{
@@ -305,6 +317,12 @@ var controllerFiles = []fileGen{
 		templatePath: "controller/Makefile",
 		outputPath:   "Makefile",
 		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
 		filePrefix:   "",
 	},
 	{
@@ -557,6 +575,12 @@ var eventFiles = []fileGen{
 		templatePath: "event/Makefile",
 		outputPath:   "Makefile",
 		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "event/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
 		filePrefix:   "",
 	},
 	{
