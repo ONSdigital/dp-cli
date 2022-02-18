@@ -49,9 +49,13 @@ func getNamedSG(name, environment, profile string, sshUser *string, ports []int6
 		},
 	}
 	if len(environment) > 0 {
+		envTag := environment
+		if envTag == "concourse" {
+			envTag = "ci"
+		}
 		filters = append(filters, &ec2.Filter{
 			Name:   aws.String("tag:Environment"),
-			Values: []*string{aws.String(environment)},
+			Values: []*string{aws.String(envTag)},
 		})
 	}
 
@@ -293,11 +297,15 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 
 	var result *ec2.DescribeInstancesOutput
 	var err error
+	envTag := environment
+	if envTag == "concourse" {
+		envTag = "ci"
+	}
 	request := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("tag:Environment"),
-				Values: []*string{aws.String(environment)},
+				Values: []*string{aws.String(envTag)},
 			},
 			{
 				Name:   aws.String("instance-state-name"),
@@ -331,9 +339,17 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 					}
 				}
 				var ipAddr string
-				if len(i.NetworkInterfaces) > 0 && len(i.NetworkInterfaces[0].PrivateIpAddresses) > 0 {
-					if i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress != nil {
-						ipAddr = *i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress
+				if environment == "concourse" {
+					if len(i.NetworkInterfaces) > 0 && len(*i.NetworkInterfaces[0].Association.PublicIp) > 0 {
+						if i.NetworkInterfaces[0].Association.PublicIp != nil {
+							ipAddr = *i.NetworkInterfaces[0].Association.PublicIp
+						}
+					}
+				} else {
+					if len(i.NetworkInterfaces) > 0 && len(i.NetworkInterfaces[0].PrivateIpAddresses) > 0 {
+						if i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress != nil {
+							ipAddr = *i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress
+						}
 					}
 				}
 				resultCache[environment] = append(resultCache[environment], EC2Result{

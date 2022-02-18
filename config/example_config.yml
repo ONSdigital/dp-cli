@@ -41,3 +41,7 @@ environments:
     user: ubuntu # This is required for all new AWS environments and has to be ubuntu
     tag: awsb
     ci: true
+  - name: concourse
+    ci: true
+    profile: develop
+    user: ubuntu

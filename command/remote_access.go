@@ -7,10 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var specialEnvs = []config.Environment{{
-	Name:    "concourse",
-	Profile: "",
-}}
 
 func remoteAccess(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,7 +48,7 @@ func allowCommand(sshUser *string, envs []config.Environment, cfg *config.Config
 
 	cmds := make([]*cobra.Command, 0)
 
-	for _, e := range append(envs, specialEnvs...) {
+	for _, e := range envs {
 		env := e
 		cmds = append(cmds, &cobra.Command{
 			Use:   e.Name,
@@ -82,7 +78,7 @@ func denyCommand(sshUser *string, envs []config.Environment, cfg *config.Config)
 
 	cmds := make([]*cobra.Command, 0)
 
-	for _, e := range append(envs, specialEnvs...) {
+	for _, e := range envs {
 		env := e
 		cmds = append(cmds, &cobra.Command{
 			Use:   e.Name,
