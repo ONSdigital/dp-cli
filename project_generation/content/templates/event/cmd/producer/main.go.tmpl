@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// kafka error logging go-routines
-    kafkaProducer.LogErrors(ctx)
+	kafkaProducer.LogErrors(ctx)
 
 	time.Sleep(500 * time.Millisecond)
 	scanner := bufio.NewScanner(os.Stdin)
