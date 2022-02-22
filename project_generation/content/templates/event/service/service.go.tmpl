@@ -6,7 +6,7 @@ import (
 
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/event"
-	kafka "github.com/ONSdigital/dp-kafka/v2"
+	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -47,8 +47,8 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 	// Event Handler for Kafka Consumer
 	event.Consume(ctx, consumer, &event.HelloCalledHandler{}, cfg)
 
-	// Kafka error logging go-routine
-	consumer.Channels().LogErrors(ctx, "kafka consumer")
+		// Kafka error logging go-routine
+    	consumer.LogErrors(ctx)
 
 	// Get HealthCheck
 	hc, err := serviceList.GetHealthCheck(cfg, buildTime, gitCommit, version)
@@ -104,7 +104,7 @@ func (svc *Service) Close(ctx context.Context) error {
 		// The kafka consumer will be closed after the service shuts down.
 		if svc.serviceList.KafkaConsumer {
 			log.Info(ctx, "stopping kafka consumer listener")
-			if err := svc.consumer.StopListeningToConsumer(ctx); err != nil {
+			if err := svc.consumer.StopAndWait(); err != nil {
 				log.Error(ctx, "error stopping kafka consumer listener", err)
 				hasShutdownError = true
 			}

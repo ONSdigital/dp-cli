@@ -10,7 +10,7 @@ import (
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/event"
 	"github.com/ONSdigital/{{.Name}}/schema"
-	kafka "github.com/ONSdigital/dp-kafka/v2"
+	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -27,8 +27,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create Kafka Producer
-	pChannels := kafka.CreateProducerChannels()
 	pConfig := &kafka.ProducerConfig{
 		KafkaVersion: &cfg.KafkaConfig.Version,
 	}
@@ -40,14 +38,14 @@ func main() {
 			cfg.KafkaConfig.SecSkipVerify,
 		)
 	}
-	kafkaProducer, err := kafka.NewProducer(ctx, cfg.KafkaConfig.Brokers, cfg.KafkaConfig.HelloCalledTopic, pChannels, pConfig)
+	kafkaProducer, err := kafka.NewProducer(ctx, pConfig)
 	if err != nil {
 		log.Fatal(ctx, "fatal error trying to create kafka producer", err, log.Data{"topic": cfg.KafkaConfig.HelloCalledTopic})
 		os.Exit(1)
 	}
 
 	// kafka error logging go-routines
-	kafkaProducer.Channels().LogErrors(ctx, "kafka producer")
+    kafkaProducer.LogErrors(ctx)
 
 	time.Sleep(500 * time.Millisecond)
 	scanner := bufio.NewScanner(os.Stdin)
