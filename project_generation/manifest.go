@@ -436,6 +436,12 @@ var apiFiles = []fileGen{
 		extension:    ".yaml",
 		filePrefix:   "",
 	},
+	{
+		templatePath: "api/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
 }
 
 var eventFiles = []fileGen{
