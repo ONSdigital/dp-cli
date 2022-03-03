@@ -257,7 +257,7 @@ func (a application) generateApplicationContent() error {
 	return nil
 }
 
-// generateLibraryContent will create all files for Application content
+// generateLibraryContent will create all files for Library content
 func (a application) generateLibraryContent() error {
 	applyFilePrefixesToManifest(applicationFiles, a.name)
 	err := a.generateGenericContent()
