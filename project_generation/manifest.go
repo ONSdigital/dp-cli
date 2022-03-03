@@ -212,6 +212,13 @@ var libraryFiles = []fileGen{
 
 var controllerFiles = []fileGen{
 	{
+		templatePath: "controller/ci/scripts/component.sh",
+		outputPath:   "ci/scripts/component",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
 		templatePath: "controller/config/config.go",
 		outputPath:   "config/config",
 		extension:    ".go",
@@ -220,6 +227,18 @@ var controllerFiles = []fileGen{
 	{
 		templatePath: "controller/config/config_test.go",
 		outputPath:   "config/config_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/features/steps/example_component.go",
+		outputPath:   "features/steps/example_component",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/features/steps/steps.go",
+		outputPath:   "features/steps/steps",
 		extension:    ".go",
 		filePrefix:   "",
 	},
@@ -292,6 +311,12 @@ var controllerFiles = []fileGen{
 	{
 		templatePath: "controller/mapper/mapper_test.go",
 		outputPath:   "mapper/mapper_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/main_test.go",
+		outputPath:   "main_test",
 		extension:    ".go",
 		filePrefix:   "",
 	},

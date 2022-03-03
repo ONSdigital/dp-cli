@@ -1,0 +1,102 @@
+package steps
+
+import (
+	"context"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
+	componenttest "github.com/ONSdigital/dp-component-test"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphttp "github.com/ONSdigital/dp-net/http"
+	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/ONSdigital/{{.Name}}/config"
+	"github.com/ONSdigital/{{.Name}}/service"
+	"github.com/ONSdigital/{{.Name}}/service/mock"
+)
+
+type Component struct {
+	componenttest.ErrorFeature
+	Config           *config.Config
+	killChannel   chan os.Signal
+	HTTPServer     *http.Server
+	ServiceRunning bool
+	svc           *service.Service
+	svcErrors     chan error
+	StartTime      time.Time
+}
+
+func NewComponent() (*Component, error) {
+	c := &Component{
+		HTTPServer: &http.Server{},
+		svcErrors: make(chan error),
+		ServiceRunning: false,
+		}
+
+	ctx := context.Background()
+
+	svcErrors := make(chan error, 1)
+
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	c.Config = cfg
+
+	initMock := &mock.InitialiserMock{
+		DoGetHTTPServerFunc:   c.DoGetHTTPServer,
+		DoGetHealthCheckFunc:  c.DoGetHealthCheck,
+		DoGetHealthClientFunc: c.DoGetHealthClient,
+	}
+
+	serviceList := service.NewServiceList(initMock)
+
+	c.svc = service.New()
+	if err := c.svc.Init(ctx, c.Config, serviceList); err != nil {
+		log.Error(ctx, "failed to initialise service", err)
+		return nil, err
+	}
+
+	c.StartTime = time.Now()
+	c.svc.Run(ctx, svcErrors)
+	c.ServiceRunning = true
+
+	return c, nil
+}
+
+func (c *Component) Close() error {
+	if c.svc != nil && c.ServiceRunning {
+		c.svc.Close(context.Background())
+		c.ServiceRunning = false
+	}
+	return nil
+}
+
+
+// TODO: confirm happy to delete this Reset()
+//func (c *Component) Reset() *Component {
+//	c.apiFeature.Reset()
+//	return c
+//}
+
+func (c *Component) DoGetHealthCheck(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
+	return &mock.HealthCheckerMock{
+		AddCheckFunc: func(name string, checker healthcheck.Checker) error { return nil },
+		StartFunc:    func(ctx context.Context) {},
+		StopFunc:     func() {},
+	}, nil
+}
+
+func (c *Component) DoGetHTTPServer(bindAddr string, router http.Handler) service.HTTPServer {
+	return dphttp.NewServer(bindAddr, router)
+}
+
+func (c *Component) DoGetHealthClient(name, url string) *health.Client {
+	return &health.Client{
+		URL:    url,
+		Name:   name,
+		Client: service.NewMockHTTPClient(&http.Response{}, nil),
+	}
+}

@@ -46,10 +46,10 @@ func helloWorld(w http.ResponseWriter, req *http.Request, cfg config.Config) {
 	}
 
 	_, err = w.Write(b)
-    	if err != nil {
-    		log.Error(ctx, "failed to write bytes for http response", err)
-    		setStatusCode(req, w, err)
-    		return
-    	}
-    	return
+	if err != nil {
+		log.Error(ctx, "failed to write bytes for http response", err)
+		setStatusCode(req, w, err)
+		return
+	}
+	return
 }
