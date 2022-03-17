@@ -212,6 +212,30 @@ var libraryFiles = []fileGen{
 
 var controllerFiles = []fileGen{
 	{
+		templatePath: "controller/assets/assets.go",
+		outputPath:   "assets/assets",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/assets/locales/service.cy.toml",
+		outputPath:   "assets/locales/service.cy",
+		extension:    ".toml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/assets/locales/service.en.toml",
+		outputPath:   "assets/locales/service.en",
+		extension:    ".toml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/assets/templates/hello-world.tmpl",
+		outputPath:   "assets/templates/hello-world",
+		extension:    ".tmpl",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "controller/ci/scripts/component.sh",
 		outputPath:   "ci/scripts/component",
 		extension:    ".sh",
@@ -231,6 +255,12 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "controller/features/hello_world.feature",
+		outputPath:   "features/hello_world",
+		extension:    ".feature",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "controller/features/steps/example_component.go",
 		outputPath:   "features/steps/example_component",
 		extension:    ".go",
@@ -239,6 +269,12 @@ var controllerFiles = []fileGen{
 	{
 		templatePath: "controller/features/steps/steps.go",
 		outputPath:   "features/steps/steps",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "controller/handlers/clients.go",
+		outputPath:   "handlers/clients",
 		extension:    ".go",
 		filePrefix:   "",
 	},

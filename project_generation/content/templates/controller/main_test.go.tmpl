@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	componenttest "github.com/ONSdigital/dp-component-test"
 	"github.com/ONSdigital/{{.Name}}/features/steps"
     "github.com/ONSdigital/log.go/v2/log"
 	"github.com/cucumber/godog"
@@ -16,35 +15,29 @@ import (
 var componentFlag = flag.Bool("component", false, "perform component tests")
 
 type ComponentTest struct {
-    uiFeature *componenttest.UIFeature
+
 }
 
 func (f *ComponentTest) InitializeScenario(ctx *godog.ScenarioContext) {
 	component, err := steps.NewComponent()
     if err != nil {
-    
+		panic(err)
     }
 
-    f.uiFeature = componenttest.NewUIFeature("http://" + component.Config.SiteDomain + component.Config.BindAddr)
-
 	ctx.BeforeScenario(func(*godog.Scenario) {
-        f.uiFeature.Reset()
+        component.Reset()
 	})
 
 	ctx.AfterScenario(func(*godog.Scenario, error) {
 		if err := component.Close(); err != nil {
 			log.Warn(context.Background(), "error closing component", log.FormatErrors([]error{err}))
 		}
-        f.uiFeature.Close()
 	})
 
 	component.RegisterSteps(ctx)
-    f.uiFeature.RegisterSteps(ctx)
 }
 
-func (f *ComponentTest) InitializeTestSuite(ctx *godog.TestSuiteContext) {
-
-}
+func (f *ComponentTest) InitializeTestSuite(ctx *godog.TestSuiteContext) {}
 
 func TestComponent(t *testing.T) {
 	if *componentFlag {

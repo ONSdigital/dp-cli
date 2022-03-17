@@ -175,7 +175,15 @@ func (a application) createAPIContentDirectoryStructure() error {
 
 // createControllerContentDirectoryStructure will create child directories for Controller content at a given path
 func (a application) createControllerContentDirectoryStructure() error {
-	err := os.MkdirAll(filepath.Join(a.pathToRepo, "handlers"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(a.pathToRepo, "assets/locales"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "assets/templates/partials"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "handlers"), os.ModePerm)
 	if err != nil {
 		return err
 	}
