@@ -3,8 +3,10 @@ package mapper
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/ONSdigital/{{.Name}}/config"
+	"github.com/ONSdigital/dp-renderer/model"
 )
 
 // TODO: remove hello world example mapper and models
@@ -14,15 +16,31 @@ type HelloModel struct {
 	Who      string `json:"who"`
 }
 
-type HelloWorldModel struct {
+type HelloWorldPageModel struct {
+    model.Page
 	HelloWho string `json:"hello-who"`
 }
 
-func HelloWorld(ctx context.Context, hm HelloModel, cfg config.Config) HelloWorldModel {
-	var hwm HelloWorldModel
-	hwm.HelloWho = fmt.Sprintf("%s %s", hm.Greeting, hm.Who)
-	if cfg.HelloWorldEmphasise {
-		hwm.HelloWho += "!"
+// CreateHelloWorldPage maps type searchC.Response to model.Page
+func CreateHelloWorldPage(ctx context.Context, req *http.Request, cfg *config.Config, basePageModel model.Page, hm HelloModel, language string) HelloWorldPageModel {
+	page := HelloWorldPageModel{
+		Page: basePageModel,
 	}
-	return hwm
+
+	page.Metadata.Title = "Hello World Page"
+	page.Type = "hello-world"
+	page.Count = 1
+	page.Language = language
+	page.BetaBannerEnabled = true
+	page.SearchDisabled = false
+	page.URI = req.URL.Path
+	page.PatternLibraryAssetsPath = cfg.PatternLibraryAssetsPath
+	page.Pagination.CurrentPage = 1 // validatedQueryParams.CurrentPage TODO: can this be removed?
+
+	page.HelloWho = fmt.Sprintf("%s %s", hm.Greeting, hm.Who)
+	if cfg.HelloWorldEmphasise {
+		page.HelloWho += "!"
+	}
+
+	return page
 }

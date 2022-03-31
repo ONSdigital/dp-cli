@@ -6,8 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/ONSdigital/{{.Name}}/assets"
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/service"
+	render "github.com/ONSdigital/dp-renderer"
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -41,9 +43,12 @@ func run(ctx context.Context) error {
 
 	log.Info(ctx, "got service configuration", log.Data{"config": cfg})
 
+	// Initialise render client, routes and initialise localisations bundles
+	renderer := render.NewWithDefaultClient(assets.Asset, assets.AssetNames, cfg.PatternLibraryAssetsPath, cfg.SiteDomain)
+
 	// Run service
 	svc := service.New()
-	if err := svc.Init(ctx, cfg, svcList); err != nil {
+	if err := svc.Init(ctx, cfg, svcList, renderer); err != nil {
 		log.Error(ctx, "failed to initialise service", err)
 		return err
 	}

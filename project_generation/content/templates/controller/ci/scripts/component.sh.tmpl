@@ -1,0 +1,7 @@
+#!/bin/bash -eux
+
+export SITE_DOMAIN=localhost
+
+pushd {{.Name}}
+  make test-component
+popd
