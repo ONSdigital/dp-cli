@@ -84,6 +84,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		if !isAWSB {
 			target = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, target)
 		} else {
+			os.Setenv("AWS_PROFILE", env.Profile)
 			target = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, target)
 		}
 	}

@@ -1,0 +1,116 @@
+package steps
+
+import (
+	"context"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/ONSdigital/dp-api-clients-go/v2/health"
+	componenttest "github.com/ONSdigital/dp-component-test"
+	"github.com/ONSdigital/dp-healthcheck/healthcheck"
+	dphttp "github.com/ONSdigital/dp-net/http"
+	render "github.com/ONSdigital/dp-renderer"
+	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/ONSdigital/{{.Name}}/assets"
+	"github.com/ONSdigital/{{.Name}}/config"
+	"github.com/ONSdigital/{{.Name}}/service"
+	"github.com/ONSdigital/{{.Name}}/service/mocks"
+)
+
+type Component struct {
+	componenttest.ErrorFeature
+	Config           *config.Config
+	killChannel   chan os.Signal
+	HTTPServer     *http.Server
+	ServiceRunning bool
+	svc           *service.Service
+	svcErrors     chan error
+	StartTime      time.Time
+	uiFeature *componenttest.UIFeature
+}
+
+// NewComponent creates and returns a new component instance.
+func NewComponent() (*Component, error) {
+	c := &Component{
+		HTTPServer: &http.Server{},
+		svcErrors: make(chan error, 1),
+		ServiceRunning: false,
+		}
+
+	ctx := context.Background()
+
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	c.Config = cfg
+
+	initMock := &mocks.InitialiserMock{
+		DoGetHTTPServerFunc:   c.DoGetHTTPServer,
+		DoGetHealthCheckFunc:  c.DoGetHealthCheck,
+		DoGetHealthClientFunc: c.DoGetHealthClient,
+	}
+
+	serviceList := service.NewServiceList(initMock)
+
+	renderer := render.NewWithDefaultClient(assets.Asset, assets.AssetNames, cfg.PatternLibraryAssetsPath, cfg.SiteDomain)
+
+	c.svc = service.New()
+	if err := c.svc.Init(ctx, c.Config, serviceList, renderer); err != nil {
+		log.Error(ctx, "failed to initialise service", err)
+		return nil, err
+	}
+
+	c.StartTime = time.Now()
+	c.svc.Run(ctx, c.svcErrors)
+	c.ServiceRunning = true
+
+	c.uiFeature = componenttest.NewUIFeature("http://" + c.Config.SiteDomain + c.Config.BindAddr)
+
+	return c, nil
+}
+
+// Close closes down component resources. Called once all tests have been run.
+func (c *Component) Close() error {
+	c.uiFeature.Close()
+
+	if c.svc != nil && c.ServiceRunning {
+		c.svc.Close(context.Background())
+		c.ServiceRunning = false
+	}
+
+	return nil
+}
+
+// Reset resets the component. Used to reset the component between tests.
+func (c *Component) Reset() *Component {
+	c.uiFeature.Reset()
+	return c
+}
+
+func (c *Component) DoGetHealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
+	return &mocks.HealthCheckerMock{
+		AddCheckFunc: func(name string, checker healthcheck.Checker) error { return nil },
+		StartFunc:    func(ctx context.Context) {},
+		StopFunc:     func() {},
+	}, nil
+}
+
+func (c *Component) DoGetHTTPServer(bindAddr string, router http.Handler) service.HTTPServer {
+	// disabling HandleOSSignals prevents the server terminating the application with an error
+	// after server shutdown (os.Exit(1)). This behaviour of dphttp.Server when HandleOSSignals
+	// is enabled should be remedied.
+	server := dphttp.NewServer(bindAddr, router)
+	server.HandleOSSignals = false
+	return server
+}
+
+func (c *Component) DoGetHealthClient(name, url string) *health.Client {
+	return &health.Client{
+		URL:    url,
+		Name:   name,
+		Client: service.NewMockHTTPClient(&http.Response{}, nil),
+	}
+}

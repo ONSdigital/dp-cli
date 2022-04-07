@@ -99,6 +99,8 @@ and if this is a first time setup, comment out production from environments, thu
 
 ]
 
+_Note_: **ssh-user** is actually your AWS account name. You should receive credentials as part of onboarding. If you do not have credentials yet, please ask a Tech Lead (as documented here: https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md).
+
 ### Brew Installation
 If using a mac you can now install using brew
 

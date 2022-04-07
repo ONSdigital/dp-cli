@@ -84,7 +84,7 @@ func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Co
 	for _, grp := range groups {
 		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error fetching ec2: %q", env)
+			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}
 
 		if len(instances) == 0 {
