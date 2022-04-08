@@ -41,7 +41,6 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		return errors.New("missing `ssh-user` in config file")
 	}
 
-	isAWSB := cfg.IsAWSB(env)
 	ansibleDir := cfg.GetAnsibleDirectory(env)
 
 	flags := "-p"
@@ -52,7 +51,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		flags += "r"
 	}
 	cmdArgs := []string{flags + "F", "ssh.cfg"}
-	if env.Name == "concourse" {
+	if env.IsCI() {
 		cmdArgs = []string{}
 	}
 	user := *cfg.User
@@ -61,7 +60,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	}
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
-			if !isAWSB {
+			if !env.IsAWSB() {
 				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, srcFile)
 			} else {
 				os.Setenv("AWS_PROFILE", env.Profile)
@@ -87,7 +86,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			return err
 		}
 	} else {
-		if !isAWSB {
+		if !env.IsAWSB() {
 			target = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, target)
 		} else {
 			os.Setenv("AWS_PROFILE", env.Profile)

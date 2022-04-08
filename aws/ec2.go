@@ -40,7 +40,7 @@ func getEC2Service(environment, profile string) *ec2.EC2 {
 	return ec2.New(getAWSSession(environment, profile))
 }
 
-func getNamedSG(name, environment, profile string, sshUser *string, ports []int64) (sg secGroup, err error) {
+func getNamedSG(name, environment, profile string, sshUser *string, ports []int64, cfg *config.Config) (sg secGroup, err error) {
 	ec2Svc := getEC2Service(environment, profile)
 	filters := []*ec2.Filter{
 		{
@@ -49,13 +49,13 @@ func getNamedSG(name, environment, profile string, sshUser *string, ports []int6
 		},
 	}
 	if len(environment) > 0 {
-		envTag := environment
-		if envTag == "concourse" {
-			envTag = "ci"
+		expectEnvTag := environment
+		if cfg.IsCI(environment) {
+			expectEnvTag = "ci"
 		}
 		filters = append(filters, &ec2.Filter{
 			Name:   aws.String("tag:Environment"),
-			Values: []*string{aws.String(envTag)},
+			Values: []*string{aws.String(expectEnvTag)},
 		})
 	}
 
@@ -130,30 +130,30 @@ func getBastionSGForEnvironment(environment, profile string, sshUser *string, ex
 	}
 	return getNamedSG(
 		environment+" - bastion", environment, profile, sshUser,
-		extraPorts,
+		extraPorts, cfg,
 	)
 }
 
-func getELBPublishingSGForEnvironment(environment, profile string, sshUser *string, extraPorts []int64) (secGroup, error) {
+func getELBPublishingSGForEnvironment(environment, profile string, sshUser *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
 	return getNamedSG(
 		environment+" - publishing elb", environment, profile, sshUser,
-		append(extraPorts, 443),
+		append(extraPorts, 443), cfg,
 	)
 }
 
-func getELBWebSGForEnvironment(environment, profile string, sshUser *string, extraPorts []int64) (secGroup, error) {
+func getELBWebSGForEnvironment(environment, profile string, sshUser *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
 	return getNamedSG(
 		environment+" - web elb", environment, profile, sshUser,
-		append(extraPorts, 80, 443),
+		append(extraPorts, 80, 443), cfg,
 	)
 }
 
-func getConcourseWebSG(sshUser *string) (secGroup, error) {
-	return getNamedSG("concourse-ci-web", "", "", sshUser, []int64{CONCOURSE_SSH_PORT})
+func getConcourseWebSG(sshUser *string, cfg *config.Config) (secGroup, error) {
+	return getNamedSG("concourse-ci-web", "", "", sshUser, []int64{CONCOURSE_SSH_PORT}, cfg)
 }
 
-func getConcourseWorkerSG(sshUser *string) (secGroup, error) {
-	return getNamedSG("concourse-ci-worker", "", "", sshUser, []int64{CONCOURSE_SSH_PORT})
+func getConcourseWorkerSG(sshUser *string, cfg *config.Config) (secGroup, error) {
+	return getNamedSG("concourse-ci-worker", "", "", sshUser, []int64{CONCOURSE_SSH_PORT}, cfg)
 }
 
 // AllowIPForEnvironment adds your IP to this environment
@@ -185,14 +185,14 @@ func changeIPsForEnvironment(isAllow bool, sshUser *string, environment, profile
 	var secGroups []secGroup
 	var sg secGroup
 	var ec2Svc *ec2.EC2
-	if environment == "concourse" {
+	if cfg.IsCI(environment) {
 		ec2Svc = getEC2Service("", "")
-		if sg, err = getConcourseWebSG(sshUser); err != nil {
+		if sg, err = getConcourseWebSG(sshUser, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
-		if sg, err = getConcourseWorkerSG(sshUser); err != nil {
+		if sg, err = getConcourseWorkerSG(sshUser, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
@@ -205,12 +205,12 @@ func changeIPsForEnvironment(isAllow bool, sshUser *string, environment, profile
 		secGroups = append(secGroups, sg)
 
 		if environment != "production" {
-			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, extraPorts.Publishing); err != nil {
+			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, extraPorts.Publishing, cfg); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
 
-			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser, extraPorts.Web); err != nil {
+			if sg, err = getELBWebSGForEnvironment(environment, profile, sshUser, extraPorts.Web, cfg); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
@@ -267,8 +267,8 @@ func changeIPsForEnvironment(isAllow bool, sshUser *string, environment, profile
 }
 
 // ListEC2ByAnsibleGroup returns EC2 instances matching ansibleGroup for this env/profile
-func ListEC2ByAnsibleGroup(environment, profile string, ansibleGroup string) ([]EC2Result, error) {
-	r, err := ListEC2(environment, profile)
+func ListEC2ByAnsibleGroup(environment, profile string, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
+	r, err := ListEC2(environment, profile, cfg)
 	if err != nil {
 		return r, err
 	}
@@ -287,7 +287,7 @@ func ListEC2ByAnsibleGroup(environment, profile string, ansibleGroup string) ([]
 }
 
 // ListEC2 returns a list of EC2 instances which match the environment name
-func ListEC2(environment, profile string) ([]EC2Result, error) {
+func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, error) {
 	if r, ok := resultCache[environment]; ok {
 		return r, nil
 	}
@@ -297,15 +297,15 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 
 	var result *ec2.DescribeInstancesOutput
 	var err error
-	envTag := environment
-	if envTag == "concourse" {
-		envTag = "ci"
+	expectEnvTag := environment
+	if cfg.IsCI(environment) {
+		expectEnvTag = "ci"
 	}
 	request := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("tag:Environment"),
-				Values: []*string{aws.String(envTag)},
+				Values: []*string{aws.String(expectEnvTag)},
 			},
 			{
 				Name:   aws.String("instance-state-name"),
@@ -339,17 +339,18 @@ func ListEC2(environment, profile string) ([]EC2Result, error) {
 					}
 				}
 				var ipAddr string
-				if environment == "concourse" {
-					if len(i.NetworkInterfaces) > 0 && len(*i.NetworkInterfaces[0].Association.PublicIp) > 0 {
-						if i.NetworkInterfaces[0].Association.PublicIp != nil {
-							ipAddr = *i.NetworkInterfaces[0].Association.PublicIp
-						}
+				if cfg.IsCI(environment) {
+					if len(i.NetworkInterfaces) > 0 &&
+						i.NetworkInterfaces[0].Association != nil &&
+						len(*i.NetworkInterfaces[0].Association.PublicIp) > 0 &&
+						i.NetworkInterfaces[0].Association.PublicIp != nil {
+						ipAddr = *i.NetworkInterfaces[0].Association.PublicIp
 					}
 				} else {
-					if len(i.NetworkInterfaces) > 0 && len(i.NetworkInterfaces[0].PrivateIpAddresses) > 0 {
-						if i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress != nil {
-							ipAddr = *i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress
-						}
+					if len(i.NetworkInterfaces) > 0 &&
+						len(i.NetworkInterfaces[0].PrivateIpAddresses) > 0 &&
+						i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress != nil {
+						ipAddr = *i.NetworkInterfaces[0].PrivateIpAddresses[0].PrivateIpAddress
 					}
 				}
 				resultCache[environment] = append(resultCache[environment], EC2Result{

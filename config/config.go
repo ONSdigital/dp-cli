@@ -15,8 +15,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// AWSB_TAG refers to dp-cli-config.yml and specifies which environments use the new AWS environments
-const AWSB_TAG = "awsb"
+// tags refer to dp-cli-config.yml environment tags which put that environment into group types
+const (
+	TAG_AWSB = "awsb"
+	TAG_CI   = "ci"
+)
 
 var httpClient = &http.Client{
 	Timeout: 5 * time.Second,
@@ -47,8 +50,7 @@ type Environment struct {
 	Name       string     `yaml:"name"`
 	Profile    string     `yaml:"profile"`
 	User       string     `yaml:"user"`
-	Tag        string     `yaml:"tag"`
-	CI         bool       `yaml:"ci"`
+	Tags       []string   `yaml:"tags"`
 	ExtraPorts ExtraPorts `yaml:"extra-ports"`
 }
 
@@ -154,19 +156,46 @@ func (cfg Config) GetMyIP() (string, error) {
 	return string(b), nil
 }
 
-func (cfg Config) IsAWSB(env Environment) bool {
-	return env.Tag == AWSB_TAG
+func (env Environment) hasTag(tag string) bool {
+	for _, eachTag := range env.Tags {
+		if eachTag == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func (cfg Config) hasTag(env, tag string) bool {
+	for _, e := range cfg.Environments {
+		if e.Name == env {
+			return e.hasTag(tag)
+		}
+	}
+	return false
+}
+
+func (cfg Config) IsAWSB(env string) bool {
+	return cfg.hasTag(env, TAG_AWSB)
+}
+func (env Environment) IsAWSB() bool {
+	return env.hasTag(TAG_AWSB)
+}
+func (cfg Config) IsCI(env string) bool {
+	return cfg.hasTag(env, TAG_CI)
+}
+func (env Environment) IsCI() bool {
+	return env.hasTag(TAG_CI)
 }
 
 func (cfg Config) GetPath(env Environment) string {
-	if env.CI {
+	if env.IsCI() {
 		return cfg.DPCIPath
 	}
 	return cfg.DPSetupPath
 }
 
 func (cfg Config) GetAnsibleDirectory(env Environment) string {
-	if env.CI {
+	if env.IsCI() {
 		return filepath.Join(cfg.DPCIPath, "ansible")
 	}
 	return filepath.Join(cfg.DPSetupPath, "ansible")

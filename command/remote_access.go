@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 func remoteAccess(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remote",
