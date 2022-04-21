@@ -120,12 +120,12 @@ func createInstanceSCPSubCommands(grp string, cfg *config.Config, env config.Env
 
 		instanceC := &cobra.Command{
 			Use:   index + " <srcFiles...> <destFile>",
-			Short: fmt.Sprintf("scp on %q %q (%s)", grp, inst.Name, inst.IPAddress),
-			Long: fmt.Sprintf("scp on %q %q (%s) args: <srcFiles...> <destFile>\n"+
+			Short: fmt.Sprintf("scp on %q %q (%s) (%s)", grp, inst.Name, inst.IPAddress, inst.InstanceId),
+			Long: fmt.Sprintf("scp on %q %q (%s) (%s) args: <srcFiles...> <destFile>\n"+
 				"By default, <srcFiles> are local and pushed to <remoteHost>:<destFile>, "+
 				"(but if `scp --pull` was used, <remoteHost>:<srcFiles> are pulled).\n"+
 				"The remote files can be relative paths (rel. to your remote home dir).",
-				grp, inst.Name, inst.IPAddress,
+				grp, inst.Name, inst.IPAddress, inst.InstanceId,
 			),
 			Args: cobra.MinimumNArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {

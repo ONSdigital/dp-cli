@@ -23,7 +23,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	lvl := out.GetLevel(env)
 	fmt.Println("")
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
-	out.Highlight(lvl, "[IP: %s | Name: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
+	out.Highlight(lvl, "[IP: %s | Name: %s | Id: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.InstanceId, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
 	ansibleDir := cfg.GetAnsibleDirectory(env)
 

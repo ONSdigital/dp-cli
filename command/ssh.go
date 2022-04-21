@@ -110,12 +110,19 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 			instX := inst
 			ipC := &cobra.Command{
 				Use:   inst.IPAddress,
+				Short: fmt.Sprintf("ssh to %s %s [%s]", env.Name, inst.InstanceId, strings.Join(inst.GroupAKA, ", ")),
+				RunE: func(cmd *cobra.Command, args []string) error {
+					return ssh.Launch(cfg, e, instX, portArgs, verboseCount, args)
+				},
+			}
+			idC := &cobra.Command{
+				Use:   inst.InstanceId,
 				Short: fmt.Sprintf("ssh to %s %-15s [%s]", env.Name, inst.IPAddress, strings.Join(inst.GroupAKA, ", ")),
 				RunE: func(cmd *cobra.Command, args []string) error {
 					return ssh.Launch(cfg, e, instX, portArgs, verboseCount, args)
 				},
 			}
-			commands = append(commands, ipC)
+			commands = append(commands, ipC, idC)
 		}
 	}
 
