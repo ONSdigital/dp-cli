@@ -6,7 +6,7 @@ Command-line client providing *handy helper tools* for the ONS Digital Publishin
 
 ## Getting started
 
-Clone the code
+Clone the code (not needed if [installing on macOS](#brew-installation))
 
 ```sh
 git clone git@github.com:ONSdigital/dp-cli.git
@@ -99,7 +99,23 @@ and if this is a first time setup, comment out production from environments, thu
 
 ]
 
-_Note_: **ssh-user** is actually your AWS account name. You should receive credentials as part of onboarding. If you do not have credentials yet, please ask a Tech Lead (as documented here: https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md).
+*Note*: **ssh-user** is actually your AWS account name. You should receive credentials as part of onboarding. If you do not have credentials yet, please ask a Tech Lead ([as documented](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md)).
+
+### Brew Installation
+
+If using macOS, you can now install using `brew`:
+
+- Create tap
+
+   ```sh
+   brew tap ONSdigital/homebrew-dp-cli git@github.com:ONSdigital/homebrew-dp-cli
+   ```
+
+- Run brew install
+
+   ```sh
+   brew install dp-cli
+   ```
 
 ### Build and run
 
@@ -205,7 +221,7 @@ Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specifi
 The error occurs when rules have previously been added and the command is run again.
 Use `dp remote deny $env` to clear out existing rules and try again.
 
-_This error should no longer appear_ - the code should now avoid re-adding existing rules.
+*This error should no longer appear* - the code should now avoid re-adding existing rules.
 However, it is possible that the rule has been added with a description that does not match your username.
 If so, you will have to use the AWS web UI/console to remove any offending security group rules.
 
@@ -240,7 +256,7 @@ dp remote --ip 192.168.11.22 allow develop
 MY_IP=192.168.11.22 dp remote allow develop
 ```
 
-Similarly, use the `--user` flag to change the label attached to the IP that is put into (or removed from) the _allow_ table.
+Similarly, use the `--user` flag to change the label attached to the IP that is put into (or removed from) the *allow* table.
 
 ```sh
 dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow develop
@@ -257,3 +273,10 @@ environments:
       publishing:
         - 80
 ```
+
+## Releases
+
+When creating new releases, please be sure to:
+
+- update the version (tag)
+- update the brew formula [in the tap](https://github.com/ONSdigital/homebrew-dp-cli).

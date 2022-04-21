@@ -1,9 +1,9 @@
 ## Example config file - replace fields as required
 ##
 dp-setup-path: "path/to/your/dp-setup" # The path to the dp-setup repo on your machine.
+dp-ci-path: "path/to/your/dp-ci" # The path to the dp-ci repo on your machine.
 dp-hierarchy-builder-path: "path/to/your/dp-hierarchy-builder" # The path to the dp-hierarchy-builder repo on your machine.
 dp-code-list-scripts-path: "path/to/your/dp-code-list-scripts" # The path to the dp-code-list-scripts repo on your machine.
-dp-ci-path: "path/to/your/dp-ci" # The path to the dp-ci repo on your machine.
 cmd:
   neo4j-url: bolt://localhost:7687
   mongo-url: localhost:27017
@@ -35,7 +35,7 @@ environments:
     profile: dp-prod
     user: ubuntu # required for all AWS-B envs and has to be ubuntu
     tags: [awsb]
-  - name: dp-ci
+  - name: ci
     profile: dp-ci
     user: ubuntu # required for all AWS-B envs and has to be ubuntu
     tags: [awsb,ci]
