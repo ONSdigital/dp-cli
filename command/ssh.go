@@ -140,7 +140,7 @@ func createInstanceSubCommands(grp string, cfg *config.Config, env config.Enviro
 
 		instanceC := &cobra.Command{
 			Use:   index,
-			Short: fmt.Sprintf("ssh to %s %q (%s)", grp, inst.Name, inst.IPAddress),
+			Short: fmt.Sprintf("ssh to %s %q (%s) %s", grp, inst.Name, inst.IPAddress, inst.InstanceId),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return ssh.Launch(cfg, e, inst, portArgs, verboseCount, args)
 			},
