@@ -67,7 +67,7 @@ func getNamedSG(name, environment, profile string, sshUser *string, ports []int6
 	}
 
 	if len(res.SecurityGroups) < 1 {
-		err = fmt.Errorf("no security groups matching environment: %q with name %q", environment, name)
+		err = fmt.Errorf("no security groups matching environment: %q with name %q and profile %q", environment, name, profile)
 		return
 	}
 	if len(res.SecurityGroups) > 1 {
