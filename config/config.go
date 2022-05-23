@@ -1,15 +1,14 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -63,34 +62,44 @@ type ExtraPorts struct {
 
 // Get returns the config struct by parsing the YML file
 func Get() (*Config, error) {
-	path := os.Getenv("DP_CLI_CONFIG")
-	if len(path) == 0 {
-		var err error
-		path, err = getDefaultConfigPath()
-		if err != nil {
-			return nil, err
-		}
-	}
+	path := getConfigPath()
 
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot read %q: %w", path, err)
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot parse %q: %w", path, err)
 	}
+
+	cfg.expandPaths()
 
 	return &cfg, nil
 }
 
-func getDefaultConfigPath() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", errors.New("no DP_CLI_CONFIG config file specified and failed to determine user's home directory")
+func (cfg Config) expandPaths() {
+	cfg.DPCIPath = expandPath(cfg.DPCIPath)
+	cfg.DPHierarchyBuilderPath = expandPath(cfg.DPHierarchyBuilderPath)
+	cfg.DPSetupPath = expandPath(cfg.DPSetupPath)
+	cfg.DPCodeListScriptsPath = expandPath(cfg.DPCodeListScriptsPath)
+}
+
+func expandPath(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		path = strings.Replace(path, "~", "${HOME}", 1)
 	}
-	return filepath.Join(usr.HomeDir, ".dp-cli-config.yml"), nil
+	path = os.ExpandEnv(path)
+	return path
+}
+
+func getConfigPath() (path string) {
+	path = os.Getenv("DP_CLI_CONFIG")
+	if len(path) == 0 {
+		path = expandPath("~/.dp-cli-config.yml")
+	}
+	return
 }
 
 func Dump() ([]byte, error) {
@@ -121,7 +130,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	// flag used?
 	if len(*cfg.IPAddress) > 0 {
 		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", errors.New("unexpected IP format for flag")
+			return "", fmt.Errorf("unexpected IP format for flag: %w", err)
 		}
 		return *cfg.IPAddress, nil
 	}
@@ -129,7 +138,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	// env var used?
 	if *cfg.IPAddress = os.Getenv("MY_IP"); len(*cfg.IPAddress) > 0 {
 		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", errors.New("unexpected format for var MY_IP")
+			return "", fmt.Errorf("unexpected format for var MY_IP: %w", err)
 		}
 		return *cfg.IPAddress, nil
 	}
@@ -137,7 +146,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	// use remote service to obtain IP
 	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot get IP from service: %w", err)
 	}
 
 	defer func() {

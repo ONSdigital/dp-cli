@@ -6,9 +6,9 @@ Command-line client providing *handy helper tools* for the ONS Digital Publishin
 
 ## Getting started
 
-Clone the code (not needed if [installing on macOS](#brew-installation))
+Clone the code (not needed if you [brew install on macOS](#brew-installation) :warning:)
 
-```sh
+```shell
 git clone git@github.com:ONSdigital/dp-cli.git
 ```
 
@@ -18,54 +18,37 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 **Required:**
 
-The DP CLI uses Go Modules so requires a go version of **1.11** or later.
-
 Check you have a suitable version of `go` installed with:
 
 `go version`
 
-(Ideally 1.17)
-
-[ The following will ensure version 1.17
-
-  ```sh
-  brew install go@1.17
-  brew unlink go
-  brew link —force go@1.17
+  ```shell
+  brew install go
   ```
-
-Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
-
-  ```sh
-  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export PATH="/usr/local/opt/go@1.17/bin:$PATH"' >> ~/.zshrc
-  ```
-
-  and restart the terminal ]
 
 **Optional:**
 
- The following are only required for some functionality of this tool.
+The following are only required for some functionality of this tool.
 
 In order to use the `dp ssh` sub-command you will need:
 
 - [`dp-setup`](https://github.com/ONSdigital/dp-setup) cloned locally:
 
-  ```bash
+  ```shell
   git clone git@github.com:ONSdigital/dp-setup
   ```
 
-In order to use the `dp import cmd` sub-command (e.g. when you are using Neo4j; `import` is currently *not needed* if you are using Neptune) you will need:
+In order to use the `dp import cmd` sub-command (e.g. when you are using **Neo4j**; however, `import` is currently *not needed* if you are using Neptune) you will need:
 
 - [`dp-code-list-scripts`](https://github.com/ONSdigital/dp-code-list-scripts) cloned locally:
 
-  ```bash
+  ```shell
   git clone git@github.com:ONSdigital/dp-code-list-scripts
   ```
 
 - [`dp-hierarchy-builder`](https://github.com/ONSdigital/dp-hierarchy-builder) cloned locally:
 
-  ```bash
+  ```shell
   git clone git@github.com:ONSdigital/dp-hierarchy-builder
   ```
 
@@ -75,45 +58,43 @@ Configuration is defined in a YAML file. By default the CLI expects the config t
 
 The [sample config file](./config/example_config.yml) should be tailored to suit you. For example:
 
-```bash
+```shell
 cp -i config/example_config.yml ~/.dp-cli-config.yml
 vi ~/.dp-cli-config.yml
 ```
 
-[ set paths for:
+- Amend the config paths for:
 
-```yaml
+  ```yaml
+    dp-ci-path:
     dp-setup-path:
     dp-hierarchy-builder-path:
     dp-code-list-scripts-path:
+  ```
 
-   set your `ssh-user:`
-```
+- set your `ssh-user:`
+  - *Note*: **ssh-user** is actually your AWS account name. You should receive credentials as part of onboarding. If you do not have credentials yet, please ask a Tech Lead ([as documented](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md)).
 
-and if this is a first time setup, comment out production from environments, thus:
+- if this is a first time setup, comment out `prod` from `environments`, thus:
 
-```yaml
-    # - name: production
-    #   profile: production
-```
-
-]
-
-*Note*: **ssh-user** is actually your AWS account name. You should receive credentials as part of onboarding. If you do not have credentials yet, please ask a Tech Lead ([as documented](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md)).
+  ```yaml
+    # - name: prod
+    #   profile: prod
+  ```
 
 ### Brew Installation
 
-If using macOS, you can now install using `brew`:
+If using macOS, you can install using `brew`:
 
 - Create tap
 
-   ```sh
-   brew tap ONSdigital/homebrew-dp-cli git@github.com:ONSdigital/homebrew-dp-cli
-   ```
+  ```shell
+  brew tap ONSdigital/homebrew-dp-cli git@github.com:ONSdigital/homebrew-dp-cli
+  ```
 
 - Run brew install
 
-   ```sh
+   ```shell
    brew install dp-cli
    ```
 
@@ -121,27 +102,26 @@ If using macOS, you can now install using `brew`:
 
 Build, install and start the CLI:
 
-```sh
+```shell
 make install
 dp
 ```
 
-[
-  If you get:
+- If you get:
 
-  `zsh: command not found: dp`
+  `command not found: dp`
 
-Then either edit your .zshrc file have the correct path OR do:
+  Then either edit your .zshrc file have the correct path OR do:
 
-```sh
-echo 'export PATH="$GOPATH/bin:$PATH"' >> ~/.zshrc
-```
+  ```shell
+  echo 'export PATH="$GOPATH/bin:$PATH"' >> ~/.zshrc
+  ```
 
-  and restart the terminal ]
+  and restart the terminal
 
 Or to build a binary locally:
 
-```sh
+```shell
 make build
 ./dp
 ```
@@ -186,15 +166,15 @@ If you do not want to set up separate profiles, another option is to not specify
 
 ```yaml
 environments:
-  - name: production
+  - name: prod
     profile:
-  - name: develop
+  - name: sandbox
     profile:
 ```
 
 #### SSH/SCP command fails
 
-```sh
+```shell
 $ dp ssh develop
 ssh to develop
 ```
@@ -211,7 +191,7 @@ Depending on the command you're trying to run, and what you're trying to access,
 
 #### Remote Allow security group rule already exists error
 
-```sh
+```shell
 $ dp remote allow develop
 [dp] allowing access to develop
 Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specified rule "peer: X.X.X.X/32, TCP, from port: 22, to port: 22, ALLOW" already exists
@@ -231,7 +211,7 @@ If so, you will have to use the AWS web UI/console to remove any offending secur
 
 You can run ssh commands from the command-line, for example to determine the time on a given host:
 
-```sh
+```shell
 $ dp ssh develop web 1 date
 [...motd banner...]
 [result of date command]
@@ -239,7 +219,7 @@ $ dp ssh develop web 1 date
 
 :warning: However, if you wish to include *flags* in the (remote) command, you must tell `dp` to stop looking for flags - use the `--` flag:
 
-```sh
+```shell
 $ dp ssh develop web 1 -- ls -la
 [...]
 ```
@@ -250,7 +230,7 @@ Optionally, (e.g. to avoid the program looking-up your IP),
 you can use the `--ip` flag (or an environment variable `MY_IP`) to force the IP used when running `dp remote allow`.
 For example:
 
-```sh
+```shell
 dp remote --ip 192.168.11.22 allow develop
 # or
 MY_IP=192.168.11.22 dp remote allow develop
@@ -258,7 +238,7 @@ MY_IP=192.168.11.22 dp remote allow develop
 
 Similarly, use the `--user` flag to change the label attached to the IP that is put into (or removed from) the *allow* table.
 
-```sh
+```shell
 dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow develop
 ```
 
