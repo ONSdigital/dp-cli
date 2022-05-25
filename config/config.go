@@ -79,7 +79,7 @@ func Get() (*Config, error) {
 	return &cfg, nil
 }
 
-func (cfg Config) expandPaths() {
+func (cfg *Config) expandPaths() {
 	cfg.DPCIPath = expandPath(cfg.DPCIPath)
 	cfg.DPHierarchyBuilderPath = expandPath(cfg.DPHierarchyBuilderPath)
 	cfg.DPSetupPath = expandPath(cfg.DPSetupPath)
