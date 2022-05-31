@@ -24,21 +24,21 @@ Check you have a suitable version of `go` installed with:
 
 `go version`
 
-(Ideally 1.17)
+(Ideally 1.18)
 
-[ The following will ensure version 1.17
+[ The following will ensure version 1.18
 
   ```sh
-  brew install go@1.17
+  brew install go@1.18
   brew unlink go
-  brew link —force go@1.17
+  brew link —force go@1.18
   ```
 
 Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
 
   ```sh
   echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export PATH="/usr/local/opt/go@1.17/bin:$PATH"' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.18/bin:$PATH"' >> ~/.zshrc
   ```
 
   and restart the terminal ]
