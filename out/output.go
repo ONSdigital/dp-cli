@@ -37,7 +37,7 @@ func getColor(lvl Level) *color.Color {
 }
 
 func GetLevel(env config.Environment) Level {
-	if env.Name == "production" {
+	if env.IsLive() {
 		return ERROR
 	}
 	return INFO

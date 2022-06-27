@@ -30,10 +30,14 @@ environments:
     profile: dp-sandbox
     user: ubuntu       # required for all AWS-B envs and has to be ubuntu
     tags: [awsb]
+  - name: staging
+    profile: dp-staging
+    user: ubuntu       # required for all AWS-B envs and has to be ubuntu
+    tags: [awsb]
   - name: prod
     profile: dp-prod
     user: ubuntu       # required for all AWS-B envs and has to be ubuntu
-    tags: [awsb]
+    tags: [awsb,live]
   - name: ci
     profile: dp-ci
     user: ubuntu       # required for all AWS-B envs and has to be ubuntu
@@ -44,4 +48,3 @@ environments:
     tags: [ci]
   - name: develop
     profile: develop
-

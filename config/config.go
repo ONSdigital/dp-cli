@@ -18,6 +18,7 @@ import (
 const (
 	TAG_AWSB = "awsb"
 	TAG_CI   = "ci"
+	TAG_LIVE = "live"
 )
 
 var httpClient = &http.Client{
@@ -194,6 +195,12 @@ func (cfg Config) IsCI(env string) bool {
 }
 func (env Environment) IsCI() bool {
 	return env.hasTag(TAG_CI)
+}
+func (cfg Config) IsLive(env string) bool {
+	return cfg.hasTag(env, TAG_LIVE)
+}
+func (env Environment) IsLive() bool {
+	return env.hasTag(TAG_LIVE)
 }
 
 func (cfg Config) GetPath(env Environment) string {

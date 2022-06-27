@@ -158,7 +158,7 @@ Use the available commands for more info on the functionality available.
 
 #### Credentials error
 
-`error creating group commands for env: develop: error fetching ec2: {"develop" "development"}: NoCredentialProviders: no valid providers in chain. Deprecated.`
+`error creating group commands for env: sandbox: error fetching ec2: {"sandbox" "dp-sandbox"}: NoCredentialProviders: no valid providers in chain. Deprecated.`
 
 [Ensure you have AWS credentials set up](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md).
 
@@ -175,15 +175,15 @@ environments:
 #### SSH/SCP command fails
 
 ```shell
-$ dp ssh develop
-ssh to develop
+$ dp ssh sandbox
+ssh to sandbox
 ```
 
 If the SSH or SCP command fails, ensure that the `dp remote allow` command has been run for the environment you want to connect to.
 
 #### Remote Allow security group error
 
-`Error: no security groups matching environment: "develop" with name "develop - bastion"`
+`Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
 
 Ensure you have `region=eu-west-1` in your AWS configuration.
 
@@ -192,8 +192,8 @@ Depending on the command you're trying to run, and what you're trying to access,
 #### Remote Allow security group rule already exists error
 
 ```shell
-$ dp remote allow develop
-[dp] allowing access to develop
+$ dp remote allow sandbox
+[dp] allowing access to sandbox
 Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specified rule "peer: X.X.X.X/32, TCP, from port: 22, to port: 22, ALLOW" already exists
         status code: 400, request id: 26a61345-8391-4c65-bfd7-4f0052892b6b
 ```
@@ -212,7 +212,7 @@ If so, you will have to use the AWS web UI/console to remove any offending secur
 You can run ssh commands from the command-line, for example to determine the time on a given host:
 
 ```shell
-$ dp ssh develop web 1 date
+$ dp ssh sandbox web 1 date
 [...motd banner...]
 [result of date command]
 ```
@@ -220,7 +220,7 @@ $ dp ssh develop web 1 date
 :warning: However, if you wish to include *flags* in the (remote) command, you must tell `dp` to stop looking for flags - use the `--` flag:
 
 ```shell
-$ dp ssh develop web 1 -- ls -la
+$ dp ssh sandbox web 1 -- ls -la
 [...]
 ```
 
@@ -231,15 +231,15 @@ you can use the `--ip` flag (or an environment variable `MY_IP`) to force the IP
 For example:
 
 ```shell
-dp remote --ip 192.168.11.22 allow develop
+dp remote --ip 192.168.11.22 allow sandbox
 # or
-MY_IP=192.168.11.22 dp remote allow develop
+MY_IP=192.168.11.22 dp remote allow sandbox
 ```
 
 Similarly, use the `--user` flag to change the label attached to the IP that is put into (or removed from) the *allow* table.
 
 ```shell
-dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow develop
+dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow sandbox
 ```
 
 #### Remote allow extra ports
