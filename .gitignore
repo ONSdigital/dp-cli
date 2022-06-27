@@ -9,3 +9,4 @@ vendor/
 
 # Mac
 .DS_Store
+.vscode
