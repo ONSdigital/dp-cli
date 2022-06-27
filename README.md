@@ -18,7 +18,7 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 **Required:**
 
-The DP CLI uses Go Modules so requires a go version of **1.17** or later.
+The DP CLI uses Go Modules so requires a go version of **1.18** or later.
 
 Check you have a suitable version of `go` installed with:
 
