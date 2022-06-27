@@ -35,7 +35,7 @@ environments:
   - name: staging 
     profile: dp-staging
     user: ubuntu 
-    tag: awsbq
+    tag: awsb
   - name: ci 
     profile: dp-ci
     user: ubuntu 

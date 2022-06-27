@@ -43,6 +43,13 @@ Check desired version of `go` is on your PATH with `echo $PATH` and if not, eith
 
   and restart the terminal ]
 
+Ensure `session-manager-plugin` is installed by running the following command
+```
+ which session-manager-plugin
+ ```
+if not installed, follow this [doc](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos)
+
+
 **Optional:**
 
  The following are only required for some functionality of this tool.
@@ -59,6 +66,7 @@ In order to use the `dp ssh` sub-command you will need:
   ```bash
   git clone git@github.com:ONSdiqgital/dp-ci
   ```
+Note: Make sure `dp-setup` and `dp-ci` branch points to main locally. This is necessary as it has the required SSH configuration and the relavant inventories.
 
 In order to use the `dp import cmd` sub-command (e.g. when you are using Neo4j; `import` is currently *not needed* if you are using Neptune) you will need:
 
@@ -92,7 +100,7 @@ update the paths and ssh-user:
     dp-ci-path: path to your local dp-ci
     dp-hierarchy-builder-path: path to your local dp-hierarchy-builder-path
     dp-code-list-scripts-path: path to your local dp-code-list-scripts-path
-    ssh-user: Your AWS account name
+    ssh-user: Your first and last name concatenated eg. JaneBloggs"
 ```
 
 and if this is a first time setup, comment out `prod` from environments, thus:
@@ -105,14 +113,6 @@ and if this is a first time setup, comment out `prod` from environments, thus:
 ```
 
 *Note*: **ssh-user** is a string used to put your name against SecurityGroup changes.
-
-You should receive credentials as part of onboarding. If you do not have credentials yet, please 
-get in touch with the platform team to get an account created
-
-- The account must be registered to an ONS email address (ons.gov.uk or ext.ons.gov.uk)
-- AWS accounts are now managed by the Cloud Ops team (in DST) and are requested in ServiceNow
-- You should receive an email with a link to register
-
 
 ### Brew Installation
 
@@ -195,39 +195,30 @@ Use the available commands for more info on the functionality available.
 
 1. `SSOProviderInvalidToken: the SSO session has expired or is invalid`
 
-If you see the above error, you need to re-authenticate with sign in information
+    If you see the above error, you need to re-authenticate with sign in information
 
 1. `error fetching ec2: {Name:sandbox Profile:dp-sandbox User:ubuntu Tag:awsb CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
 
-check that you have the correct AWS profile names in your `~/.aws/config` file (dp-sandbox, dp-staging, dp-prod, dp-ci)
-
-Sample of file `~/.aws/config` for sandbox profile:
-
-[profile dp-sandbox]
-sso_start_url = https://ons.awsapps.com/start
-sso_account_id = 1234556253 #replace this with correct account id
-sso_role_name = AdministratorAccess
-sso_region = eu-west-2
-region = eu-west-2
+    check that you have the correct AWS profile names in your `~/.aws/config` file (dp-sandbox, dp-staging, dp-prod, dp-ci). A sample config for `~/.aws/config` is included at the end of this guide as a reference.
 
 1. `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
 
-check  ~/.aws/credentials and remove any profile information added for dp-sandbox/dp-staging/dp-prod as this is not needed
+    check  ~/.aws/credentials and remove any profile information added for dp-sandbox/dp-staging/dp-prod as this is not needed
 
 
-If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
+    If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
 
-```yaml
-environments:
-  - name: prod
-    profile:
-    user: ubuntu 
-    tag: awsb
-  - name: staging
-    profile:
-    user: ubuntu 
-    tag: awsb
-```
+    ```yaml
+    environments:
+      - name: prod
+        profile:
+        user: ubuntu 
+        tag: awsb
+      - name: staging
+        profile:
+        user: ubuntu 
+        tag: awsb
+    ```
 
 #### SSH/SCP command fails
 
@@ -244,7 +235,7 @@ If the SSH or SCP command fails, ensure that the `dp remote allow` command has b
 
 Ensure you have `region=eu-west-2` in your AWS configuration.
 
-Depending on the command you're trying to run, and what you're trying to access, ensure your `AWS_PROFILE` is set correctly.
+Depending on the command you're trying to run, and what you're trying to access, ensure your `AWS_PROFILE` is set correctly and there is no prod/sandbox/ci config added in the `~/.aws/credentials` file.
 Example:
 ```yaml
 export AWS_PROFILE=dp-staging
@@ -316,17 +307,21 @@ environments:
 ```
 #### AWS Command Line Access
 
-Follow the guide at Configuring the AWS CLI to use AWS Single Sign-On to set up CLI access with SSO. The details needed are:
-```yaml
-  SSO Start URL: https://ons.awsapps.com/start
-  SSO Region: eu-west-2
-```
-
-Each environment you have access to will need to be configured. Make sure you name each profile the same as the environment (dp-sandbox, dp-staging, dp-prod, dp-ci) so that it works seamlessly with other DP tooling (dp-cli, terraform). A sample config is included at the end of this guide as a reference.
-
+Follow the guide in [dp](https://github.com/ONSdigital/dp/blob/main/guides/AWS_ACCOUNT_ACCESS.md)
 ## Releases
 
 When creating new releases, please be sure to:
 
 - update the version (tag)
 - update the brew formula [in the tap](https://github.com/ONSdigital/homebrew-dp-cli).
+
+## Sample config for `~/.aws/config`:
+
+```
+[profile dp-sandbox]
+sso_start_url = https://ons.awsapps.com/start
+sso_account_id = 1234556253 #replace this with correct account id
+sso_role_name = AdministratorAccess
+sso_region = eu-west-2
+region = eu-west-2
+```
