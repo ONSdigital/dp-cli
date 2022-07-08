@@ -203,8 +203,7 @@ Use the available commands for more info on the functionality available.
 
 1. `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
 
-    check  ~/.aws/credentials and remove any profile information added for dp-sandbox/dp-staging/dp-prod as this is not needed
-
+    check  ~/.aws/credentials and remove any profile information added for dp-sandbox, dp-staging and dp-prod as this is not needed
 
     If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
 
