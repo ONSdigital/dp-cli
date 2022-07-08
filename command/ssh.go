@@ -18,7 +18,7 @@ import (
 // The command has the following structure:
 //
 // 	ssh
-// 	    environment 	# develop
+// 	    environment 	# sandbox
 // 		group		# publishing_mount
 //		    instance	# 1
 //

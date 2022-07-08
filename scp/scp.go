@@ -94,7 +94,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	out.Highlight(lvl, "SCP %s for %s (%s -> %s)", verb, env.Name, strings.Join(srcFiles, ", "), target)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s | AKA %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
-	if *opts.IsPull && env.Name == "production" && !*opts.IsConfirmed {
+	if *opts.IsPull && env.Name == "prod" && !*opts.IsConfirmed {
 		reader := bufio.NewReader(os.Stdin)
 		for {
 			fmt.Print("Legal declaration: I confirm that I am NOT copying sensitive files (yes/no): ")

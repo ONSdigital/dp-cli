@@ -200,7 +200,7 @@ func changeIPsForEnvironment(isAllow bool, sshUser *string, environment, profile
 		}
 		secGroups = append(secGroups, sg)
 
-		if environment != "production" {
+		if environment != "prod" {
 			if sg, err = getELBPublishingSGForEnvironment(environment, profile, sshUser, extraPorts.Publishing); err != nil {
 				return err
 			}
