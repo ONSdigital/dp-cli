@@ -18,13 +18,37 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 **Required:**
 
+The DP CLI uses Go Modules so requires a go version of **1.18** or later.
+
 Check you have a suitable version of `go` installed with:
 
 `go version`
 
-  ```shell
-  brew install go
+(Ideally 1.18)
+
+[ The following will ensure version 1.18
+
+  ```sh
+  brew install go@1.18
+  brew unlink go
+  brew link —force go@1.18
   ```
+
+Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
+
+  ```sh
+  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.18/bin:$PATH"' >> ~/.zshrc
+  ```
+
+  and restart the terminal ]
+
+Ensure `session-manager-plugin` is installed by running the following command
+```
+ which session-manager-plugin
+ ```
+if not installed, follow this [doc](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos)
+
 
 **Optional:**
 
@@ -37,6 +61,12 @@ In order to use the `dp ssh` sub-command you will need:
   ```shell
   git clone git@github.com:ONSdigital/dp-setup
   ```
+- [`dp-ci`](https://github.com/ONSdigital/dp-ci) cloned locally:
+
+  ```bash
+  git clone git@github.com:ONSdiqgital/dp-ci
+  ```
+Note: Make sure `dp-setup` and `dp-ci` branch points to main locally. This is necessary as it has the required SSH configuration and the relavant inventories.
 
 In order to use the `dp import cmd` sub-command (e.g. when you are using **Neo4j**; however, `import` is currently *not needed* if you are using Neptune) you will need:
 
@@ -63,24 +93,26 @@ cp -i config/example_config.yml ~/.dp-cli-config.yml
 vi ~/.dp-cli-config.yml
 ```
 
-- Amend the config paths for:
+update the paths and ssh-user: 
 
-  ```yaml
-    dp-ci-path:
-    dp-setup-path:
-    dp-hierarchy-builder-path:
-    dp-code-list-scripts-path:
-  ```
+```yaml
+    dp-setup-path: path to your local dp-setup
+    dp-ci-path: path to your local dp-ci
+    dp-hierarchy-builder-path: path to your local dp-hierarchy-builder-path
+    dp-code-list-scripts-path: path to your local dp-code-list-scripts-path
+    ssh-user: Your first and last name concatenated eg. JaneBloggs"
+```
 
-- set your `ssh-user:`
-  - *Note*: **ssh-user** is actually your AWS account name. You should receive credentials as part of onboarding. If you do not have credentials yet, please ask a Tech Lead ([as documented](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md)).
+and if this is a first time setup, comment out `prod` from environments, thus:
 
-- if this is a first time setup, comment out `prod` from `environments`, thus:
+```yaml
+     #- name: prod 
+     #  profile: dp-prod
+     #  user: ubuntu 
+     #  tag: awsb
+```
 
-  ```yaml
-    # - name: prod
-    #   profile: prod
-  ```
+*Note*: **ssh-user** is a string used to put your name against SecurityGroup changes.
 
 ### Brew Installation
 
@@ -158,19 +190,33 @@ Use the available commands for more info on the functionality available.
 
 #### Credentials error
 
-`error creating group commands for env: sandbox: error fetching ec2: {"sandbox" "dp-sandbox"}: NoCredentialProviders: no valid providers in chain. Deprecated.`
+1. If sandbox/prod/staging are not in the dp cli output try unsetting `AWS_REGION` and `AWS_DEFAULT_REGION`
 
-[Ensure you have AWS credentials set up](https://github.com/ONSdigital/dp/blob/main/guides/AWS_CREDENTIALS.md).
+1. `SSOProviderInvalidToken: the SSO session has expired or is invalid`
 
-If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
+    If you see the above error, you need to re-authenticate with sign in information
 
-```yaml
-environments:
-  - name: prod
-    profile:
-  - name: sandbox
-    profile:
-```
+1. `error fetching ec2: {Name:sandbox Profile:dp-sandbox User:ubuntu Tag:awsb CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
+
+    check that you have the correct AWS profile names in your `~/.aws/config` file (dp-sandbox, dp-staging, dp-prod, dp-ci). A sample config for `~/.aws/config` is included at the end of this guide as a reference.
+
+1. `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
+
+    check  ~/.aws/credentials and remove any profile information added for dp-sandbox, dp-staging and dp-prod as this is not needed
+
+    If you do not want to set up separate profiles, another option is to not specify any profiles in your `~/.dp-cli-config.yml`. That way the default credentials will be used.
+
+    ```yaml
+    environments:
+      - name: prod
+        profile:
+        user: ubuntu 
+        tag: awsb
+      - name: staging
+        profile:
+        user: ubuntu 
+        tag: awsb
+    ```
 
 #### SSH/SCP command fails
 
@@ -185,13 +231,17 @@ If the SSH or SCP command fails, ensure that the `dp remote allow` command has b
 
 `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
 
-Ensure you have `region=eu-west-1` in your AWS configuration.
+Ensure you have `region=eu-west-2` in your AWS configuration.
 
-Depending on the command you're trying to run, and what you're trying to access, ensure your `AWS_DEFAULT_PROFILE` is set correctly.
+Depending on the command you're trying to run, and what you're trying to access, ensure your `AWS_PROFILE` is set correctly and there is no prod/sandbox/ci config added in the `~/.aws/credentials` file.
+Example:
+```yaml
+export AWS_PROFILE=dp-staging
+```
 
 #### Remote Allow security group rule already exists error
 
-```shell
+```sh
 $ dp remote allow sandbox
 [dp] allowing access to sandbox
 Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specified rule "peer: X.X.X.X/32, TCP, from port: 22, to port: 22, ALLOW" already exists
@@ -211,7 +261,7 @@ If so, you will have to use the AWS web UI/console to remove any offending secur
 
 You can run ssh commands from the command-line, for example to determine the time on a given host:
 
-```shell
+```sh
 $ dp ssh sandbox web 1 date
 [...motd banner...]
 [result of date command]
@@ -219,7 +269,7 @@ $ dp ssh sandbox web 1 date
 
 :warning: However, if you wish to include *flags* in the (remote) command, you must tell `dp` to stop looking for flags - use the `--` flag:
 
-```shell
+```sh
 $ dp ssh sandbox web 1 -- ls -la
 [...]
 ```
@@ -230,7 +280,7 @@ Optionally, (e.g. to avoid the program looking-up your IP),
 you can use the `--ip` flag (or an environment variable `MY_IP`) to force the IP used when running `dp remote allow`.
 For example:
 
-```shell
+```sh
 dp remote --ip 192.168.11.22 allow sandbox
 # or
 MY_IP=192.168.11.22 dp remote allow sandbox
@@ -253,10 +303,23 @@ environments:
       publishing:
         - 80
 ```
+#### AWS Command Line Access
 
+Follow the guide in [dp](https://github.com/ONSdigital/dp/blob/main/guides/AWS_ACCOUNT_ACCESS.md)
 ## Releases
 
 When creating new releases, please be sure to:
 
 - update the version (tag)
 - update the brew formula [in the tap](https://github.com/ONSdigital/homebrew-dp-cli).
+
+## Sample config for `~/.aws/config`:
+
+```
+[profile dp-sandbox]
+sso_start_url = https://ons.awsapps.com/start
+sso_account_id = 1234556253 #replace this with correct account id
+sso_role_name = AdministratorAccess
+sso_region = eu-west-2
+region = eu-west-2
+```

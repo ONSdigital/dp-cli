@@ -28,23 +28,17 @@ ssh-user: JamesHetfield
 environments:
   - name: sandbox
     profile: dp-sandbox
-    user: ubuntu       # required for all AWS-B envs and has to be ubuntu
+    user: ubuntu
     tags: [awsb]
   - name: staging
     profile: dp-staging
-    user: ubuntu       # required for all AWS-B envs and has to be ubuntu
+    user: ubuntu
     tags: [awsb]
   - name: prod
     profile: dp-prod
-    user: ubuntu       # required for all AWS-B envs and has to be ubuntu
+    user: ubuntu
     tags: [awsb,live]
   - name: ci
     profile: dp-ci
-    user: ubuntu       # required for all AWS-B envs and has to be ubuntu
-    tags: [awsb,ci]
-  - name: concourse
-    profile: develop
     user: ubuntu
-    tags: [ci]
-  - name: develop
-    profile: develop
+    tags: [awsb,ci]
