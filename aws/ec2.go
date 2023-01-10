@@ -339,7 +339,7 @@ func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, erro
 					}
 				}
 				var ipAddr string
-				if cfg.IsCI(environment) {
+				if cfg.IsCI(environment) && !cfg.IsAWSB(environment) {
 					if len(i.NetworkInterfaces) > 0 &&
 						i.NetworkInterfaces[0].Association != nil &&
 						len(*i.NetworkInterfaces[0].Association.PublicIp) > 0 &&
