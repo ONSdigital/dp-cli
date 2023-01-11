@@ -20,7 +20,7 @@ Ensure that you have the `main` branch checked out locally by running the follow
 git checkout main
 ```
 
-Locally rename the `main` branch to `master` by running the following command in your terminal  
+Locally rename the `main` branch to `master` by running the following command in your terminal
 
 ```shell
 git branch -m main master
@@ -58,7 +58,7 @@ Finally, we need to update the `master` branch's security settings
 9. Check the box for 'Require status checks to pass before merging'
 10. Check the box for 'Require branches to be up to date before merging'
 11. Check the box for 'Require signed commits'
-12. Check the box for 'Include administrators'
+12. Check the box for 'Do not allow bypassing the above settings'
 13. Check the box for 'Restrict who can push to matching branches'
 14. Under the checkbox 'Restrict who can push to matching branches' enter 'ONSdigital/digitalpublishing'
 15. Double check all security settings ensuring that all the above has been done
