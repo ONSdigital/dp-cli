@@ -64,7 +64,7 @@ In order to use the `dp ssh` sub-command you will need:
 - [`dp-ci`](https://github.com/ONSdigital/dp-ci) cloned locally:
 
   ```bash
-  git clone git@github.com:ONSdiqgital/dp-ci
+  git clone git@github.com:ONSdigital/dp-ci
   ```
 Note: Make sure `dp-setup` and `dp-ci` branch points to main locally. This is necessary as it has the required SSH configuration and the relavant inventories.
 
