@@ -3,8 +3,8 @@ github.com/ONSdigital/dp-api-clients-go v1.34.3/go.mod h1:kX+YKuoLYLfkeLHMvQKRRy
 github.com/ONSdigital/dp-api-clients-go v1.41.1/go.mod h1:Ga1+ANjviu21NFJI9wp5NctJIdB4TJLDGbpQFl2V8Wc=
 github.com/ONSdigital/dp-api-clients-go v1.43.0 h1:0982P/YxnYXvba1RhEcFmwF3xywC4eXokWQ8YH3Mm24=
 github.com/ONSdigital/dp-api-clients-go v1.43.0/go.mod h1:V5MfINik+o3OAF985UXUoMjXIfrZe3JKYa5AhZn5jts=
-github.com/ONSdigital/dp-api-clients-go/v2 v2.211.0 h1:uAojkbULUI4ogMfrhLLHYYIf/V/ej4eAm9Ezr1OpO6A=
-github.com/ONSdigital/dp-api-clients-go/v2 v2.211.0/go.mod h1:JhWrjETosIKYjbLoa3d19QJlKv7dx+/+x09qg355Rxg=
+github.com/ONSdigital/dp-api-clients-go/v2 v2.219.0 h1:go5BYTrxHPLC9vJT9dLJmGz4DMx5YezKsHqXqprJ9pE=
+github.com/ONSdigital/dp-api-clients-go/v2 v2.219.0/go.mod h1:JhWrjETosIKYjbLoa3d19QJlKv7dx+/+x09qg355Rxg=
 github.com/ONSdigital/dp-healthcheck v1.0.5/go.mod h1:2wbVAUHMl9+4tWhUlxYUuA1dnf2+NrwzC+So5f5BMLk=
 github.com/ONSdigital/dp-healthcheck v1.1.0/go.mod h1:vZwyjMJiCHjp/sJ2R1ZEqzZT0rJ0+uHVGwxqdP4J5vg=
 github.com/ONSdigital/dp-mocking v0.0.0-20190905163309-fee2702ad1b9/go.mod h1:BcIRgitUju//qgNePRBmNjATarTtynAgc0yV29VpLEk=
@@ -29,8 +29,8 @@ github.com/ONSdigital/log.go/v2 v2.0.5/go.mod h1:PR7vXrv9dZKUc7SI/0toxBbStk84snm
 github.com/ONSdigital/log.go/v2 v2.0.9/go.mod h1:VyTDkL82FtiAkaNFaT+bURBhLbP7NsIx4rkVbdpiuEg=
 github.com/ONSdigital/log.go/v2 v2.3.0 h1:go+KkUR36/CClez+UCCwVIVqFie1w3PYgvAyoclKVYM=
 github.com/ONSdigital/log.go/v2 v2.3.0/go.mod h1:s5iqJuW0jDE8V7VQJqLHT73nn/H8u1c+A2Nqw2QPEeo=
-github.com/aws/aws-sdk-go v1.44.176 h1:mxcfI3IWHemX+5fEKt5uqIS/hdbaR7qzGfJYo5UyjJE=
-github.com/aws/aws-sdk-go v1.44.176/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/aws/aws-sdk-go v1.44.184 h1:/MggyE66rOImXJKl1HqhLQITvWvqIV7w1Q4MaG6FHUo=
+github.com/aws/aws-sdk-go v1.44.184/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

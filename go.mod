@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/ONSdigital/log.go/v2 v2.3.0
-	github.com/aws/aws-sdk-go v1.44.176
+	github.com/aws/aws-sdk-go v1.44.184
 	github.com/fatih/color v1.13.0
 	github.com/google/go-github/v28 v28.1.1
 	github.com/johnnadratowski/golang-neo4j-bolt-driver v0.0.0-20200323142034-807201386efa
@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/ONSdigital/dp-api-clients-go v1.43.0 // indirect
-	github.com/ONSdigital/dp-api-clients-go/v2 v2.211.0 // indirect
+	github.com/ONSdigital/dp-api-clients-go/v2 v2.219.0 // indirect
 	github.com/ONSdigital/dp-net v1.5.0 // indirect
 	github.com/ONSdigital/dp-net/v2 v2.7.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

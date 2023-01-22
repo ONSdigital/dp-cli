@@ -23,22 +23,20 @@ cmd:
     - "cpih.yaml"
     - "mid-year-pop-est.yaml"
 
-ssh-user: JamesHetfield
+ssh-user: ChangeMe # change me to YourName (e.g. JaneDoe)
 
 environments:
   - name: sandbox
     profile: dp-sandbox
     user: ubuntu
-    tags: [awsb]
   - name: staging
     profile: dp-staging
     user: ubuntu
-    tags: [awsb]
   - name: prod
     profile: dp-prod
+    tags: [live]
     user: ubuntu
-    tags: [awsb,live]
   - name: ci
     profile: dp-ci
+    tags: [ci]
     user: ubuntu
-    tags: [awsb,ci]

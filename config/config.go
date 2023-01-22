@@ -16,7 +16,7 @@ import (
 
 // tags refer to dp-cli-config.yml environment tags which put that environment into group types
 const (
-	TAG_AWSB = "awsb"
+	TAG_AWSA = "awsa"
 	TAG_CI   = "ci"
 	TAG_LIVE = "live"
 )
@@ -184,11 +184,11 @@ func (cfg Config) hasTag(env, tag string) bool {
 	return false
 }
 
-func (cfg Config) IsAWSB(env string) bool {
-	return cfg.hasTag(env, TAG_AWSB)
+func (cfg Config) IsAWSA(env string) bool {
+	return cfg.hasTag(env, TAG_AWSA)
 }
-func (env Environment) IsAWSB() bool {
-	return env.hasTag(TAG_AWSB)
+func (env Environment) IsAWSA() bool {
+	return env.hasTag(TAG_AWSA)
 }
 func (cfg Config) IsCI(env string) bool {
 	return cfg.hasTag(env, TAG_CI)

@@ -60,7 +60,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	}
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
-			if !env.IsAWSB() {
+			if env.IsAWSA() {
 				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, srcFile)
 			} else {
 				os.Setenv("AWS_PROFILE", env.Profile)
@@ -86,7 +86,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			return err
 		}
 	} else {
-		if !env.IsAWSB() {
+		if env.IsAWSA() {
 			target = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, target)
 		} else {
 			os.Setenv("AWS_PROFILE", env.Profile)

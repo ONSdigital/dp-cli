@@ -17,11 +17,10 @@ import (
 // sshCommand builds a cobra.Command to SSH into an environment.
 // The command has the following structure:
 //
-// 	ssh
-// 	    environment 	# sandbox
-// 		group		# publishing_mount
+//	ssh
+//	    environment 	# sandbox
+//		group		# publishing_mount
 //		    instance	# 1
-//
 func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
 		Use:   "ssh",

@@ -46,11 +46,11 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			args = append(args, sshPortArgs...)
 		}
 	}
-	if env.IsAWSB() {
+	if env.IsAWSA() {
+		userHost = fmt.Sprintf("%s@%s", user, instance.IPAddress)
+	} else {
 		os.Setenv("AWS_PROFILE", env.Profile)
 		userHost = fmt.Sprintf("%s@%s", user, instance.InstanceId)
-	} else {
-		userHost = fmt.Sprintf("%s@%s", user, instance.IPAddress)
 	}
 	for v := 0; v < *verboseCount; v++ {
 		args = append(args, "-v")
