@@ -18,27 +18,25 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 **Required:**
 
-The DP CLI uses Go Modules so requires a go version of **1.18** or later.
+The DP CLI uses Go Modules so requires a go version of **1.11** or later (ideally the latest)
 
 Check you have a suitable version of `go` installed with:
 
 `go version`
 
-(Ideally 1.18)
-
-[ The following will ensure version 1.18
+[ The following will ensure version 1.19
 
   ```sh
-  brew install go@1.18
+  brew install go@1.19
   brew unlink go
-  brew link —force go@1.18
+  brew link --force go@1.19
   ```
 
 Check desired version of `go` is on your PATH with `echo $PATH` and if not, either edit your .zshrc file to have the correct path OR do:
 
   ```sh
   echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export PATH="/usr/local/opt/go@1.18/bin:$PATH"' >> ~/.zshrc
+  echo 'export PATH="/usr/local/opt/go@1.19/bin:$PATH"' >> ~/.zshrc
   ```
 
   and restart the terminal ]
