@@ -15,7 +15,7 @@ import (
 
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) error {
-	if cfg.User == nil || len(*cfg.User) == 0 {
+	if cfg.SSHUser == nil || len(*cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in configuration file (or `--user`) you can view the app configuration values using the %s command", "ssh-user", "spew config")
 		return errors.New("missing `ssh-user` in config file (or no `--user`)")
 	}
@@ -32,9 +32,9 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	if env.IsCI() {
 		args = []string{}
 	}
-	user := *cfg.User
-	if len(env.User) > 0 {
-		user = env.User
+	user := *cfg.SSHUser
+	if len(env.SSHUser) > 0 {
+		user = env.SSHUser
 	}
 
 	if portArgs != nil {

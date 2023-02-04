@@ -36,7 +36,7 @@ func withCWD(file string) (string, error) {
 
 // Launch an scp file copy to/from the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, opts Options, srcFiles []string, target string) (err error) {
-	if cfg.User == nil || len(*cfg.User) == 0 {
+	if cfg.SSHUser == nil || len(*cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh-user", "spew config")
 		return errors.New("missing `ssh-user` in config file")
 	}
@@ -54,9 +54,9 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	if env.IsCI() {
 		cmdArgs = []string{}
 	}
-	user := *cfg.User
-	if len(env.User) > 0 {
-		user = env.User
+	user := *cfg.SSHUser
+	if len(env.SSHUser) > 0 {
+		user = env.SSHUser
 	}
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {

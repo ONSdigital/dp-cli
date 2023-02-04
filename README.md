@@ -178,7 +178,7 @@ Use the available commands for more info on the functionality available.
 
     If you see the above error, you need to re-authenticate with sign-in information
 
-1. `error fetching ec2: {Name:sandbox Profile:dp-sandbox User:ubuntu Tag: CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
+1. `error fetching ec2: {Name:sandbox Profile:dp-sandbox SSHUser:ubuntu Tag: CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
 
     check that you have the correct AWS profile names in your `~/.aws/config` file (`dp-sandbox`, `dp-staging`, `dp-prod`, `dp-ci`).
     A sample config for `~/.aws/config` is included at the end of this guide as a reference.

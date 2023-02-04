@@ -28,7 +28,8 @@ var httpClient = &http.Client{
 type Config struct {
 	CMD                    CMD           `yaml:"cmd"`
 	Environments           []Environment `yaml:"environments"`
-	User                   *string       `yaml:"ssh-user"`
+	SSHUser                *string       `yaml:"ssh-user"`
+	UserName               *string       `yaml:"user-name"`
 	IPAddress              *string       `yaml:"ip-address"`
 	HttpOnly               *bool         `yaml:"http-only"`
 	DPSetupPath            string        `yaml:"dp-setup-path"`
@@ -49,7 +50,7 @@ type CMD struct {
 type Environment struct {
 	Name       string     `yaml:"name"`
 	Profile    string     `yaml:"profile"`
-	User       string     `yaml:"user"`
+	SSHUser    string     `yaml:"ssh-user"`
 	Tags       []string   `yaml:"tags"`
 	ExtraPorts ExtraPorts `yaml:"extra-ports"`
 }
