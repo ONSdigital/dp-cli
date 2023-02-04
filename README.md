@@ -18,7 +18,7 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 **Required:**
 
-The DP CLI uses Go Modules so requires a go version of **1.18** or later.
+The DP CLI uses Go Modules so requires a go version of **1.11** or later (ideally the latest)
 
 Ensure `session-manager-plugin` is installed by running the following command
 
