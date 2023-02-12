@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,9 +15,10 @@ import (
 
 // tags refer to dp-cli-config.yml environment tags which put that environment into group types
 const (
-	TAG_AWSA = "awsa"
-	TAG_CI   = "ci"
-	TAG_LIVE = "live"
+	TAG_AWSA  = "awsa"
+	TAG_CI    = "ci"
+	TAG_LIVE  = "live"
+	TAG_NISRA = "nisra"
 )
 
 var httpClient = &http.Client{
@@ -33,6 +33,7 @@ type Config struct {
 	IPAddress              *string       `yaml:"ip-address"`
 	HttpOnly               *bool         `yaml:"http-only"`
 	DPSetupPath            string        `yaml:"dp-setup-path"`
+	NisraPath              string        `yaml:"dp-nisra-path"`
 	DPCIPath               string        `yaml:"dp-ci-path"`
 	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
 	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
@@ -66,7 +67,7 @@ type ExtraPorts struct {
 func Get() (*Config, error) {
 	path := getConfigPath()
 
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read %q: %w", path, err)
 	}
@@ -85,6 +86,7 @@ func (cfg *Config) expandPaths() {
 	cfg.DPCIPath = expandPath(cfg.DPCIPath)
 	cfg.DPHierarchyBuilderPath = expandPath(cfg.DPHierarchyBuilderPath)
 	cfg.DPSetupPath = expandPath(cfg.DPSetupPath)
+	cfg.NisraPath = expandPath(cfg.NisraPath)
 	cfg.DPCodeListScriptsPath = expandPath(cfg.DPCodeListScriptsPath)
 }
 
@@ -152,14 +154,14 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, res.Body)
+		res.Body.Close()
 	}()
 
 	if res.StatusCode != 200 {
 		return "", fmt.Errorf("unexpected status code fetching IP: %d", res.StatusCode)
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
@@ -203,10 +205,19 @@ func (cfg Config) IsLive(env string) bool {
 func (env Environment) IsLive() bool {
 	return env.hasTag(TAG_LIVE)
 }
+func (cfg Config) IsNisra(env string) bool {
+	return cfg.hasTag(env, TAG_NISRA)
+}
+func (env Environment) IsNisra() bool {
+	return env.hasTag(TAG_NISRA)
+}
 
 func (cfg Config) GetPath(env Environment) string {
 	if env.IsCI() {
 		return cfg.DPCIPath
+	}
+	if env.IsNisra() {
+		return cfg.NisraPath
 	}
 	return cfg.DPSetupPath
 }
@@ -214,6 +225,9 @@ func (cfg Config) GetPath(env Environment) string {
 func (cfg Config) GetAnsibleDirectory(env Environment) string {
 	if env.IsCI() {
 		return filepath.Join(cfg.DPCIPath, "ansible")
+	}
+	if env.IsNisra() {
+		return filepath.Join(cfg.NisraPath, "ansible")
 	}
 	return filepath.Join(cfg.DPSetupPath, "ansible")
 }

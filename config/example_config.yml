@@ -1,9 +1,10 @@
 ## Example config file - replace fields as required
 ##
-dp-setup-path: "~/src/github.com/ONSdigital/dp-setup"                         # path to dp-setup             repo
-dp-ci-path: "~/src/github.com/ONSdigital/dp-ci"                               # path to dp-ci                repo
-dp-hierarchy-builder-path: "~/src/github.com/ONSdigital/dp-hierarchy-builder" # path to dp-hierarchy-builder repo
-dp-code-list-scripts-path: "~/src/github.com/ONSdigital/dp-code-list-scripts" # path to dp-code-list-scripts repo
+dp-setup-path: "~/src/github.com/ONSdigital/dp-setup"                         # path to dp-setup                repo
+dp-nisra-path: "~/src/github.com/ONSdigital/dp-nisra-infrastructure"          # path to dp-nisra-infrastructure repo
+dp-ci-path: "~/src/github.com/ONSdigital/dp-ci"                               # path to dp-ci                   repo
+dp-hierarchy-builder-path: "~/src/github.com/ONSdigital/dp-hierarchy-builder" # path to dp-hierarchy-builder    repo
+dp-code-list-scripts-path: "~/src/github.com/ONSdigital/dp-code-list-scripts" # path to dp-code-list-scripts    repo
 
 cmd:
   neo4j-url: bolt://localhost:7687
@@ -38,3 +39,9 @@ environments:
   # - name: ci
   #   profile: dp-ci
   #   tags: [ci]
+  # - name: ni-dev
+  #   profile: nisra-dev
+  #   tags: [nisra]
+  # - name: ni-prod
+  #   profile: nisra-prod
+  #   tags: [nisra,live]
