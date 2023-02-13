@@ -39,9 +39,7 @@ environments:
   # - name: ci
   #   profile: dp-ci
   #   tags: [ci]
-  # - name: ni-dev
-  #   profile: nisra-dev
+  # - name: nisra-dev
   #   tags: [nisra]
-  # - name: ni-prod
-  #   profile: nisra-prod
+  # - name: nisra-prod
   #   tags: [nisra,live]
