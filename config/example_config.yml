@@ -6,24 +6,6 @@ dp-ci-path: "~/src/github.com/ONSdigital/dp-ci"                               # 
 dp-hierarchy-builder-path: "~/src/github.com/ONSdigital/dp-hierarchy-builder" # path to dp-hierarchy-builder    repo
 dp-code-list-scripts-path: "~/src/github.com/ONSdigital/dp-code-list-scripts" # path to dp-code-list-scripts    repo
 
-cmd:
-  neo4j-url: bolt://localhost:7687
-  mongo-url: localhost:27017
-  mongo-dbs: # The mongo databases to be dropped when cleaning your CMD data
-    - "imports"
-    - "datasets"
-    - "filters"
-    - "codelists"
-    - "test"
-  hierarchies: # The hierarchies import scripts to run when importing CMD data
-    - "admin-geography.cypher"
-    - "cpih1dim1aggid.cypher"
-    - "mid-year-pop-geography.cypher"
-
-  codelists: # The codelist import scripts to run when importing CMD data
-    - "cpih.yaml"
-    - "mid-year-pop-est.yaml"
-
 user-name: ChangeMe # change me to YourName (e.g. JaneDoe)
 ssh-user: ubuntu
 
@@ -43,3 +25,21 @@ environments:
   #   tags: [nisra]
   # - name: nisra-prod
   #   tags: [nisra,live]
+
+cmd:
+  neo4j-url: bolt://localhost:7687
+  mongo-url: localhost:27017
+  mongo-dbs: # The mongo databases to be dropped when cleaning your CMD data
+    - "imports"
+    - "datasets"
+    - "filters"
+    - "codelists"
+    - "test"
+  hierarchies: # The hierarchies import scripts to run when importing CMD data
+    - "admin-geography.cypher"
+    - "cpih1dim1aggid.cypher"
+    - "mid-year-pop-geography.cypher"
+
+  codelists: # The codelist import scripts to run when importing CMD data
+    - "cpih.yaml"
+    - "mid-year-pop-est.yaml"

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -26,7 +26,7 @@ func GetGroupsForEnvironment(dpSetUpPath, environment string) ([]string, error) 
 
 func readFile(dpSetUpPath, environment string) ([]byte, error) {
 	hostsPath := filepath.Join(dpSetUpPath, "ansible/inventories", environment, "hosts")
-	return ioutil.ReadFile(hostsPath)
+	return os.ReadFile(hostsPath)
 }
 
 func parseFile(fileBytes []byte) ([]string, error) {

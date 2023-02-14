@@ -2,7 +2,6 @@ package steps
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,7 +22,7 @@ func (c *Component) RegisterSteps(ctx *godog.ScenarioContext) {
 }
 
 func (c *Component) iShouldReceiveAHelloworldResponse() error {
-	content, err := ioutil.ReadFile(c.cfg.OutputFilePath)
+	content, err := os.ReadFile(c.cfg.OutputFilePath)
 	if err != nil {
 		return err
 	}

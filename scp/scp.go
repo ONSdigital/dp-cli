@@ -54,17 +54,17 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	if env.IsCI() {
 		cmdArgs = []string{}
 	}
-	user := *cfg.SSHUser
+	sshUser := *cfg.SSHUser
 	if len(env.SSHUser) > 0 {
-		user = env.SSHUser
+		sshUser = env.SSHUser
 	}
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
 			if env.IsAWSA() {
-				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, srcFile)
+				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, srcFile)
 			} else {
 				os.Setenv("AWS_PROFILE", env.Profile)
-				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.InstanceId, srcFile)
+				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, srcFile)
 			}
 		} else {
 			if srcFile, err = withCWD(srcFile); err != nil {
@@ -87,10 +87,10 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	} else {
 		if env.IsAWSA() {
-			target = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, target)
+			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, target)
 		} else {
 			os.Setenv("AWS_PROFILE", env.Profile)
-			target = fmt.Sprintf("%s@%s:%s", user, instance.InstanceId, target)
+			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, target)
 		}
 	}
 	cmdArgs = append(cmdArgs, target)

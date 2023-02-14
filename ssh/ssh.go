@@ -32,9 +32,9 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	if env.IsCI() {
 		args = []string{}
 	}
-	user := *cfg.SSHUser
+	sshUser := *cfg.SSHUser
 	if len(env.SSHUser) > 0 {
-		user = env.SSHUser
+		sshUser = env.SSHUser
 	}
 
 	if portArgs != nil {
@@ -47,10 +47,10 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	}
 	if env.IsAWSA() {
-		userHost = fmt.Sprintf("%s@%s", user, instance.IPAddress)
+		userHost = fmt.Sprintf("%s@%s", sshUser, instance.IPAddress)
 	} else {
 		os.Setenv("AWS_PROFILE", env.Profile)
-		userHost = fmt.Sprintf("%s@%s", user, instance.InstanceId)
+		userHost = fmt.Sprintf("%s@%s", sshUser, instance.InstanceId)
 	}
 	for v := 0; v < *verboseCount; v++ {
 		args = append(args, "-v")
