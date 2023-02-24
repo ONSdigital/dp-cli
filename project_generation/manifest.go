@@ -130,6 +130,12 @@ var applicationFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "base-app/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "base-app/nomad",
 		outputPath:   "",
 		extension:    ".nomad",
@@ -144,6 +150,12 @@ var applicationFiles = []fileGen{
 }
 
 var libraryFiles = []fileGen{
+	{
+		templatePath: "library/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
 	{
 		templatePath: "library/ci/build.yml",
 		outputPath:   "ci/build",
@@ -211,6 +223,12 @@ var libraryFiles = []fileGen{
 }
 
 var controllerFiles = []fileGen{
+	{
+		templatePath: "controller/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
 	{
 		templatePath: "controller/assets/assets.go",
 		outputPath:   "assets/assets",
@@ -378,6 +396,12 @@ var controllerFiles = []fileGen{
 
 var apiFiles = []fileGen{
 	{
+		templatePath: "api/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "api/api/api.go",
 		outputPath:   "api/api",
 		extension:    ".go",
@@ -482,6 +506,12 @@ var apiFiles = []fileGen{
 }
 
 var eventFiles = []fileGen{
+	{
+		templatePath: "event/.golangci.yml",
+		outputPath:   ".golangci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
 	{
 		templatePath: "event/cmd/producer/main.go",
 		outputPath:   "cmd/producer/main",

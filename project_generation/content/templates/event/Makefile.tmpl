@@ -22,6 +22,10 @@ debug:
 	go build -tags 'debug' $(LDFLAGS) -o $(BINPATH)/{{.Name}}
 	HUMAN_LOG=1 DEBUG=1 $(BINPATH)/{{.Name}}
 
+.PHONY: lint
+lint:
+	golangci-lint run ./...
+
 .PHONY: test
 test:
 	go test -race -cover ./...

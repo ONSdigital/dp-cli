@@ -1,0 +1,15 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: onsdigital/dp-concourse-tools-chrome-go
+    tag: latest
+
+inputs:
+  - name: {{.Name}}
+
+run:
+  path: {{.Name}}/ci/scripts/component.sh
