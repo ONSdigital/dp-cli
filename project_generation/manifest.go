@@ -254,6 +254,13 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "controller/ci/component.yml",
+		outputPath:   "ci/component",
+		extension:    ".yml",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
 		templatePath: "controller/ci/scripts/component.sh",
 		outputPath:   "ci/scripts/component",
 		extension:    ".sh",
