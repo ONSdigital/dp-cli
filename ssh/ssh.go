@@ -29,6 +29,14 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
+	if env.Name == "concourse" {
+		args = []string{}
+	}
+	user := *cfg.User
+	if len(env.User) > 0 {
+		user = env.User
+	}
+
 	if portArgs != nil {
 		for _, portArg := range *portArgs {
 			sshPortArgs, err := getSSHPortArguments(portArg)
@@ -39,10 +47,10 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	}
 	if !cfg.IsAWSB(env) {
-		userHost = fmt.Sprintf("%s@%s", *cfg.User, instance.IPAddress)
+		userHost = fmt.Sprintf("%s@%s", user, instance.IPAddress)
 	} else {
 		os.Setenv("AWS_PROFILE", env.Profile)
-		userHost = fmt.Sprintf("%s@%s", env.User, instance.InstanceId)
+		userHost = fmt.Sprintf("%s@%s", user, instance.InstanceId)
 	}
 	for v := 0; v < *verboseCount; v++ {
 		args = append(args, "-v")

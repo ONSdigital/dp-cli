@@ -41,3 +41,7 @@ environments:
     user: ubuntu 
     tag: awsb
     ci: true
+  - name: concourse
+    ci: true
+    profile: develop
+    user: ubuntu

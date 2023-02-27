@@ -52,14 +52,20 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		flags += "r"
 	}
 	cmdArgs := []string{flags + "F", "ssh.cfg"}
-
+	if env.Name == "concourse" {
+		cmdArgs = []string{}
+	}
+	user := *cfg.User
+	if len(env.User) > 0 {
+		user = env.User
+	}
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
 			if !isAWSB {
-				srcFile = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, srcFile)
+				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, srcFile)
 			} else {
 				os.Setenv("AWS_PROFILE", env.Profile)
-				srcFile = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, srcFile)
+				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.InstanceId, srcFile)
 			}
 		} else {
 			if srcFile, err = withCWD(srcFile); err != nil {
@@ -82,10 +88,10 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		}
 	} else {
 		if !isAWSB {
-			target = fmt.Sprintf("%s@%s:%s", *cfg.User, instance.IPAddress, target)
+			target = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, target)
 		} else {
 			os.Setenv("AWS_PROFILE", env.Profile)
-			target = fmt.Sprintf("%s@%s:%s", env.User, instance.InstanceId, target)
+			target = fmt.Sprintf("%s@%s:%s", user, instance.InstanceId, target)
 		}
 	}
 	cmdArgs = append(cmdArgs, target)
