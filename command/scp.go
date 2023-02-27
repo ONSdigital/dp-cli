@@ -17,14 +17,13 @@ import (
 //
 // The command-line has the following structure:
 //
-// 	scp		# dp
-// 	 environment 	# develop
-// 	  group		# publishing_mount
+//	scp		# dp
+//	 environment 	# develop
+//	  group		# publishing_mount
 //	   instance	# 1
 //	    [--pull]
 //	     <fromFile>
 //	      <toFile>
-//
 func scpCommand(cfg *config.Config) (*cobra.Command, error) {
 	scpC := &cobra.Command{
 		Use:   "scp",
