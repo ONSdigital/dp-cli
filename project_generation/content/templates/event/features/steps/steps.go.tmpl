@@ -34,7 +34,6 @@ func (c *Component) iShouldReceiveAHelloworldResponse() error {
 }
 
 func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
-
 	observationEvents, err := c.convertToHelloEvents(table)
 	if err != nil {
 		return err
@@ -64,10 +63,12 @@ func (c *Component) theseHelloEventsAreConsumed(table *godog.Table) error {
 
 func (c *Component) convertToHelloEvents(table *godog.Table) ([]*event.HelloCalled, error) {
 	assist := assistdog.NewDefault()
+
 	events, err := assist.CreateSlice(&event.HelloCalled{}, table)
 	if err != nil {
 		return nil, err
 	}
+
 	return events.([]*event.HelloCalled), nil
 }
 
@@ -77,13 +78,18 @@ func (c *Component) sendToConsumer(e *event.HelloCalled) error {
 		return err
 	}
 
-	c.KafkaConsumer.Channels().Upstream <- kafkatest.NewMessage(bytes, 0)
-	return nil
+	newMessage, err := kafkatest.NewMessage(bytes, 0)
+	if err != nil {
+		return err
+	}
 
+	c.KafkaConsumer.Channels().Upstream <- newMessage
+	return nil
 }
 
 func registerInterrupt() chan os.Signal {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+
 	return signals
 }
