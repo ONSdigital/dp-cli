@@ -212,6 +212,18 @@ func (env Environment) IsNisra() bool {
 	return env.hasTag(TAG_NISRA)
 }
 
+func (cfg Config) GetProfile(env string) string {
+	for _, e := range cfg.Environments {
+		if e.Name == env {
+			if e.Profile != "" {
+				return e.Profile
+			}
+			return env
+		}
+	}
+	return "noEnv"
+}
+
 func (cfg Config) GetPath(env Environment) string {
 	if env.IsCI() {
 		return cfg.DPCIPath

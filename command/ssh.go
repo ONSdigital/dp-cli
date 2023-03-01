@@ -76,7 +76,7 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 	seenIP := make(map[string]bool)
 
 	for _, grp := range groups {
-		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp, cfg)
+		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, cfg.GetProfile(env.Name), grp, cfg)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}

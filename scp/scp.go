@@ -63,7 +63,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			if env.IsAWSA() {
 				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, srcFile)
 			} else {
-				os.Setenv("AWS_PROFILE", env.Profile)
+				os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
 				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, srcFile)
 			}
 		} else {
@@ -89,7 +89,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		if env.IsAWSA() {
 			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, target)
 		} else {
-			os.Setenv("AWS_PROFILE", env.Profile)
+			os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
 			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, target)
 		}
 	}

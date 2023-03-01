@@ -21,7 +21,6 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	}
 
 	lvl := out.GetLevel(env)
-	fmt.Println("")
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 	out.Highlight(lvl, "[IP: %s | Name: %s | Id: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.InstanceId, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
@@ -49,7 +48,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	if env.IsAWSA() {
 		userHost = fmt.Sprintf("%s@%s", sshUser, instance.IPAddress)
 	} else {
-		os.Setenv("AWS_PROFILE", env.Profile)
+		os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
 		userHost = fmt.Sprintf("%s@%s", sshUser, instance.InstanceId)
 	}
 	for v := 0; v < *verboseCount; v++ {
