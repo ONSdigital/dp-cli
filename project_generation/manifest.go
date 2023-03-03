@@ -532,6 +532,12 @@ var eventFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "event/.nancy-ignore",
+		outputPath:   ".nancy-ignore",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "event/cmd/producer/main.go",
 		outputPath:   "cmd/producer/main",
 		extension:    ".go",
