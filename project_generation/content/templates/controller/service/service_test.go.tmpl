@@ -17,6 +17,12 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+const (
+	buildTime = "TestBuildTime"
+	gitCommit = "TestGitCommit"
+	version   = "TestVersion"
+)
+
 var (
 	ctx = context.Background()
 
@@ -93,9 +99,9 @@ func TestInitSuccess(t *testing.T) {
 		mockRenderer := &handlers.RenderClientMock{}
 
 		Convey("and valid config and service error channel are provided", func() {
-			service.BuildTime = "TestBuildTime"
-			service.GitCommit = "TestGitCommit"
-			service.Version = "TestVersion"
+			service.BuildTime = buildTime
+			service.GitCommit = gitCommit
+			service.Version = version
 
 			cfg, err := config.Get()
 			So(err, ShouldBeNil)
@@ -138,9 +144,9 @@ func TestInitFailure(t *testing.T) {
 		mockRenderer := &handlers.RenderClientMock{}
 
 		Convey("and valid config and service error channel are provided", func() {
-			service.BuildTime = "TestBuildTime"
-			service.GitCommit = "TestGitCommit"
-			service.Version = "TestVersion"
+			service.BuildTime = buildTime
+			service.GitCommit = gitCommit
+			service.Version = version
 
 			cfg, err := config.Get()
 			So(err, ShouldBeNil)
@@ -179,9 +185,9 @@ func TestInitFailure(t *testing.T) {
 		mockRenderer := &handlers.RenderClientMock{}
 
 		Convey("and valid config and service error channel are provided", func() {
-			service.BuildTime = "TestBuildTime"
-			service.GitCommit = "TestGitCommit"
-			service.Version = "TestVersion"
+			service.BuildTime = buildTime
+			service.GitCommit = gitCommit
+			service.Version = version
 
 			cfg, err := config.Get()
 			So(err, ShouldBeNil)
@@ -260,9 +266,9 @@ func TestStart(t *testing.T) {
 		mockServiceList := service.NewServiceList(initMock)
 
 		Convey("and valid config and service error channel are provided", func() {
-			service.BuildTime = "TestBuildTime"
-			service.GitCommit = "TestGitCommit"
-			service.Version = "TestVersion"
+			service.BuildTime = buildTime
+			service.GitCommit = gitCommit
+			service.Version = version
 
 			svcErrors := make(chan error, 1)
 
@@ -291,7 +297,6 @@ func TestStart(t *testing.T) {
 
 func TestCloseSuccess(t *testing.T) {
 	Convey("Given a correctly initialised service", t, func() {
-
 		ctx := context.Background()
 
 		cfg, err := config.Get()
