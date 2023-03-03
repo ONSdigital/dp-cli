@@ -220,6 +220,18 @@ var libraryFiles = []fileGen{
 		extension:    ".md",
 		filePrefix:   "",
 	},
+	{
+		templatePath: "library/hello_world.go",
+		outputPath:   "hello_world",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/hello_world_test.go",
+		outputPath:   "hello_world_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
 }
 
 var controllerFiles = []fileGen{
