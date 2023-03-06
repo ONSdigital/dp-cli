@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/ONSdigital/log.go/v2 v2.3.0
-	github.com/aws/aws-sdk-go v1.44.208
+	github.com/aws/aws-sdk-go v1.44.209
 	github.com/fatih/color v1.14.1
 	github.com/google/go-github/v28 v28.1.1
 	github.com/johnnadratowski/golang-neo4j-bolt-driver v0.0.0-20200323142034-807201386efa
