@@ -36,12 +36,11 @@ func withCWD(file string) (string, error) {
 
 // Launch an scp file copy to/from the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, opts Options, srcFiles []string, target string) (err error) {
-	if cfg.User == nil || len(*cfg.User) == 0 {
+	if cfg.SSHUser == nil || len(*cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh-user", "spew config")
 		return errors.New("missing `ssh-user` in config file")
 	}
 
-	isAWSB := cfg.IsAWSB(env)
 	ansibleDir := cfg.GetAnsibleDirectory(env)
 
 	flags := "-p"
@@ -52,20 +51,20 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		flags += "r"
 	}
 	cmdArgs := []string{flags + "F", "ssh.cfg"}
-	if env.Name == "concourse" {
+	if env.IsCI() {
 		cmdArgs = []string{}
 	}
-	user := *cfg.User
-	if len(env.User) > 0 {
-		user = env.User
+	sshUser := *cfg.SSHUser
+	if len(env.SSHUser) > 0 {
+		sshUser = env.SSHUser
 	}
 	for _, srcFile := range srcFiles {
 		if *opts.IsPull {
-			if !isAWSB {
-				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, srcFile)
+			if env.IsAWSA() {
+				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, srcFile)
 			} else {
-				os.Setenv("AWS_PROFILE", env.Profile)
-				srcFile = fmt.Sprintf("%s@%s:%s", user, instance.InstanceId, srcFile)
+				os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, srcFile)
 			}
 		} else {
 			if srcFile, err = withCWD(srcFile); err != nil {
@@ -87,20 +86,20 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			return err
 		}
 	} else {
-		if !isAWSB {
-			target = fmt.Sprintf("%s@%s:%s", user, instance.IPAddress, target)
+		if env.IsAWSA() {
+			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, target)
 		} else {
-			os.Setenv("AWS_PROFILE", env.Profile)
-			target = fmt.Sprintf("%s@%s:%s", user, instance.InstanceId, target)
+			os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, target)
 		}
 	}
 	cmdArgs = append(cmdArgs, target)
 
 	lvl := out.GetLevel(env)
 	out.Highlight(lvl, "SCP %s for %s (%s -> %s)", verb, env.Name, strings.Join(srcFiles, ", "), target)
-	out.Highlight(lvl, "[IP: %s | Name: %s | Groups %s | AKA %s]", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
+	out.Highlight(lvl, "[IP: %s | Name: %s | Id %s | Groups %s | AKA %s]", instance.IPAddress, instance.Name, instance.InstanceId, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
-	if *opts.IsPull && env.Name == "prod" && !*opts.IsConfirmed {
+	if *opts.IsPull && env.IsLive() && !*opts.IsConfirmed {
 		reader := bufio.NewReader(os.Stdin)
 		for {
 			fmt.Print("Legal declaration: I confirm that I am NOT copying sensitive files (yes/no): ")

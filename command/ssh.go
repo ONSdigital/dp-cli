@@ -17,11 +17,10 @@ import (
 // sshCommand builds a cobra.Command to SSH into an environment.
 // The command has the following structure:
 //
-// 	ssh
-// 	    environment 	# sandbox
-// 		group		# publishing_mount
+//	ssh
+//	    environment 	# sandbox
+//		group		# publishing_mount
 //		    instance	# 1
-//
 func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
 		Use:   "ssh",
@@ -77,7 +76,7 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 	seenIP := make(map[string]bool)
 
 	for _, grp := range groups {
-		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, env.Profile, grp)
+		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, cfg.GetProfile(env.Name), grp, cfg)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}
@@ -110,12 +109,19 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 			instX := inst
 			ipC := &cobra.Command{
 				Use:   inst.IPAddress,
+				Short: fmt.Sprintf("ssh to %s %s [%s]", env.Name, inst.InstanceId, strings.Join(inst.GroupAKA, ", ")),
+				RunE: func(cmd *cobra.Command, args []string) error {
+					return ssh.Launch(cfg, e, instX, portArgs, verboseCount, args)
+				},
+			}
+			idC := &cobra.Command{
+				Use:   inst.InstanceId,
 				Short: fmt.Sprintf("ssh to %s %-15s [%s]", env.Name, inst.IPAddress, strings.Join(inst.GroupAKA, ", ")),
 				RunE: func(cmd *cobra.Command, args []string) error {
 					return ssh.Launch(cfg, e, instX, portArgs, verboseCount, args)
 				},
 			}
-			commands = append(commands, ipC)
+			commands = append(commands, ipC, idC)
 		}
 	}
 
@@ -133,7 +139,7 @@ func createInstanceSubCommands(grp string, cfg *config.Config, env config.Enviro
 
 		instanceC := &cobra.Command{
 			Use:   index,
-			Short: fmt.Sprintf("ssh to %s %q (%s)", grp, inst.Name, inst.IPAddress),
+			Short: fmt.Sprintf("ssh to %s %q (%s) %s", grp, inst.Name, inst.IPAddress, inst.InstanceId),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return ssh.Launch(cfg, e, inst, portArgs, verboseCount, args)
 			},

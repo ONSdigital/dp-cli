@@ -1,10 +1,11 @@
 package steps
 
 import (
+	"io"
+	"strings"
+
 	"github.com/cucumber/godog"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"strings"
 )
 
 
@@ -16,7 +17,7 @@ func (c *Component) RegisterSteps(ctx *godog.ScenarioContext) {
 
 func (c *Component) iShouldReceiveAHelloworldResponse() error {
 	responseBody := c.apiFeature.HttpResponse.Body
-	body, _ := ioutil.ReadAll(responseBody)
+	body, _ := io.ReadAll(responseBody)
 
 	assert.Equal(c, `{"message":"Hello, World!"}`, strings.TrimSpace(string(body)))
 

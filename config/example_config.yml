@@ -1,10 +1,31 @@
+## Example config file - replace fields as required
 ##
-## Example config file Replace fields as required
-##
-dp-setup-path: "path/to/your/dp-setup" # The path to the dp-setup repo on your machine.
-dp-ci-path: "path/to/your/dp-ci" # The path to the dp-ci repo on your machine.
-dp-hierarchy-builder-path: "path/to/your/dp-hierarchy-builder" # The path to the dp-hierarchy-builder repo on your machine.
-dp-code-list-scripts-path: "path/to/your/dp-code-list-scripts" # The path to the dp-code-list-scripts repo on your machine.
+dp-setup-path: "~/src/github.com/ONSdigital/dp-setup"                         # path to dp-setup                repo
+dp-nisra-path: "~/src/github.com/ONSdigital/dp-nisra-infrastructure"          # path to dp-nisra-infrastructure repo
+dp-ci-path: "~/src/github.com/ONSdigital/dp-ci"                               # path to dp-ci                   repo
+dp-hierarchy-builder-path: "~/src/github.com/ONSdigital/dp-hierarchy-builder" # path to dp-hierarchy-builder    repo
+dp-code-list-scripts-path: "~/src/github.com/ONSdigital/dp-code-list-scripts" # path to dp-code-list-scripts    repo
+
+user-name: ChangeMe # change me to YourName (e.g. JaneDoe)
+ssh-user: ubuntu
+
+# uncomment more environments when you get (AWS) access to them
+environments:
+  - name: sandbox
+    profile: dp-sandbox
+  # - name: staging
+  #   profile: dp-staging
+  # - name: prod
+  #   profile: dp-prod
+  #   tags: [live]
+  # - name: ci
+  #   profile: dp-ci
+  #   tags: [ci]
+  # - name: nisra-dev
+  #   tags: [nisra]
+  # - name: nisra-prod
+  #   tags: [nisra,live]
+
 cmd:
   neo4j-url: bolt://localhost:7687
   mongo-url: localhost:27017
@@ -22,26 +43,3 @@ cmd:
   codelists: # The codelist import scripts to run when importing CMD data
     - "cpih.yaml"
     - "mid-year-pop-est.yaml"
-ssh-user: JamesHetfield
-environments:
-  - name: sandbox 
-    profile: dp-sandbox
-    user: ubuntu 
-    tag: awsb
-  - name: prod 
-    profile: dp-prod
-    user: ubuntu 
-    tag: awsb
-  - name: staging 
-    profile: dp-staging
-    user: ubuntu 
-    tag: awsb
-  - name: ci 
-    profile: dp-ci
-    user: ubuntu 
-    tag: awsb
-    ci: true
-  - name: concourse
-    ci: true
-    profile: develop
-    user: ubuntu

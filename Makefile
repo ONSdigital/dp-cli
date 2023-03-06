@@ -20,4 +20,7 @@ debug:
 test:
 	go test -race -cover ./...
 
-.PHONY: build install test debug
+audit:
+	go list -m all | nancy sleuth
+
+.PHONY: build install debug test audit

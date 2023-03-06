@@ -15,26 +15,25 @@ import (
 
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, portArgs *[]string, verboseCount *int, extraArgs []string) error {
-	if cfg.User == nil || len(*cfg.User) == 0 {
+	if cfg.SSHUser == nil || len(*cfg.SSHUser) == 0 {
 		out.Highlight(out.WARN, "no %s is defined in configuration file (or `--user`) you can view the app configuration values using the %s command", "ssh-user", "spew config")
 		return errors.New("missing `ssh-user` in config file (or no `--user`)")
 	}
 
 	lvl := out.GetLevel(env)
-	fmt.Println("")
 	out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
-	out.Highlight(lvl, "[IP: %s | Name: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
+	out.Highlight(lvl, "[IP: %s | Name: %s | Id: %s | Groups: %s | AKA: %s", instance.IPAddress, instance.Name, instance.InstanceId, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
 
 	ansibleDir := cfg.GetAnsibleDirectory(env)
 
 	var userHost string
 	args := []string{"-F", "ssh.cfg"}
-	if env.Name == "concourse" {
+	if env.IsCI() {
 		args = []string{}
 	}
-	user := *cfg.User
-	if len(env.User) > 0 {
-		user = env.User
+	sshUser := *cfg.SSHUser
+	if len(env.SSHUser) > 0 {
+		sshUser = env.SSHUser
 	}
 
 	if portArgs != nil {
@@ -46,11 +45,11 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			args = append(args, sshPortArgs...)
 		}
 	}
-	if !cfg.IsAWSB(env) {
-		userHost = fmt.Sprintf("%s@%s", user, instance.IPAddress)
+	if env.IsAWSA() {
+		userHost = fmt.Sprintf("%s@%s", sshUser, instance.IPAddress)
 	} else {
-		os.Setenv("AWS_PROFILE", env.Profile)
-		userHost = fmt.Sprintf("%s@%s", user, instance.InstanceId)
+		os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+		userHost = fmt.Sprintf("%s@%s", sshUser, instance.InstanceId)
 	}
 	for v := 0; v < *verboseCount; v++ {
 		args = append(args, "-v")
