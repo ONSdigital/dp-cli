@@ -16,7 +16,7 @@ SERVICE_PATH = github.com/ONSdigital/{{.Name}}/service
 LDFLAGS = -ldflags "-X $(SERVICE_PATH).BuildTime=$(BUILD_TIME) -X $(SERVICE_PATH).GitCommit=$(GIT_COMMIT) -X $(SERVICE_PATH).Version=$(VERSION)"
 
 .PHONY: all
-all: audit lint test test-component build ## Runs multiple targets, audit, lint, test, test-component and build
+all: audit lint test test-component ## Runs multiple targets, audit, lint, test and test-component
 
 .PHONY: audit
 audit: ## Runs checks for security vulnerabilities on dependencies (including transient ones)

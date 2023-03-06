@@ -5,7 +5,7 @@ CYAN   := $(shell tput -Txterm setaf 6)
 RESET  := $(shell tput -Txterm sgr0)
 
 .PHONY: all
-all: audit test lint build ## Runs multiple targets, audit, lint, test and build
+all: audit test lint ## Runs multiple targets, audit, lint and test
 
 .PHONY: audit
 audit: ## Runs checks for security vulnerabilities on dependencies (including transient ones)

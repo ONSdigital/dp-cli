@@ -13,7 +13,7 @@ VERSION ?= $(shell git tag --points-at HEAD | grep ^v | head -n 1)
 LDFLAGS = -ldflags "-X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT) -X main.Version=$(VERSION)"
 
 .PHONY: all
-all: audit lint test test-component build ## Runs multiple targets, audit, lint, test, test-component and build
+all: audit lint test test-component ## Runs multiple targets, audit, lint, test and test-component
 
 .PHONY: audit
 audit: ## Runs checks for security vulnerabilities on dependencies (including transient ones)
