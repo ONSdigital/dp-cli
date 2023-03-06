@@ -445,7 +445,7 @@ func installGoBinData(ctx context.Context, pathToRepo string) {
 }
 
 func generateGoCode(ctx context.Context, pathToRepo string) {
-	log.Info(ctx, "Generating go code with \"go generate\"")
+	log.Info(ctx, `Generating go code with "go generate"`)
 	cmd := exec.Command("go", "generate", "./...")
 	cmd.Dir = pathToRepo
 	err := cmd.Run()

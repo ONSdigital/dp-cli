@@ -15,14 +15,13 @@ type Service struct {
 	Config      *config.Config
 	Server      HTTPServer
 	Router      *mux.Router
-	Api         *api.API
+	API         *api.API
 	ServiceList *ExternalServiceList
 	HealthCheck HealthChecker
 }
 
 // Run the service
 func Run(ctx context.Context, cfg *config.Config, serviceList *ExternalServiceList, buildTime, gitCommit, version string, svcErrors chan error) (*Service, error) {
-
 	log.Info(ctx, "running service")
 
 	log.Info(ctx, "using service configuration", log.Data{"config": cfg})
@@ -61,7 +60,7 @@ func Run(ctx context.Context, cfg *config.Config, serviceList *ExternalServiceLi
 	return &Service{
 		Config:      cfg,
 		Router:      r,
-		Api:         a,
+		API:         a,
 		HealthCheck: hc,
 		ServiceList: serviceList,
 		Server:      s,
@@ -116,7 +115,6 @@ func (svc *Service) Close(ctx context.Context) error {
 
 func registerCheckers(ctx context.Context,
 	hc HealthChecker) (err error) {
-
 	// TODO: add other health checks here, as per dp-upload-service
 
 	return nil

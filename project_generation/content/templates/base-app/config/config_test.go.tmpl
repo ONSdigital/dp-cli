@@ -19,7 +19,6 @@ func TestConfig(t *testing.T) {
 		})
 
 		Convey("When the config values are retrieved", func() {
-
 			Convey("Then there should be no error returned, and values are as expected", func() {
 				configuration, err = Get() // This Get() is only called once, when inside this function
 				So(err, ShouldBeNil)
