@@ -51,9 +51,6 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		flags += "r"
 	}
 	cmdArgs := []string{flags + "F", "ssh.cfg"}
-	if env.IsCI() {
-		cmdArgs = []string{}
-	}
 	sshUser := *cfg.SSHUser
 	if len(env.SSHUser) > 0 {
 		sshUser = env.SSHUser
