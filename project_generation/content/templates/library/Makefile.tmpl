@@ -21,7 +21,7 @@ convey: ## Runs unit test suite and outputs results on http://127.0.0.1:8080/
 
 .PHONY: delimiter-%
 delimiter-%:
-	@echo '=================== $* ==================='
+	@echo '===================${GREEN} $* ${RESET}==================='
 
 .PHONY: fmt
 fmt: ## Run Go formatting on code

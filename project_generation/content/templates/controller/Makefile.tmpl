@@ -37,7 +37,7 @@ debug: generate-debug ## Used to run code locally in debug mode
 
 .PHONY: delimiter-%
 delimiter-%:
-	@echo '=================== $* ==================='
+	@echo '===================${GREEN} $* ${RESET}==================='
 
 .PHONY: fmt
 fmt: ## Run Go formatting on code
