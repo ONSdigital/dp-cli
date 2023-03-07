@@ -125,9 +125,6 @@ func getNamedSG(name, environment, profile string, userName *string, ports []int
 
 func getBastionSGForEnvironment(environment, profile string, userName *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
 	extraPorts = append(extraPorts, 443)
-	if cfg.HttpOnly == nil || !*cfg.HttpOnly {
-		extraPorts = append(extraPorts, 22)
-	}
 	return getNamedSG(
 		environment+" - bastion", environment, profile, userName,
 		extraPorts, cfg,
@@ -209,12 +206,12 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 				return err
 			}
 			secGroups = append(secGroups, sg)
-
-			if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
-				return err
-			}
-			secGroups = append(secGroups, sg)
 		}
+		if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
+			return err
+		}
+		secGroups = append(secGroups, sg)
+
 	}
 
 	// apply `secGroups` changes
