@@ -16,7 +16,7 @@ SERVICE_PATH = github.com/ONSdigital/{{.Name}}/service
 LDFLAGS = -ldflags "-X $(SERVICE_PATH).BuildTime=$(BUILD_TIME) -X $(SERVICE_PATH).GitCommit=$(GIT_COMMIT) -X $(SERVICE_PATH).Version=$(VERSION)"
 
 .PHONY: all
-all: audit lint test test-component ## Runs multiple targets, audit, lint, test and test-component
+all: delimiter-AUDIT audit delimiter-LINTERS lint delimiter-UNIT_TESTS test delimiter-COMPONENT_TESTS test-component delimiter-FINISH ## Runs multiple targets, audit, lint, test and test-component
 
 .PHONY: audit
 audit: ## Runs checks for security vulnerabilities on dependencies (including transient ones)
@@ -34,6 +34,10 @@ convey: ## Runs unit test suite and outputs results on http://127.0.0.1:8080/
 debug: generate-debug ## Used to run code locally in debug mode
 	go build -tags 'debug' $(LDFLAGS) -o $(BINPATH)/{{.Name}}
 	HUMAN_LOG=1 DEBUG=1 $(BINPATH)/{{.Name}}
+
+.PHONY: delimiter-%
+delimiter-%:
+	@echo '=================== $* ==================='
 
 .PHONY: fmt
 fmt: ## Run Go formatting on code
