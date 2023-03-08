@@ -139,8 +139,12 @@ func getELBPublishingSGForEnvironment(environment, profile string, userName *str
 }
 
 func getELBWebSGForEnvironment(environment, profile string, userName *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
+	sgName := environment + " - web elb"
+	if cfg.IsNisra(environment) {
+		sgName = environment + " - cantabular-ui elb"
+	}
 	return getNamedSG(
-		environment+" - web elb", environment, profile, userName,
+		sgName, environment, profile, userName,
 		append(extraPorts, 80, 443), cfg,
 	)
 }
@@ -194,7 +198,15 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 		}
 		secGroups = append(secGroups, sg)
 
+	} else if cfg.IsNisra(environment) {
+		ec2Svc = getEC2Service(environment, profile)
+		if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
+			return err
+		}
+		secGroups = append(secGroups, sg)
+
 	} else {
+
 		ec2Svc = getEC2Service(environment, profile)
 		if sg, err = getBastionSGForEnvironment(environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
 			return err
@@ -207,6 +219,7 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 			}
 			secGroups = append(secGroups, sg)
 		}
+
 		if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
 			return err
 		}
