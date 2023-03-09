@@ -3,9 +3,10 @@ package event_test
 import (
 	"context"
 	"errors"
-	"github.com/ONSdigital/{{.Name}}/config"
 	"sync"
 	"testing"
+
+	"github.com/ONSdigital/{{.Name}}/config"
 
 	kafka "github.com/ONSdigital/dp-kafka/v3"
 	"github.com/ONSdigital/dp-kafka/v3/kafkatest"
@@ -17,25 +18,15 @@ import (
 
 var testCtx = context.Background()
 
-var errHandler = errors.New("Handler Error")
+var errHandler = errors.New("handler Error")
 
 var testEvent = event.HelloCalled{
 	RecipientName: "World",
 }
 
-// kafkaStubConsumer mock which exposes Channels function returning empty channels
-// to be used on tests that are not supposed to receive any kafka message
-var kafkaStubConsumer = &kafkatest.IConsumerGroupMock{
-	ChannelsFunc: func() *kafka.ConsumerGroupChannels {
-		return &kafka.ConsumerGroupChannels{}
-	},
-}
-
 // TODO: remove or replace hello called logic with app specific
 func TestConsume(t *testing.T) {
-
 	Convey("Given kafka consumer and event handler mocks", t, func() {
-
 		cgChannels := &kafka.ConsumerGroupChannels{Upstream: make(chan kafka.Message, 2)}
 		mockConsumer := &kafkatest.IConsumerGroupMock{
 			ChannelsFunc: func() *kafka.ConsumerGroupChannels { return cgChannels },
@@ -50,12 +41,14 @@ func TestConsume(t *testing.T) {
 		}
 
 		Convey("And a kafka message with the valid schema being sent to the Upstream channel", func() {
-
-			message := kafkatest.NewMessage(marshal(testEvent), 0)
+			message, err := kafkatest.NewMessage(marshal(testEvent), 0)
+			if err != nil {
+				t.Errorf("unable to create new message")
+			}
+			
 			mockConsumer.Channels().Upstream <- message
 
 			Convey("When consume message is called", func() {
-
 				handlerWg.Add(1)
 				event.Consume(testCtx, mockConsumer, mockEventHandler, &config.Config{KafkaConfig:config.KafkaConfig{NumWorkers: 1}})
 				handlerWg.Wait()
@@ -74,14 +67,20 @@ func TestConsume(t *testing.T) {
 		})
 
 		Convey("And two kafka messages, one with a valid schema and one with an invalid schema", func() {
+			validMessage, err := kafkatest.NewMessage(marshal(testEvent), 1)
+			if err != nil {
+				t.Errorf("unable to create new message")
+			}
+			
+			invalidMessage, err := kafkatest.NewMessage([]byte("invalid schema"), 0)
+			if err != nil {
+				t.Errorf("unable to create new message")
+			}
 
-			validMessage := kafkatest.NewMessage(marshal(testEvent), 1)
-			invalidMessage := kafkatest.NewMessage([]byte("invalid schema"), 0)
 			mockConsumer.Channels().Upstream <- invalidMessage
 			mockConsumer.Channels().Upstream <- validMessage
 
 			Convey("When consume messages is called", func() {
-
 				handlerWg.Add(1)
 				event.Consume(testCtx, mockConsumer, mockEventHandler, &config.Config{KafkaConfig:config.KafkaConfig{NumWorkers: 1}})
 				handlerWg.Wait()
@@ -107,11 +106,15 @@ func TestConsume(t *testing.T) {
 				defer handlerWg.Done()
 				return errHandler
 			}
-			message := kafkatest.NewMessage(marshal(testEvent), 0)
+
+			message, err := kafkatest.NewMessage(marshal(testEvent), 0)
+			if err != nil {
+				t.Errorf("unable to create new message")
+			}
+			
 			mockConsumer.Channels().Upstream <- message
 
 			Convey("When consume message is called", func() {
-
 				handlerWg.Add(1)
 				event.Consume(testCtx, mockConsumer, mockEventHandler, &config.Config{KafkaConfig:config.KafkaConfig{NumWorkers: 1}})
 				handlerWg.Wait()
@@ -132,8 +135,8 @@ func TestConsume(t *testing.T) {
 }
 
 // marshal helper method to marshal a event into a []byte
-func marshal(event event.HelloCalled) []byte {
-	bytes, err := schema.HelloCalledEvent.Marshal(event)
+func marshal(e event.HelloCalled) []byte {
+	bytes, err := schema.HelloCalledEvent.Marshal(e)
 	So(err, ShouldBeNil)
 	return bytes
 }

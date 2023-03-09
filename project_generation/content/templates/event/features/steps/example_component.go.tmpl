@@ -19,25 +19,36 @@ type Component struct {
 	componenttest.ErrorFeature
 	serviceList   *service.ExternalServiceList
 	KafkaConsumer kafka.IConsumerGroup
-	killChannel   chan os.Signal
-	apiFeature    *componenttest.APIFeature
 	errorChan     chan error
 	svc           *service.Service
 	cfg           *config.Config
 }
 
 func NewComponent() *Component {
-
-	c := &Component{errorChan: make(chan error)}
-
-	consumer := kafkatest.NewMessageConsumer(false)
-	consumer.CheckerFunc = funcCheck
-	c.KafkaConsumer = consumer
-
 	cfg, err := config.Get()
 	if err != nil {
 		return nil
 	}
+
+	c := &Component{errorChan: make(chan error)}
+
+	minBrokers := 1
+	
+	consumer, err := kafkatest.NewConsumer(context.Background(),
+			&kafka.ConsumerGroupConfig{
+				BrokerAddrs:       cfg.KafkaConfig.Brokers,
+				Topic:             cfg.KafkaConfig.HelloCalledTopic,
+				GroupName:         cfg.KafkaConfig.HelloCalledGroup,
+				MinBrokersHealthy: &minBrokers,
+				KafkaVersion:      &cfg.KafkaConfig.Version,
+			}, nil,
+	)
+	if err != nil {
+        return nil
+    }
+	
+	consumer.Mock.CheckerFunc = funcCheck
+	c.KafkaConsumer = consumer.Mock
 
 	c.cfg = cfg
 
@@ -60,7 +71,7 @@ func (c *Component) Reset() {
 	os.Remove(c.cfg.OutputFilePath)
 }
 
-func (c *Component) DoGetHealthCheck(cfg *config.Config, buildTime string, gitCommit string, version string) (service.HealthChecker, error) {
+func (c *Component) DoGetHealthCheck(cfg *config.Config, buildTime, gitCommit, version string) (service.HealthChecker, error) {
 	return &mock.HealthCheckerMock{
 		AddCheckFunc: func(name string, checker healthcheck.Checker) error { return nil },
 		StartFunc:    func(ctx context.Context) {},

@@ -30,6 +30,7 @@ func main() {
 	pConfig := &kafka.ProducerConfig{
 		KafkaVersion: &cfg.KafkaConfig.Version,
 	}
+
 	if cfg.KafkaConfig.SecProtocol == config.KafkaTLSProtocolFlag {
 		pConfig.SecurityConfig = kafka.GetSecurityConfig(
 			cfg.KafkaConfig.SecCACerts,
@@ -38,6 +39,7 @@ func main() {
 			cfg.KafkaConfig.SecSkipVerify,
 		)
 	}
+	
 	kafkaProducer, err := kafka.NewProducer(ctx, pConfig)
 	if err != nil {
 		log.Fatal(ctx, "fatal error trying to create kafka producer", err, log.Data{"topic": cfg.KafkaConfig.HelloCalledTopic})
@@ -60,7 +62,11 @@ func main() {
 		}
 
 		// Send bytes to Output channel, after calling Initialise just in case it is not initialised.
-		kafkaProducer.Initialise(ctx)
+		if err := kafkaProducer.Initialise(ctx); err != nil {
+			log.Fatal(ctx, "fatal error trying to initialise kafka producer", err, log.Data{"topic": cfg.KafkaConfig.HelloCalledTopic})
+			os.Exit(1)
+        }
+
 		kafkaProducer.Channels().Output <- bytes
 	}
 }

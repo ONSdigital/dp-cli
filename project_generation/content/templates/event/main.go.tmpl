@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/ONSdigital/{{.Name}}/service"
 	"github.com/ONSdigital/log.go/v2/log"
@@ -33,7 +34,7 @@ func main() {
 
 func run(ctx context.Context) error {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, os.Kill)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 
 	// Run the service, providing an error channel for fatal errors
 	svcErrors := make(chan error, 1)

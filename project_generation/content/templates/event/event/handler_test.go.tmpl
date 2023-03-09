@@ -11,7 +11,6 @@ import (
 
 // TODO: remove hello called example test
 func TestHelloCalledHandler_Handle(t *testing.T) {
-
 	Convey("Given a successful event handler, when Handle is triggered", t, func() {
 		eventHandler := &event.HelloCalledHandler{}
 		filePath := "/tmp/helloworld.txt"

@@ -108,7 +108,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 		if err != nil {
 			return err
 		}
-		FinaliseModules(ctx, newApp.pathToRepo)
+		FinaliseModules(ctx, newApp.pathToRepo, AppOptions{Type: Controller})
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	case EventDriven:
 		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)

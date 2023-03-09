@@ -146,7 +146,7 @@ func ValidateProjectType(ctx context.Context, projectType string) (validatedProj
 	return projectType, err
 }
 
-//ValidateGoVersion will ensure that the golang docker hub image version provided by the user is valid
+// ValidateGoVersion will ensure that the golang docker hub image version provided by the user is valid
 func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 	var err error = nil
 	if ValidVersionNumber(goVer) {
@@ -397,9 +397,31 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) error {
 	return nil
 }
 
+// FinaliseModules will run go build ./... to generate go modules dependency management files
+func FinaliseModules(ctx context.Context, pathToRepo string, opts ...AppOptions) {
+	runGoModTidy(ctx, pathToRepo)
+	if len(opts) > 0 && opts[0].Type == Controller {
+		installGoBinData(ctx, pathToRepo)
+	}
+
+	cmd := exec.Command("make", "build")
+	cmd.Dir = pathToRepo
+	err := cmd.Run()
+	if err != nil {
+		log.Error(ctx, "error during go build step", err)
+	}
+
+	generateGoCode(ctx, pathToRepo)
+
+	if len(opts) > 0 && opts[0].Type == Controller {
+		cleanupAssets(ctx, pathToRepo)
+	}
+}
+
 // runGoModTidy will download all the dependencies that are required for your source file and updates go mod with
 // that dependency.
 func runGoModTidy(ctx context.Context, pathToRepo string) {
+	log.Info(ctx, "Running go mod tidy")
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
@@ -408,14 +430,37 @@ func runGoModTidy(ctx context.Context, pathToRepo string) {
 	}
 }
 
-// FinaliseModules will run go build ./... to generate go modules dependency management files
-func FinaliseModules(ctx context.Context, pathToRepo string) {
-	runGoModTidy(ctx, pathToRepo)
-	cmd := exec.Command("go", "build", "./...")
+type AppOptions struct {
+	Type ProjectType
+}
+
+func installGoBinData(ctx context.Context, pathToRepo string) {
+	log.Info(ctx, "Installing go-bindata")
+	cmd := exec.Command("go", "get", "github.com/kevinburke/go-bindata/go-bindata")
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
-		log.Error(ctx, "error during go build step", err)
+		log.Error(ctx, "error installing kevinburke go-bindata", err)
+	}
+}
+
+func generateGoCode(ctx context.Context, pathToRepo string) {
+	log.Info(ctx, `Generating go code with "go generate"`)
+	cmd := exec.Command("go", "generate", "./...")
+	cmd.Dir = pathToRepo
+	err := cmd.Run()
+	if err != nil {
+		log.Error(ctx, "generating files", err)
+	}
+}
+
+func cleanupAssets(ctx context.Context, pathToRepo string) {
+	log.Info(ctx, "Cleaning up assets")
+	cmd := exec.Command("rm", "assets/data.go")
+	cmd.Dir = pathToRepo
+	err := cmd.Run()
+	if err != nil {
+		log.Error(ctx, "error removing assets", err)
 	}
 }
 
