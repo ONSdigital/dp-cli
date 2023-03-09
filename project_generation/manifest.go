@@ -242,6 +242,12 @@ var controllerFiles = []fileGen{
 		filePrefix:   "",
 	},
 	{
+		templatePath: "controller/.gitignore",
+		outputPath:   ".gitignore",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
 		templatePath: "controller/assets/assets.go",
 		outputPath:   "assets/assets",
 		extension:    ".go",
