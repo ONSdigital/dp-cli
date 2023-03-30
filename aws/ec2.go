@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
@@ -31,6 +32,7 @@ type EC2Result struct {
 	AnsibleGroups []string
 	GroupAKA      []string
 	InstanceId    string
+	LaunchTime    *time.Time
 }
 
 var resultCache = make(map[string][]EC2Result)
@@ -370,12 +372,18 @@ func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, erro
 					AnsibleGroups: strings.Split(ansibleGroup, ","),
 					GroupAKA:      []string{},
 					InstanceId:    *i.InstanceId,
+					LaunchTime:    i.LaunchTime,
 				})
 			}
 		}
 	}
 
-	sort.Slice(resultCache[environment], func(i, j int) bool { return resultCache[environment][i].Name < resultCache[environment][j].Name })
+	sort.Slice(resultCache[environment], func(i, j int) bool {
+		if resultCache[environment][i].Name == resultCache[environment][j].Name {
+			return resultCache[environment][i].LaunchTime.Before(*resultCache[environment][j].LaunchTime)
+		}
+		return resultCache[environment][i].Name < resultCache[environment][j].Name
+	})
 
 	// add (e.g.) "publishing 2" to GroupAKA field, now that the list is sorted
 	countGroup := make(map[string]int)

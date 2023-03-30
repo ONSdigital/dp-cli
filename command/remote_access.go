@@ -2,6 +2,7 @@ package command
 
 import (
 	"github.com/ONSdigital/dp-cli/aws"
+	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	subCommands := []*cobra.Command{
 		allowCommand(cfg.UserName, cfg.Environments, cfg),
 		denyCommand(cfg.UserName, cfg.Environments, cfg),
+		loginCommand(cfg.UserName, cfg.Environments, cfg),
 	}
 
 	cmd.AddCommand(subCommands...)
@@ -91,5 +93,22 @@ func denyCommand(userName *string, envs []config.Environment, cfg *config.Config
 	}
 
 	c.AddCommand(cmds...)
+	return c
+}
+
+// loginCommand - build the `login` sub-command - has a sub-command for each environment
+func loginCommand(userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
+	firstEnv := envs[0]
+	c := &cobra.Command{
+		Use:   "login",
+		Short: "login to AWS environment",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			lvl := out.GetLevel(firstEnv)
+			loginCmd := "aws sso login --profile " + cfg.GetProfile(firstEnv.Name)
+			out.Highlight(lvl, "logging in to %s using %s", firstEnv.Name, loginCmd)
+			return cli.ExecCommand(loginCmd, ".")
+		},
+	}
+
 	return c
 }
