@@ -18,9 +18,7 @@ git clone git@github.com:ONSdigital/dp-cli.git
 
 **Required:**
 
-The DP CLI uses Go Modules so requires a go version of **1.19** or later (ideally the latest)
-
-Ensure `session-manager-plugin` is installed by running the following command
+Check that `session-manager-plugin` is installed by running the following command
 
 ```shell
 which session-manager-plugin
@@ -46,7 +44,13 @@ In order to use the `dp ssh` sub-command you will need:
   git clone git@github.com:ONSdigital/dp-ci
   ```
 
-Note: Make sure `dp-setup` and `dp-ci` are on the branch `main` (or `awsb` for `dp-setup`), locally. This is necessary as they have the required SSH configuration and the relevant inventories.
+Note: Make sure your repo's are on the right branches and are uptodate:
+
+- `dp-setup` is on the `awsb` (or `main`) branch
+- `dp-ci` is on the `main` branch
+- `dp-nisra-infrastructure` is on the `develop` branch
+
+This is necessary because they have the required SSH configuration and the relevant ansible inventories.
 
 #### Optional and less common CMD requirements
 
@@ -71,7 +75,7 @@ Configuration is defined in a YAML file:
 - By default the CLI expects the config file to be `~/.dp-cli-config.yml`.
 - The config file location can be customised by setting the `DP_CLI_CONFIG` environment variable to your chosen path.
 
-The [sample config file](./config/example_config.yml) should be tailored to suit you. For example:
+The [sample config file](./config/example_config.yml) should be copied and tailored to suit you. For example:
 
 ```shell
 cp -i config/example_config.yml ~/.dp-cli-config.yml
@@ -83,12 +87,13 @@ update the paths and `user-name`:
 ```yaml
     dp-setup-path: path to your local dp-setup
     dp-ci-path: path to your local dp-ci
+    dp-nisra-path: path to dp-nisra-infrastructure
     dp-hierarchy-builder-path: path to your local dp-hierarchy-builder-path
     dp-code-list-scripts-path: path to your local dp-code-list-scripts-path
     user-name: Your first and last name concatenated eg. JaneBloggs"
 ```
 
-You can uncomment the `environments` values as and when you get access to them.
+You can uncomment more `environments` values as and when you get access to them.
 
 ### Brew Installation
 
@@ -172,6 +177,8 @@ Use the available commands for more info on the functionality available.
 
     If you see the above error, you need to re-authenticate with sign-in information
 
+    Try: `dp remote login`
+
 1. `error fetching ec2: {Name:sandbox Profile:dp-sandbox SSHUser:ubuntu Tag: CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
 
     check that you have the correct AWS profile names in your `~/.aws/config` file (`dp-sandbox`, `dp-staging`, `dp-prod`, `dp-ci`).
@@ -187,10 +194,8 @@ Use the available commands for more info on the functionality available.
     environments:
       - name: prod
         profile:
-        user: ubuntu
       - name: staging
         profile:
-        user: ubuntu
     ```
 
 #### SSH/SCP command fails
@@ -253,6 +258,10 @@ $ dp ssh sandbox web 1 date
 ```shell
 $ dp ssh sandbox web 1 -- ls -la
 [...]
+$ dp ssh sandbox web_mount 1 --to 2 -- ls -la
+# runs `ls -la` on web_mount 1 and 2
+$ dp ssh sandbox web 1 --to 0 -- ls -la
+# runs `ls -la` on ALL web boxes
 ```
 
 #### Manually configuring your IP or user

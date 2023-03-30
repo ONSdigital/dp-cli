@@ -59,6 +59,13 @@ func Highlight(lvl Level, msg string, args ...interface{}) {
 	highlight(c, msg, args...)
 }
 
+// HighlightDNL is Highlight with no newline ("delete newline")
+func HighlightDNL(lvl Level, msg string, args ...interface{}) {
+	c := getColor(lvl)
+	c.Printf("%s ", outPrefix)
+	highlightDNL(c, msg, args...)
+}
+
 type Log func(msg string, args ...interface{})
 
 func cliPrefix(c *color.Color) {
@@ -105,6 +112,14 @@ func ErrorFHighlight(msg string, args ...interface{}) {
 }
 
 func highlight(c *color.Color, formattedMsg string, args ...interface{}) {
+	highlightTrail(c, formattedMsg, "\n", args...)
+}
+
+func highlightDNL(c *color.Color, formattedMsg string, args ...interface{}) {
+	highlightTrail(c, formattedMsg, "", args...)
+}
+
+func highlightTrail(c *color.Color, formattedMsg, endOfLine string, args ...interface{}) {
 	var highlighted []interface{}
 
 	for _, val := range args {
@@ -112,5 +127,5 @@ func highlight(c *color.Color, formattedMsg string, args ...interface{}) {
 	}
 
 	formattedMsg = fmt.Sprintf(formattedMsg, highlighted...)
-	fmt.Printf("%s\n", formattedMsg)
+	fmt.Printf("%s%s", formattedMsg, endOfLine)
 }
