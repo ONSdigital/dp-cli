@@ -16,6 +16,8 @@ import (
 )
 
 const CONCOURSE_SSH_PORT = 22
+const CONCOURSE_HTTP_PORT = 80
+const CONCOURSE_HTTPS_PORT = 443
 
 type secGroup struct {
 	id          string
@@ -152,7 +154,7 @@ func getELBWebSGForEnvironment(environment, profile string, userName *string, ex
 }
 
 func getConcourseWebSG(userName *string, cfg *config.Config) (secGroup, error) {
-	return getNamedSG("concourse-ci-web", "", "", userName, []int64{CONCOURSE_SSH_PORT}, cfg)
+	return getNamedSG("concourse-ci-web", "", "", userName, []int64{CONCOURSE_SSH_PORT, CONCOURSE_HTTP_PORT, CONCOURSE_HTTPS_PORT}, cfg)
 }
 
 func getConcourseWorkerSG(userName *string, cfg *config.Config) (secGroup, error) {

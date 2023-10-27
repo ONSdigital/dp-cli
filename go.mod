@@ -1,15 +1,21 @@
 module github.com/ONSdigital/dp-cli
 
-go 1.20
+go 1.21
+
+replace golang.org/x/crypto => golang.org/x/crypto v0.14.0
+
+replace golang.org/x/net => golang.org/x/net v0.17.0
+
+replace golang.org/x/sys => golang.org/x/sys v0.13.0
 
 require (
-	github.com/ONSdigital/log.go/v2 v2.3.0
+	github.com/ONSdigital/log.go/v2 v2.4.1
 	github.com/aws/aws-sdk-go v1.44.232
 	github.com/fatih/color v1.15.0
 	github.com/google/go-github/v28 v28.1.1
 	github.com/johnnadratowski/golang-neo4j-bolt-driver v0.0.0-20200323142034-807201386efa
 	github.com/pkg/errors v0.9.1
-	github.com/smartystreets/goconvey v1.7.2
+	github.com/smartystreets/goconvey v1.8.0
 	github.com/spf13/cobra v1.6.1
 	golang.org/x/oauth2 v0.6.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
@@ -17,10 +23,8 @@ require (
 )
 
 require (
-	github.com/ONSdigital/dp-api-clients-go v1.43.0 // indirect
-	github.com/ONSdigital/dp-api-clients-go/v2 v2.249.0 // indirect
-	github.com/ONSdigital/dp-net v1.5.0 // indirect
-	github.com/ONSdigital/dp-net/v2 v2.8.1 // indirect
+	github.com/ONSdigital/dp-api-clients-go/v2 v2.252.0 // indirect
+	github.com/ONSdigital/dp-net/v2 v2.9.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
@@ -28,13 +32,14 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
-	github.com/smartystreets/assertions v1.13.0 // indirect
+	github.com/smartystreets/assertions v1.13.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/crypto v0.7.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
