@@ -1,15 +1,17 @@
 package cli
 
 import (
-	"github.com/ONSdigital/dp-cli/out"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/ONSdigital/dp-cli/out"
 )
 
 func ExecCommand(command string, wrkDir string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
 
 	if len(wrkDir) > 0 {
 		cmd.Dir = wrkDir
