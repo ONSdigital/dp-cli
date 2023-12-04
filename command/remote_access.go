@@ -66,6 +66,10 @@ func allowCommand(userName *string, envs []config.Environment, cfg *config.Confi
 		})
 	}
 
+	if len(cmds) == 0 {
+		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
+	}
+
 	c.AddCommand(cmds...)
 	return c
 }
@@ -92,22 +96,33 @@ func denyCommand(userName *string, envs []config.Environment, cfg *config.Config
 		})
 	}
 
+	if len(cmds) == 0 {
+		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
+	}
+
 	c.AddCommand(cmds...)
 	return c
 }
 
 // loginCommand - build the `login` sub-command - has a sub-command for each environment
 func loginCommand(userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
-	firstEnv := envs[0]
+
 	c := &cobra.Command{
 		Use:   "login",
 		Short: "login to AWS environment",
-		RunE: func(cmd *cobra.Command, args []string) error {
+	}
+
+	if envs != nil {
+		firstEnv := envs[0]
+
+		c.RunE = func(cmd *cobra.Command, args []string) error {
 			lvl := out.GetLevel(firstEnv)
 			loginCmd := "aws sso login --profile " + cfg.GetProfile(firstEnv.Name)
 			out.Highlight(lvl, "logging in to %s using %s", firstEnv.Name, loginCmd)
 			return cli.ExecCommand(loginCmd, ".")
-		},
+		}
+	} else {
+		out.WarnFHighlight("Warning: No environments found in config - dp remote login will not work")
 	}
 
 	return c
