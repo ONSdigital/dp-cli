@@ -40,7 +40,7 @@ func scpCommand(cfg *config.Config) (*cobra.Command, error) {
 		return nil, err
 	}
 	if len(environmentCommands) == 0 {
-		out.Warn("Warning: No sub-commands found for envs - missing envs in config?")
+		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
 	}
 
 	scpC.AddCommand(environmentCommands...)
