@@ -90,6 +90,7 @@ update the paths and `user-name`:
     dp-nisra-path: path to dp-nisra-infrastructure
     dp-hierarchy-builder-path: path to your local dp-hierarchy-builder-path
     dp-code-list-scripts-path: path to your local dp-code-list-scripts-path
+    dp-cli-path: path to your local dp-cli
     user-name: Your first and last name concatenated eg. JaneBloggs"
 ```
 

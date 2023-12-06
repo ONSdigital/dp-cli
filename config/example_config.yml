@@ -5,6 +5,7 @@ dp-nisra-path: "~/src/github.com/ONSdigital/dp-nisra-infrastructure"          # 
 dp-ci-path: "~/src/github.com/ONSdigital/dp-ci"                               # path to dp-ci                   repo
 dp-hierarchy-builder-path: "~/src/github.com/ONSdigital/dp-hierarchy-builder" # path to dp-hierarchy-builder    repo
 dp-code-list-scripts-path: "~/src/github.com/ONSdigital/dp-code-list-scripts" # path to dp-code-list-scripts    repo
+dp-cli-path: "~/src/github.com/ONSdigital/dp-cli"                             # path to dp-cli                  repo
 
 user-name: ChangeMe # change me to YourName (e.g. JaneDoe)
 ssh-user: ubuntu
