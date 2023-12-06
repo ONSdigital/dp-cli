@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ONSdigital/dp-cli/project_generation"
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,6 +38,7 @@ type Config struct {
 	DPCIPath               string        `yaml:"dp-ci-path"`
 	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
 	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
+	DPCLIPath              string        `yaml:"dp-cli-path"`
 }
 
 type CMD struct {
@@ -79,6 +81,13 @@ func Get() (*Config, error) {
 
 	cfg.expandPaths()
 
+	// if compile-time templatePath does not exist, or dp-cli-path set in config
+	if _, err = os.Stat(project_generation.GetTemplatePath()); os.IsNotExist(err) || cfg.DPCLIPath != "" {
+		if cfg.DPCLIPath != "" {
+			project_generation.SetTemplatePath(cfg.DPCLIPath + "/project_generation/content/templates")
+		}
+	}
+
 	return &cfg, nil
 }
 
@@ -88,6 +97,7 @@ func (cfg *Config) expandPaths() {
 	cfg.DPSetupPath = expandPath(cfg.DPSetupPath)
 	cfg.NisraPath = expandPath(cfg.NisraPath)
 	cfg.DPCodeListScriptsPath = expandPath(cfg.DPCodeListScriptsPath)
+	cfg.DPCLIPath = expandPath(cfg.DPCLIPath)
 }
 
 func expandPath(path string) string {
