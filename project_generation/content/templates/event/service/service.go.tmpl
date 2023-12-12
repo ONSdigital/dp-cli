@@ -10,6 +10,8 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 )
 
 // Service contains all the configs, server and clients to run the event handler service
@@ -35,6 +37,8 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 
 	// Get HTTP Server with collectionID checkHeader middleware
 	r := mux.NewRouter()
+	otelHandler := otelhttp.NewHandler(router, "/")
+	router.Use(otelmux.Middleware(cfg.OTServiceName))
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 
 	// Get Kafka consumer
