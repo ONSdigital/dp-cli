@@ -10,16 +10,17 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
-type templateModel struct {
-	Name        string
-	Description string
-	Year        int
-	GoVersion   string
-	Port        string
+type TemplateModel struct {
+	Name           string
+	Description    string
+	Year           int
+	GoVersion      string
+	DebianCodename string
+	Port           string
 }
 
 type application struct {
-	templateModel templateModel
+	templateModel TemplateModel
 	pathToRepo    string
 	name          string
 	license       string
@@ -62,6 +63,8 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 	ctx := context.Background()
 	var err error
 
+	const dc = "bullseye"
+
 	an, ad, pt, pl, gv, prt, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, goVer, port)
 	if err != nil {
 		log.Error(ctx, "error configuring and validating arguments", err)
@@ -76,7 +79,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 		pathToRepo:    filepath.Join(pl, an),
 		projectType:   ProjectType(pt),
 		name:          an,
-		templateModel: PopulateTemplateModel(an, ad, gv, prt),
+		templateModel: PopulateTemplateModel(an, ad, gv, dc, prt),
 	}
 
 	switch newApp.projectType {

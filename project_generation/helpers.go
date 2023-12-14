@@ -293,15 +293,16 @@ func IsEmptyDir(path string) (isEmptyDir bool, err error) {
 }
 
 // PopulateTemplateModel will populate the templating model with variables that can be used in templates
-func PopulateTemplateModel(name, desc, goVer, port string) templateModel {
+func PopulateTemplateModel(name, desc, goVer, debCN, port string) TemplateModel {
 	// UTC to avoid any sketchy BST timing
 	year := time.Now().UTC().Year()
-	return templateModel{
-		Name:        name,
-		Description: desc,
-		Year:        year,
-		GoVersion:   goVer,
-		Port:        port,
+	return TemplateModel{
+		Name:           name,
+		Description:    desc,
+		Year:           year,
+		GoVersion:      goVer,
+		DebianCodename: debCN,
+		Port:           port,
 	}
 }
 
