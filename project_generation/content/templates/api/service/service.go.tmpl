@@ -8,6 +8,8 @@ import (
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	// "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // Service contains all the configs, server and clients to run the API
@@ -28,6 +30,9 @@ func Run(ctx context.Context, cfg *config.Config, serviceList *ExternalServiceLi
 
 	// Get HTTP Server and ... // TODO: Add any middleware that your service requires
 	r := mux.NewRouter()
+	r.Use(otelmux.Middleware(cfg.OTServiceName))
+
+	// TODO: Any middleware will require 'otelhttp.NewMiddleware(cfg.OTServiceName),' included for Open Telemetry
 
 	s := serviceList.GetHTTPServer(cfg.BindAddr, r)
 

@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
+	kafka "github.com/ONSdigital/dp-kafka/v4"
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/event"
 	"github.com/ONSdigital/{{.Name}}/schema"
-	kafka "github.com/ONSdigital/dp-kafka/v3"
-	"github.com/ONSdigital/log.go/v2/log"
 )
 
 const serviceName = "{{.Name}}"
@@ -67,7 +67,7 @@ func main() {
 			os.Exit(1)
         }
 
-		kafkaProducer.Channels().Output <- bytes
+		kafkaProducer.Channels().Output <- kafka.BytesMessage{Value: bytes, Context: ctx}
 	}
 }
 
