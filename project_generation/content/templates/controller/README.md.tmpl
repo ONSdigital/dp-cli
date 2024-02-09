@@ -12,13 +12,17 @@
 
 ### Configuration
 
-| Environment variable         | Default   | Description
-| ---------------------------- | --------- | -----------
-| BIND_ADDR                    | :{{.Port}}    | The host and port to bind to
-| GRACEFUL_SHUTDOWN_TIMEOUT    | 5s        | The graceful shutdown timeout in seconds (`time.Duration` format)
-| HEALTHCHECK_INTERVAL         | 30s       | Time between self-healthchecks (`time.Duration` format)
-| HEALTHCHECK_CRITICAL_TIMEOUT | 90s       | Time to wait until an unhealthy dependent propagates its state to make this app unhealthy (`time.Duration` format)
-| HELLO_WORLD_EMPHASISE        | true      | Example boolean flag to control whether the 'Hello World' greeting should be emphasised with "!"
+| Environment variable         | Default            | Description
+| ---------------------------- | ------------------ | -----------
+| BIND_ADDR                    | :{{.Port}}         | The host and port to bind to
+| GRACEFUL_SHUTDOWN_TIMEOUT    | 5s                 | The graceful shutdown timeout in seconds (`time.Duration` format)
+| HEALTHCHECK_INTERVAL         | 30s                | Time between self-healthchecks (`time.Duration` format)
+| HEALTHCHECK_CRITICAL_TIMEOUT | 90s                | Time to wait until an unhealthy dependent propagates its state to make this app unhealthy (`time.Duration` format)
+| HELLO_WORLD_EMPHASISE        | true               | Example boolean flag to control whether the 'Hello World' greeting should be emphasised with "!"
+| OTEL_EXPORTER_OTLP_ENDPOINT  | localhost:4317     | Endpoint for OpenTelemetry service
+| OTEL_SERVICE_NAME            | {{.Name}}          | Label of service for OpenTelemetry service
+| OTEL_BATCH_TIMEOUT           | 5s                 | Timeout for OpenTelemetry
+| OTEL_ENABLED                 | false              | Feature flag to enable OpenTelemetry
 
 ### Contributing
 
