@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/ONSdigital/{{.Name}}/config"
 	"github.com/ONSdigital/{{.Name}}/service"
-	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/pkg/errors"
 
 	dpotelgo "github.com/ONSdigital/dp-otel-go"
@@ -59,7 +59,7 @@ func run(ctx context.Context) error {
 		return errors.Wrap(err, "error getting configuration")
 	}
 
-    if cfg.OtelEnabled {
+	if cfg.OtelEnabled {
 		// Set up OpenTelemetry
 		otelConfig := dpotelgo.Config{
 			OtelServiceName:          cfg.OTServiceName,
