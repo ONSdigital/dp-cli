@@ -59,10 +59,15 @@ func (svc *Service) Init(ctx context.Context, cfg *config.Config, serviceList *E
 
 	// Initialise router
 	r := mux.NewRouter()
-	r.Use(otelmux.Middleware(cfg.OTServiceName))
-	otelHandler := otelhttp.NewHandler(r, "/")
 	routes.Setup(ctx, r, cfg, clients, renderer)
-	svc.Server = serviceList.GetHTTPServer(cfg.BindAddr, otelHandler)
+
+	if cfg.OtelEnabled {
+		r.Use(otelmux.Middleware(cfg.OTServiceName))
+		otelHandler := otelhttp.NewHandler(r, "/")
+		svc.Server = serviceList.GetHTTPServer(cfg.BindAddr, otelHandler)
+	} else {
+		svc.Server = serviceList.GetHTTPServer(cfg.BindAddr, r)
+	}
 
 	return nil
 }

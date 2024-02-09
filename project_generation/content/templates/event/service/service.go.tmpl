@@ -37,9 +37,15 @@ func Run(ctx context.Context, serviceList *ExternalServiceList, buildTime, gitCo
 
 	// Get HTTP Server with collectionID checkHeader middlew are
 	r := mux.NewRouter()
-	otelHandler := otelhttp.NewHandler(r, "/")
-	r.Use(otelmux.Middleware(cfg.OTServiceName))
-	s := serviceList.GetHTTPServer(cfg.BindAddr, otelHandler)
+    
+	var s HTTPServer
+	if cfg.OtelEnabled {
+		otelHandler := otelhttp.NewHandler(r, "/")
+		r.Use(otelmux.Middleware(cfg.OTServiceName))
+		s = serviceList.GetHTTPServer(cfg.BindAddr, otelHandler)
+	} else {
+		s = serviceList.GetHTTPServer(cfg.BindAddr, r)
+	}
 
 	// Get Kafka consumer
 	consumer, err := serviceList.GetKafkaConsumer(ctx, cfg)
