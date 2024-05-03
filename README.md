@@ -24,7 +24,13 @@ Check that `session-manager-plugin` is installed by running the following comman
 which session-manager-plugin
 ```
 
-if not installed, follow this [doc](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos)
+if not installed, you can install it using the following:
+
+```shell
+brew install --cask session-manager-plugin
+```
+
+or by follow this [doc](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos).
 
 #### Optional but common requirements
 
@@ -42,6 +48,12 @@ In order to use the `dp ssh` sub-command you will need:
 
   ```shell
   git clone git@github.com:ONSdigital/dp-ci
+  ```
+
+- [`dp-nisra-infrastructure`](https://github.com/ONSdigital/dp-nisra-infrastructure) cloned locally:
+
+  ```shell
+  git clone git@github.com:ONSdigital/dp-nisra-infrastructure
   ```
 
 Note: Make sure your repo's are on the right branches and are uptodate:
@@ -174,18 +186,18 @@ Use the available commands for more info on the functionality available.
 
 1. If sandbox/prod/staging are not in the dp cli output try unsetting `AWS_REGION` and `AWS_DEFAULT_REGION`
 
-1. `SSOProviderInvalidToken: the SSO session has expired or is invalid`
+2. `SSOProviderInvalidToken: the SSO session has expired or is invalid`
 
     If you see the above error, you need to re-authenticate with sign-in information
 
     Try: `dp remote login`
 
-1. `error fetching ec2: {Name:sandbox Profile:dp-sandbox SSHUser:ubuntu Tag: CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
+3. `error fetching ec2: {Name:sandbox Profile:dp-sandbox SSHUser:ubuntu Tag: CI:false ExtraPorts:{Bastion:[] Publishing:[] Web:[]}}: MissingRegion: could not find region configuration`
 
     check that you have the correct AWS profile names in your `~/.aws/config` file (`dp-sandbox`, `dp-staging`, `dp-prod`, `dp-ci`).
     A sample config for `~/.aws/config` is included at the end of this guide as a reference.
 
-1. `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
+4. `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
 
     check `~/.aws/credentials` and remove any profile information added for `dp-sandbox`, `dp-staging` and `dp-prod` as this is not needed
 
