@@ -1,6 +1,6 @@
 # dp-cli
 
-Command-line client providing *handy helper tools* for the ONS Digital Publishing software engineering team
+Command-line client providing *handy helper tools* for the ONS Dissemination Platform software engineering team
 
 :warning: Still in active development. If you notice any bugs/issues please open a Github issue.
 
@@ -143,14 +143,14 @@ make build
 You should be presented with a help menu similar to:
 
 ```text
-dp is a command-line client providing handy helper tools for ONS Digital Publishing software engineers
+dp is a command-line client providing handy helper tools for ONS Dissemination Platform software engineers
 
 Usage:
   dp [command]
 
 Available Commands:
   clean            Delete data from your local environment
-  create-repo      Creates a new repository with the typical Digital Publishing configurations
+  create-repo      Creates a new repository with the typical Dissemination Platform configurations
   generate-project Generates the boilerplate for a given project type
   help             Help about any command
   import           Import data into your local developer environment

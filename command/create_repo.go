@@ -9,7 +9,7 @@ import (
 func createRepoSubCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "create-repo",
-		Short: "Creates a new repository with the typical Digital Publishing configurations ",
+		Short: "Creates a new repository with the typical Dissemination Platform configurations ",
 	}
 
 	command.AddCommand(createGithubRepo())

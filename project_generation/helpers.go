@@ -105,7 +105,7 @@ func ValidateAppName(ctx context.Context, name string) (string, error) {
 
 	for name == "" {
 		name, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
-			"Digital Publishing specific application it should be prepended with 'dp-'")
+			"Dissemination Platform specific application it should be prepended with 'dp-'")
 		if err != nil {
 			return "", err
 		}

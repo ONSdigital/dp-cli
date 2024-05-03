@@ -21,7 +21,7 @@ These steps should be removed once CI has been updated to use `main` as the lead
 5. Click Personal Access Token
 6. Generate an Access token with permissions to manipulate repositories
 
-#### Be a member of the ONS Digital Publishing team and the ONSDigital organisation with permissions to create new repositories
+#### Be a member of the ONS Dissemination team and the ONSDigital organisation with permissions to create new repositories
 
 ___
 
@@ -31,5 +31,5 @@ ___
 2. Run `dp create-repo github`
 3. Enter your 'Personal Access Token' when prompted (if step 1. was not complete)
 4. Enter your Github handle when prompted
-5. Enter your repository name, note that if the repository is specific to Digital Publishing then prefix it with `dp-`
+5. Enter your repository name, note that if the repository is specific to the Dissemination Platform then prefix it with `dp-`
 6. Enter a description for the repository when prompted
