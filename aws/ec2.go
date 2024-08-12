@@ -153,12 +153,12 @@ func getELBWebSGForEnvironment(environment, profile string, userName *string, ex
 	)
 }
 
-func getConcourseWebSG(userName *string, cfg *config.Config) (secGroup, error) {
-	return getNamedSG("concourse-ci-web", "", "", userName, []int64{CONCOURSE_SSH_PORT, CONCOURSE_HTTP_PORT, CONCOURSE_HTTPS_PORT}, cfg)
+func getConcourseWebSG(userName *string, profile string, cfg *config.Config) (secGroup, error) {
+	return getNamedSG("concourse-ci-web", "", profile, userName, []int64{CONCOURSE_SSH_PORT, CONCOURSE_HTTP_PORT, CONCOURSE_HTTPS_PORT}, cfg)
 }
 
-func getConcourseWorkerSG(userName *string, cfg *config.Config) (secGroup, error) {
-	return getNamedSG("concourse-ci-worker", "", "", userName, []int64{CONCOURSE_SSH_PORT}, cfg)
+func getConcourseWorkerSG(userName *string, profile string, cfg *config.Config) (secGroup, error) {
+	return getNamedSG("concourse-ci-worker", "", profile, userName, []int64{CONCOURSE_SSH_PORT}, cfg)
 }
 
 // AllowIPForEnvironment adds your IP to this environment
@@ -191,13 +191,13 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 	var sg secGroup
 	var ec2Svc *ec2.EC2
 	if cfg.IsCI(environment) {
-		ec2Svc = getEC2Service("", "")
-		if sg, err = getConcourseWebSG(userName, cfg); err != nil {
+		ec2Svc = getEC2Service(environment, profile)
+		if sg, err = getConcourseWebSG(userName, profile, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
-		if sg, err = getConcourseWorkerSG(userName, cfg); err != nil {
+		if sg, err = getConcourseWorkerSG(userName, profile, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
@@ -210,7 +210,6 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 		secGroups = append(secGroups, sg)
 
 	} else {
-
 		ec2Svc = getEC2Service(environment, profile)
 		if sg, err = getBastionSGForEnvironment(environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
 			return err
