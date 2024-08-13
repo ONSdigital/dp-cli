@@ -1,0 +1,18 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.22.6-bullseye
+
+inputs:
+  - name: dp-cli
+
+caches:
+  - path: go/
+
+run:
+  path: dp-cli/ci/scripts/unit.sh

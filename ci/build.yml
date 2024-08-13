@@ -1,0 +1,21 @@
+---
+
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.22.2-bullseye
+
+inputs:
+  - name: dp-cli
+
+outputs:
+  - name: build
+
+caches:
+  - path: go/
+
+run:
+  path: dp-cli/ci/scripts/build.sh

@@ -23,4 +23,7 @@ test:
 audit:
 	go list -m all | nancy sleuth
 
-.PHONY: build install debug test audit
+lint:
+	exit
+
+.PHONY: build install debug test audit lint
