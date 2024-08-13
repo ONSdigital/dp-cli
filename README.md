@@ -330,3 +330,13 @@ region         = eu-west-2
 ```
 
 Repeat the above for any other environments (with the appropriate profile-name and account-id changes).
+
+## Contributing
+
+See [CONTRIBUTING](CONTRIBUTING.md) for details.
+
+## License
+
+Copyright © 2024, Office for National Statistics <https://www.ons.gov.uk>
+
+Released under MIT license, see [LICENSE](LICENSE.md) for details.
