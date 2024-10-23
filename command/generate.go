@@ -26,6 +26,7 @@ func generateProjectSubCommand() *cobra.Command {
 	command.Flags().String("type", "", "Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
 	command.Flags().String("port", "", "The port this application will run on")
 	command.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
+	command.Flags().String("team-slugs", "", "Comma separated list of teams, e.g. 'dissemination-open-sauce', who are the codeowners of this project")
 
 	return command
 }
@@ -43,6 +44,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 	createRepositoryInput, _ := cmd.Flags().GetString("create-repository")
 	createRepositoryInput = strings.ToLower(strings.TrimSpace(createRepositoryInput))
 	strategy, _ := cmd.Flags().GetString("strategy")
+	teamSlugs, _ := cmd.Flags().GetString("team-slugs")
 
 	// Can't create repo unless project type has been provided in a flag, so prompt user for it
 	if createRepositoryInput == "y" || createRepositoryInput == "yes" {
@@ -95,7 +97,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 			log.Error(ctx, "failed to clone repository", err)
 			return err
 		}
-		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, true)
+		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, listOfArguments["teamSlugs"].OutputVal, true)
 		if err != nil {
 			log.Error(ctx, "failed to generate project on github", err)
 			return err
@@ -107,7 +109,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 		}
 		return nil
 	}
-	err = project_generation.GenerateProject(nameOfApp, appDescription, projectType, projectLocation, goVer, port, false)
+	err = project_generation.GenerateProject(nameOfApp, appDescription, projectType, projectLocation, goVer, port, teamSlugs, false)
 	if err != nil {
 		return err
 	}

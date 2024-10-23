@@ -37,6 +37,12 @@ var genericFiles = []fileGen{
 		extension:    ".md",
 		filePrefix:   "",
 	},
+	{
+		templatePath: "generic/.github/CODEOWNERS",
+		outputPath:   ".github/CODEOWNERS",
+		extension:    "",
+		filePrefix:   "",
+	},
 }
 
 var applicationFiles = []fileGen{

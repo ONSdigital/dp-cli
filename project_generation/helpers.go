@@ -24,7 +24,7 @@ type Argument struct {
 	OutputVal string
 }
 
-func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, goVersion, port string) (an, ad, pt, pl, gv, prt string, err error) {
+func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, goVersion, port string, teamSlugs string) (an, ad, pt, pl, gv, prt string, ts []string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
 		InputVal:  appName,
@@ -46,15 +46,24 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 		Context:   ctx,
 		Validator: ValidateProjectLocation,
 	}
+
+	listOfArguments["teamSlugs"] = &Argument{
+		InputVal:  teamSlugs,
+		Context:   ctx,
+		Validator: ValidateTeamSlugs,
+	}
+
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", err
+		return "", "", "", "", "", "", []string{}, err
 	}
 	an = listOfArguments["appName"].OutputVal
 	ad = listOfArguments["description"].OutputVal
 	pt = listOfArguments["projectType"].OutputVal
 	pl = listOfArguments["projectLocation"].OutputVal
+	ts = strings.Split(listOfArguments["teamSlugs"].OutputVal, ",")
+
 	listOfArguments = make(ListOfArguments)
 	goVerUnset := goVersion == ""
 	if goVerUnset && ProjectType(pt) != GenericProject {
@@ -76,13 +85,13 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", err
+		return "", "", "", "", "", "", []string{}, err
 	}
 	prt = listOfArguments["port"].OutputVal
 	if goVerUnset && ProjectType(pt) != GenericProject {
 		gv = listOfArguments["goVersion"].OutputVal
 	}
-	return an, ad, pt, pl, gv, prt, nil
+	return an, ad, pt, pl, gv, prt, ts, nil
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
@@ -105,7 +114,7 @@ func ValidateAppName(ctx context.Context, name string) (string, error) {
 
 	for name == "" {
 		name, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
-			"Dissemination Platform specific application it should be prepended with 'dp-'")
+			"Dissemination Platform specific application it should be prepended with 'dis-'")
 		if err != nil {
 			return "", err
 		}
@@ -184,6 +193,18 @@ func ValidateProjectLocation(ctx context.Context, projectLocation string) (strin
 	}
 
 	return projectLocation, nil
+}
+
+func ValidateTeamSlugs(ctx context.Context, teamSlugs string) (string, error) {
+	var err error
+
+	for teamSlugs == "" {
+		teamSlugs, err = PromptForInput(ctx, "Please specify the team slugs who are codeowners for this application")
+		if err != nil {
+			return "", err
+		}
+	}
+	return teamSlugs, nil
 }
 
 func ValidateProjectDirectory(ctx context.Context, path, projectName string) error {
@@ -293,7 +314,7 @@ func IsEmptyDir(path string) (isEmptyDir bool, err error) {
 }
 
 // PopulateTemplateModel will populate the templating model with variables that can be used in templates
-func PopulateTemplateModel(name, desc, goVer, debCN, port string) TemplateModel {
+func PopulateTemplateModel(name, desc, goVer, debCN, port string, teamSlugs []string) TemplateModel {
 	// UTC to avoid any sketchy BST timing
 	year := time.Now().UTC().Year()
 	return TemplateModel{
@@ -303,6 +324,7 @@ func PopulateTemplateModel(name, desc, goVer, debCN, port string) TemplateModel 
 		GoVersion:      goVer,
 		DebianCodename: debCN,
 		Port:           port,
+		TeamSlugs:      teamSlugs,
 	}
 }
 
