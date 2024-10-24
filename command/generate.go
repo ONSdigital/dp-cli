@@ -87,7 +87,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 			log.Error(ctx, "error confirming project directory is valid", err)
 			return err
 		}
-		cloneURL, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal)
+		cloneURL, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal, listOfArguments["teamSlugs"].OutputVal)
 		if err != nil {
 			log.Error(ctx, "failed to generate project on github", err)
 			return err

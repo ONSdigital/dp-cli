@@ -9,17 +9,31 @@ import (
 
 	"github.com/ONSdigital/dp-cli/project_generation"
 	"github.com/ONSdigital/log.go/v2/log"
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v66/github"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
 
 const (
-	org = "ONSdigital"
-	// Team: "DigitalPublishing", slug: "digitalpublishing", id: 779417
-	dpTeamSlug = "DigitalPublishing"
-	teamID     = int64(779417)
+	org        = "ONSdigital"
 	mainBranch = "main"
+)
+
+type GithubTeam struct {
+	slug string
+	name string
+}
+
+// List of standard Github Teams to apply permissions
+var (
+	dissemationTeam = GithubTeam{
+		slug: "dissemination",
+		name: "Dissemination",
+	}
+	dissemationTechLeadTeam = GithubTeam{
+		slug: "dissemination-tech-leads",
+		name: "Dissemination Tech Leads",
+	}
 )
 
 func RunGenerateRepo(cmd *cobra.Command, args []string) error {
@@ -28,7 +42,8 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 	token, _ := cmd.Flags().GetString("token")
 	branchStrategyInput, _ := cmd.Flags().GetString("strategy")
 	branchStrategy := strings.ToLower(strings.TrimSpace(branchStrategyInput))
-	_, err = GenerateGithub(nameOfApp, "", "", token, branchStrategy)
+	teamSlugsInput, _ := cmd.Flags().GetString("team-slugs")
+	_, err = GenerateGithub(nameOfApp, "", "", token, branchStrategy, teamSlugsInput)
 	if err != nil {
 		return err
 	}
@@ -37,8 +52,8 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 }
 
 // GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name, description string, ProjectType project_generation.ProjectType, personalAccessToken string, branchStrategy string) (cloneUrl string, err error) {
-	accessToken, repoName, repoDescription, defaultBranch := getConfigurationsForNewRepo(name, description, ProjectType, personalAccessToken, branchStrategy)
+func GenerateGithub(name, description string, ProjectType project_generation.ProjectType, personalAccessToken, branchStrategy string, teamSlugsInput string) (cloneUrl string, err error) {
+	accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput := getConfigurationsForNewRepo(name, description, ProjectType, personalAccessToken, branchStrategy, teamSlugsInput)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -46,6 +61,8 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 	tc := oauth2.NewClient(ctx, ts)
 
 	client := github.NewClient(tc)
+
+	teamSlugs := strings.Split(repoTeamSlugsInput, ",")
 
 	hasAccess, err := checkAccess(ctx, client)
 	if err != nil {
@@ -67,6 +84,9 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 		HasProjects:   github.Bool(false),
 		AutoInit:      github.Bool(true),
 	}
+	log.Info(ctx, "repo", log.Data{
+		"repo": repo,
+	})
 
 	err = createRepo(ctx, client, repo)
 	if err != nil {
@@ -94,7 +114,7 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 		return cloneUrl, err
 	}
 
-	err = setTeamsAndCollaborators(ctx, client, repoName)
+	err = setTeamsAndCollaborators(ctx, client, repoName, teamSlugs)
 	if err != nil {
 		log.Error(ctx, "unable to set team and collaborators", err)
 		return cloneUrl, err
@@ -118,12 +138,30 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 }
 
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
-func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string) error {
-	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: "admin"}
-	_, err := client.Teams.AddTeamRepo(ctx, teamID, org, repoName, &addTeamRepoOptions)
+func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string, teamSlugs []string) error {
+	// Add Diss as write
+	_, err := addTeamToRepo(ctx, client, dissemationTeam.slug, "push", org, repoName)
 	if err != nil {
-		log.Error(ctx, "unable to add collaborators", err)
+		log.Error(ctx, "unable to add dissemination collaborators", err)
 		return err
+	}
+
+	// Add TLs as admins
+	_, err = addTeamToRepo(ctx, client, dissemationTechLeadTeam.slug, "admin", org, repoName)
+	if err != nil {
+		log.Error(ctx, "unable to add technical lead collaborators", err)
+		return err
+	}
+
+	// Add teams as maintainers
+	for _, slug := range teamSlugs {
+		if slug != "" {
+			_, err = addTeamToRepo(ctx, client, slug, "maintain", org, repoName)
+			if err != nil {
+				log.Error(ctx, "unable to add team collaborators", err)
+				return err
+			}
+		}
 	}
 
 	user, resp, err := client.Users.Get(ctx, "")
@@ -139,16 +177,22 @@ func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoNa
 	return err
 }
 
+func addTeamToRepo(ctx context.Context, client *github.Client, slug, permission, org, repoName string) (*github.Response, error) {
+	addTeamRepoOptions := github.TeamAddTeamRepoOptions{Permission: permission}
+	return client.Teams.AddTeamRepoBySlug(ctx, org, slug, org, repoName, &addTeamRepoOptions)
+}
+
 // setBranchProtections sets the protections for both main and develop branches
 func setBranchProtections(ctx context.Context, client *github.Client, repoName, branchStrategy string) error {
 	requiredStatusChecks := github.RequiredStatusChecks{
 		Strict:   true,
-		Contexts: []string{},
+		Contexts: &[]string{},
 	}
 
 	dismissalRestrictionsRequest := github.DismissalRestrictionsRequest{
 		Users: &[]string{},
-		Teams: &[]string{dpTeamSlug},
+		Teams: &[]string{dissemationTeam.slug},
+		Apps:  &[]string{},
 	}
 	requiredPullRequestReviewsEnforcementRequest := github.PullRequestReviewsEnforcementRequest{
 		DismissalRestrictionsRequest: &dismissalRestrictionsRequest,
@@ -159,7 +203,8 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 
 	branchRestrictions := github.BranchRestrictionsRequest{
 		Users: []string{},
-		Teams: []string{dpTeamSlug},
+		Teams: []string{dissemationTeam.slug},
+		Apps:  []string{},
 	}
 
 	protectionRequest := github.ProtectionRequest{
@@ -237,7 +282,9 @@ func createRepo(ctx context.Context, client *github.Client, repo *github.Reposit
 }
 
 // getConfigurationsForNewRepo gets required configuration information from the end user
-func getConfigurationsForNewRepo(name, description string, projType project_generation.ProjectType, personalAccessToken string, branchStrategy string) (accessToken, repoName, repoDescription, defaultBranch string) {
+func getConfigurationsForNewRepo(name, description string, projType project_generation.ProjectType, personalAccessToken, branchStrategy, teamSlugsInput string) (accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput string) {
+	ctx := context.Background()
+
 	defaultBranch = "develop"
 	if personalAccessToken == "" {
 		token, exists := os.LookupEnv("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -262,7 +309,6 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 	if branchStrategy == "" {
 		prompt := "Please pick the branching strategy you wish this repo to use:"
 		options := []string{"github flow", "git flow"}
-		ctx := context.Background()
 		branchStrategy, err := project_generation.OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			log.Error(ctx, "error getting branch strategy", err)
@@ -272,7 +318,11 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 	if projType == "generic-project" || branchStrategy == "github" {
 		defaultBranch = "main"
 	}
-	return accessToken, repoName, repoDescription, defaultBranch
+	if teamSlugsInput == "" {
+		prompt := "Please set at least one team in a comma separated list who will be responsible for this repo."
+		repoTeamSlugsInput = PromptForInput(prompt)
+	}
+	return accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput
 }
 
 // PromptForInput gives a user a message and expect input to be provided
