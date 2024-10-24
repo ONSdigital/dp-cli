@@ -2,7 +2,7 @@
 
 Command-line client providing *handy helper tools* for the ONS Dissemination Platform software engineering team
 
-:warning: Still in active development. If you notice any bugs/issues please open a Github issue.
+:warning: Still in active development. If you notice any bugs/issues please open a GitHub issue.
 
 ## Getting started
 

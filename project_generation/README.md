@@ -1,7 +1,7 @@
 # Project Generation 
 
 ## What
-If you do not have a folder structure for your project, and one doesn't exist on GitHub for your project, then this project templating tool will do this for you. If you wish, it will also create the repo on Github for you.
+If you do not have a folder structure for your project, and one doesn't exist on GitHub for your project, then this project templating tool will do this for you. If you wish, it will also create the repo on GitHub for you.
 
 This tool can be used to create projects of the following types:
 - [generic-project](#generic-project)

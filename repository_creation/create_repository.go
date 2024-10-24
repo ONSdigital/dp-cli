@@ -19,18 +19,18 @@ const (
 	mainBranch = "main"
 )
 
-type GithubTeam struct {
+type GitHubTeam struct {
 	slug string
 	name string
 }
 
-// List of standard Github Teams to apply permissions
+// List of standard GitHub Teams to apply permissions
 var (
-	dissemationTeam = GithubTeam{
+	disseminationTeam = GitHubTeam{
 		slug: "dissemination",
 		name: "Dissemination",
 	}
-	dissemationTechLeadTeam = GithubTeam{
+	disseminationTechLeadTeam = GitHubTeam{
 		slug: "dissemination-tech-leads",
 		name: "Dissemination Tech Leads",
 	}
@@ -140,14 +140,14 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 // setTeamsAndCollaborators will set the DigitalPublishing team as a team working on the repo and removes the creator from being a collaborator
 func setTeamsAndCollaborators(ctx context.Context, client *github.Client, repoName string, teamSlugs []string) error {
 	// Add Diss as write
-	_, err := addTeamToRepo(ctx, client, dissemationTeam.slug, "push", org, repoName)
+	_, err := addTeamToRepo(ctx, client, disseminationTeam.slug, "push", org, repoName)
 	if err != nil {
 		log.Error(ctx, "unable to add dissemination collaborators", err)
 		return err
 	}
 
 	// Add TLs as admins
-	_, err = addTeamToRepo(ctx, client, dissemationTechLeadTeam.slug, "admin", org, repoName)
+	_, err = addTeamToRepo(ctx, client, disseminationTechLeadTeam.slug, "admin", org, repoName)
 	if err != nil {
 		log.Error(ctx, "unable to add technical lead collaborators", err)
 		return err
@@ -191,7 +191,7 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 
 	dismissalRestrictionsRequest := github.DismissalRestrictionsRequest{
 		Users: &[]string{},
-		Teams: &[]string{dissemationTeam.slug},
+		Teams: &[]string{disseminationTeam.slug},
 		Apps:  &[]string{},
 	}
 	requiredPullRequestReviewsEnforcementRequest := github.PullRequestReviewsEnforcementRequest{
@@ -203,7 +203,7 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 
 	branchRestrictions := github.BranchRestrictionsRequest{
 		Users: []string{},
-		Teams: []string{dissemationTeam.slug},
+		Teams: []string{disseminationTeam.slug},
 		Apps:  []string{},
 	}
 
@@ -291,7 +291,7 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 		if exists {
 			accessToken = token
 		} else {
-			accessToken = PromptForInput("Please provide your personal access token (to create one follow this guide https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token):")
+			accessToken = PromptForInput("Please provide your personal access token (to create one follow this guide https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens):")
 		}
 	} else {
 		accessToken = personalAccessToken

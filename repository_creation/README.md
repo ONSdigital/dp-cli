@@ -12,7 +12,7 @@ These steps should be removed once CI has been updated to use `main` as the lead
 
 ### Usage prerequisite
 
-#### Github 'Personal Access Token'
+#### GitHub 'Personal Access Token'
 
 1. Navigate to github.com
 2. Click your Avatar
