@@ -30,6 +30,6 @@ ___
 1. (optional) Export the environment variable `GITHUB_PERSONAL_ACCESS_TOKEN` with your github personal access token
 2. Run `dp create-repo github`
 3. Enter your 'Personal Access Token' when prompted (if step 1. was not complete)
-4. Enter your Github handle when prompted
-5. Enter your repository name, note that if the repository is specific to the Dissemination Platform then prefix it with `dp-`
+4. Enter your GitHub handle when prompted
+5. Enter your repository name, note that if the repository is specific to the Dissemination Platform then prefix it with `dis-`
 6. Enter a description for the repository when prompted

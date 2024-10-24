@@ -26,7 +26,7 @@ func generateProjectSubCommand() *cobra.Command {
 	command.Flags().String("type", "", "Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
 	command.Flags().String("port", "", "The port this application will run on")
 	command.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
-	command.Flags().String("team-slugs", "", "Comma separated list of teams, e.g. 'dissemination-open-sauce', who are the codeowners of this project")
+	command.Flags().String("team-slugs", "", "Comma separated list of teams, e.g. 'dissemination-open-sauce', who are the code owners of this project")
 
 	return command
 }

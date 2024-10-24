@@ -199,7 +199,7 @@ func ValidateTeamSlugs(ctx context.Context, teamSlugs string) (string, error) {
 	var err error
 
 	for teamSlugs == "" {
-		teamSlugs, err = PromptForInput(ctx, "Please specify the team slugs who are codeowners for this application")
+		teamSlugs, err = PromptForInput(ctx, "Please specify the team slugs who are code owners for this application")
 		if err != nil {
 			return "", err
 		}
