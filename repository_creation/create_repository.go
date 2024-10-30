@@ -122,7 +122,7 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 
 	err = setLabels(ctx, client, repoName)
 	if err != nil {
-		log.Error(ctx, "unable to set team and collaborators", err)
+		log.Error(ctx, "unable to labels", err)
 		return cloneUrl, err
 	}
 
