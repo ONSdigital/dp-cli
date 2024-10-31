@@ -122,7 +122,7 @@ func loginCommand(userName *string, envs []config.Environment, cfg *config.Confi
 			return cli.ExecCommand(loginCmd, ".")
 		}
 	} else {
-		out.WarnFHighlight("Warning: No environments found in config - dp remote login will not work")
+		out.WarnFHighlight("Warning: No environments found in config - `dp remote login` will not work")
 	}
 
 	return c

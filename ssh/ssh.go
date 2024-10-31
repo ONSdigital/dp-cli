@@ -40,7 +40,7 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 	for instanceNumLoop := instanceNum; instanceNumLoop <= instanceMax; instanceNumLoop++ {
 		instance := instances[instanceNumLoop]
 		if isQuiet {
-			out.HighlightDNL(lvl, "[IP: %s | Name: %s | Id: %s | Groups: %s | AKA: %s] ", instance.IPAddress, instance.Name, instance.InstanceId, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))
+			out.HighlightDNL(lvl, "[ %s %s %s %s ] ", instance.IPAddress, instance.Name, instance.InstanceId, strings.Join(instance.GroupAKA, ","))
 		} else {
 			out.Highlight(lvl, "Launching SSH connection to %s", env.Name)
 			out.Highlight(lvl, "[IP: %s | Name: %s | Id: %s | Groups: %s | AKA: %s]", instance.IPAddress, instance.Name, instance.InstanceId, instance.AnsibleGroups, strings.Join(instance.GroupAKA, ", "))

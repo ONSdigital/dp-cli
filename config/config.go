@@ -16,10 +16,11 @@ import (
 
 // tags refer to dp-cli-config.yml environment tags which put that environment into group types
 const (
-	TAG_AWSA  = "awsa"
-	TAG_CI    = "ci"
-	TAG_LIVE  = "live"
-	TAG_NISRA = "nisra"
+	TAG_AWSA   = "awsa"   // legacy/deprecated
+	TAG_CI     = "ci"     // concourse
+	TAG_LIVE   = "live"   // production
+	TAG_SECURE = "secure" // has secure data (e.g. prod, staging)
+	TAG_NISRA  = "nisra"  // NISRA
 )
 
 var httpClient = &http.Client{
@@ -134,7 +135,7 @@ func (cfg Config) checkGotIP() (bool, error) {
 	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, *cfg.IPAddress)
 }
 
-// GetMyIP fetches your external IP address
+// GetMyIP returns first IP in: `--ip` flag, `MY_IP` env var, config file, external service
 func (cfg Config) GetMyIP() (string, error) {
 	if cfg.IPAddress == nil {
 		s := ""
@@ -157,10 +158,18 @@ func (cfg Config) GetMyIP() (string, error) {
 		return *cfg.IPAddress, nil
 	}
 
+	// return IP if it was in config file
+	if *cfg.IPAddress != "" {
+		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
+			return "", fmt.Errorf("unexpected format for IP in config file: %w", err)
+		}
+		return *cfg.IPAddress, nil
+	}
+
 	// use remote service to obtain IP
 	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
-		return "", fmt.Errorf("cannot get IP from service: %w", err)
+		return "", fmt.Errorf("cannot get IP from service (consider using `--ip` flag instead): %w", err)
 	}
 
 	defer func() {
@@ -168,7 +177,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	}()
 
 	if res.StatusCode != 200 {
-		return "", fmt.Errorf("unexpected status code fetching IP: %d", res.StatusCode)
+		return "", fmt.Errorf("unexpected status code fetching IP (consider using `--ip` flag instead): %d", res.StatusCode)
 	}
 
 	b, err := io.ReadAll(res.Body)
@@ -220,6 +229,12 @@ func (cfg Config) IsNisra(env string) bool {
 }
 func (env Environment) IsNisra() bool {
 	return env.hasTag(TAG_NISRA)
+}
+func (cfg Config) IsSecure(env string) bool {
+	return cfg.hasTag(env, TAG_SECURE)
+}
+func (env Environment) IsSecure() bool {
+	return env.hasTag(TAG_SECURE)
 }
 
 func (cfg Config) GetProfile(env string) string {
