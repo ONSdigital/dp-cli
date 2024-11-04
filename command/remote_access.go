@@ -15,7 +15,7 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	}
 
 	ipFlag := cmd.PersistentFlags().String("ip", "", "The IP for ssh,remote sub-commands")
-	if ipFlag != nil {
+	if ipFlag != nil && len(*ipFlag) > 0 {
 		cfg.IPAddress = ipFlag
 	}
 	userDefault := ""
