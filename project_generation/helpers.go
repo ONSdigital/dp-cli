@@ -246,7 +246,8 @@ func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (s
 	if branchingStrategy == "" {
 		prompt := "Please pick the branching strategy you wish this repo to use:"
 		options := []string{"github flow", "git flow"}
-		branchingStrategy, err := OptionPromptInput(ctx, prompt, options...)
+		var err error
+		branchingStrategy, err = OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			return "", err
 		}
