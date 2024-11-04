@@ -131,42 +131,29 @@ func Dump() ([]byte, error) {
 	return data, nil
 }
 
-func (cfg Config) checkGotIP() (bool, error) {
-	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, *cfg.IPAddress)
+func (cfg Config) checkGotIP(ip string) (bool, error) {
+	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, ip)
 }
 
 // GetMyIP returns first IP in: `--ip` flag, `MY_IP` env var, config file, external service
 func (cfg Config) GetMyIP() (string, error) {
-	if cfg.IPAddress == nil {
-		s := ""
-		cfg.IPAddress = &s
-	}
-
-	// flag used?
-	if len(*cfg.IPAddress) > 0 {
-		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", fmt.Errorf("unexpected IP format for flag: %w", err)
+	// flag or config-file used?
+	if cfg.IPAddress != nil && len(*cfg.IPAddress) > 0 {
+		if isValidIP, err := cfg.checkGotIP(*cfg.IPAddress); err != nil || !isValidIP {
+			return "", fmt.Errorf("unexpected format for IP (from --ip flag or config-file): %w", err)
 		}
 		return *cfg.IPAddress, nil
 	}
 
 	// env var used?
-	if *cfg.IPAddress = os.Getenv("MY_IP"); len(*cfg.IPAddress) > 0 {
-		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", fmt.Errorf("unexpected format for var MY_IP: %w", err)
+	if ip := os.Getenv("MY_IP"); len(ip) > 0 {
+		if isValidIP, err := cfg.checkGotIP(ip); err != nil || !isValidIP {
+			return "", fmt.Errorf("unexpected format for env var MY_IP: %w", err)
 		}
-		return *cfg.IPAddress, nil
+		return ip, nil
 	}
 
-	// return IP if it was in config file
-	if *cfg.IPAddress != "" {
-		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", fmt.Errorf("unexpected format for IP in config file: %w", err)
-		}
-		return *cfg.IPAddress, nil
-	}
-
-	// use remote service to obtain IP
+	// otherwise, use remote service to obtain IP
 	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
 		return "", fmt.Errorf("cannot get IP from service (consider using `--ip` flag instead): %w", err)
@@ -183,6 +170,10 @@ func (cfg Config) GetMyIP() (string, error) {
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
+	}
+
+	if isValidIP, err := cfg.checkGotIP(string(b)); err != nil || !isValidIP {
+		return "", fmt.Errorf("unexpected format for IP result from IP service: %w", err)
 	}
 
 	return string(b), nil
