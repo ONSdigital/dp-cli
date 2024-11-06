@@ -15,7 +15,7 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	}
 
 	ipFlag := cmd.PersistentFlags().String("ip", "", "The IP for ssh,remote sub-commands")
-	if ipFlag != nil {
+	if ipFlag != nil && len(*ipFlag) > 0 {
 		cfg.IPAddress = ipFlag
 	}
 	userDefault := ""
@@ -122,7 +122,7 @@ func loginCommand(userName *string, envs []config.Environment, cfg *config.Confi
 			return cli.ExecCommand(loginCmd, ".")
 		}
 	} else {
-		out.WarnFHighlight("Warning: No environments found in config - dp remote login will not work")
+		out.WarnFHighlight("Warning: No environments found in config - `dp remote login` will not work")
 	}
 
 	return c

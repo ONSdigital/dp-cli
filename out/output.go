@@ -40,6 +40,9 @@ func GetLevel(env config.Environment) Level {
 	if env.IsLive() {
 		return ERROR
 	}
+	if env.IsSecure() {
+		return WARN
+	}
 	return INFO
 }
 

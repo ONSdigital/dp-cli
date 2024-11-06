@@ -16,10 +16,11 @@ import (
 
 // tags refer to dp-cli-config.yml environment tags which put that environment into group types
 const (
-	TAG_AWSA  = "awsa"
-	TAG_CI    = "ci"
-	TAG_LIVE  = "live"
-	TAG_NISRA = "nisra"
+	TAG_AWSA   = "awsa"   // legacy/deprecated
+	TAG_CI     = "ci"     // concourse
+	TAG_LIVE   = "live"   // production
+	TAG_SECURE = "secure" // has secure data (e.g. prod, staging)
+	TAG_NISRA  = "nisra"  // NISRA
 )
 
 var httpClient = &http.Client{
@@ -130,37 +131,32 @@ func Dump() ([]byte, error) {
 	return data, nil
 }
 
-func (cfg Config) checkGotIP() (bool, error) {
-	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, *cfg.IPAddress)
+func (cfg Config) checkGotIP(ip string) (bool, error) {
+	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, ip)
 }
 
-// GetMyIP fetches your external IP address
+// GetMyIP returns first IP in: `--ip` flag, `MY_IP` env var, config file, external service
 func (cfg Config) GetMyIP() (string, error) {
-	if cfg.IPAddress == nil {
-		s := ""
-		cfg.IPAddress = &s
-	}
-
-	// flag used?
-	if len(*cfg.IPAddress) > 0 {
-		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", fmt.Errorf("unexpected IP format for flag: %w", err)
+	// flag or config-file used?
+	if cfg.IPAddress != nil && len(*cfg.IPAddress) > 0 {
+		if isValidIP, err := cfg.checkGotIP(*cfg.IPAddress); err != nil || !isValidIP {
+			return "", fmt.Errorf("unexpected format for IP (from --ip flag or config-file): %w", err)
 		}
 		return *cfg.IPAddress, nil
 	}
 
 	// env var used?
-	if *cfg.IPAddress = os.Getenv("MY_IP"); len(*cfg.IPAddress) > 0 {
-		if isIP, err := cfg.checkGotIP(); err != nil || !isIP {
-			return "", fmt.Errorf("unexpected format for var MY_IP: %w", err)
+	if ip := os.Getenv("MY_IP"); len(ip) > 0 {
+		if isValidIP, err := cfg.checkGotIP(ip); err != nil || !isValidIP {
+			return "", fmt.Errorf("unexpected format for env var MY_IP: %w", err)
 		}
-		return *cfg.IPAddress, nil
+		return ip, nil
 	}
 
-	// use remote service to obtain IP
+	// otherwise, use remote service to obtain IP
 	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
-		return "", fmt.Errorf("cannot get IP from service: %w", err)
+		return "", fmt.Errorf("cannot get IP from service (consider using `--ip` flag instead): %w", err)
 	}
 
 	defer func() {
@@ -168,12 +164,16 @@ func (cfg Config) GetMyIP() (string, error) {
 	}()
 
 	if res.StatusCode != 200 {
-		return "", fmt.Errorf("unexpected status code fetching IP: %d", res.StatusCode)
+		return "", fmt.Errorf("unexpected status code fetching IP (consider using `--ip` flag instead): %d", res.StatusCode)
 	}
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
+	}
+
+	if isValidIP, err := cfg.checkGotIP(string(b)); err != nil || !isValidIP {
+		return "", fmt.Errorf("unexpected format for IP result from IP service: %w", err)
 	}
 
 	return string(b), nil
@@ -220,6 +220,12 @@ func (cfg Config) IsNisra(env string) bool {
 }
 func (env Environment) IsNisra() bool {
 	return env.hasTag(TAG_NISRA)
+}
+func (cfg Config) IsSecure(env string) bool {
+	return cfg.hasTag(env, TAG_SECURE)
+}
+func (env Environment) IsSecure() bool {
+	return env.hasTag(TAG_SECURE)
 }
 
 func (cfg Config) GetProfile(env string) string {

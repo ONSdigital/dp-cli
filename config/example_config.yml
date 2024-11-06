@@ -16,16 +16,17 @@ environments:
     profile: dp-sandbox
   # - name: staging
   #   profile: dp-staging
+  #   tags: [secure]
   # - name: prod
   #   profile: dp-prod
-  #   tags: [live]
+  #   tags: [live,secure]
   # - name: ci
   #   profile: dp-ci
   #   tags: [ci]
   # - name: nisra-dev
   #   tags: [nisra]
   # - name: nisra-prod
-  #   tags: [nisra,live]
+  #   tags: [nisra,live,secure]
 
 cmd:
   neo4j-url: bolt://localhost:7687

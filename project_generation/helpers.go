@@ -246,7 +246,8 @@ func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (s
 	if branchingStrategy == "" {
 		prompt := "Please pick the branching strategy you wish this repo to use:"
 		options := []string{"github flow", "git flow"}
-		branchingStrategy, err := OptionPromptInput(ctx, prompt, options...)
+		var err error
+		branchingStrategy, err = OptionPromptInput(ctx, prompt, options...)
 		if err != nil {
 			return "", err
 		}
@@ -423,9 +424,6 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) error {
 // FinaliseModules will run go build ./... to generate go modules dependency management files
 func FinaliseModules(ctx context.Context, pathToRepo string, opts ...AppOptions) {
 	runGoModTidy(ctx, pathToRepo)
-	if len(opts) > 0 && opts[0].Type == Controller {
-		installGoBinData(ctx, pathToRepo)
-	}
 
 	cmd := exec.Command("make", "build")
 	cmd.Dir = pathToRepo
@@ -455,16 +453,6 @@ func runGoModTidy(ctx context.Context, pathToRepo string) {
 
 type AppOptions struct {
 	Type ProjectType
-}
-
-func installGoBinData(ctx context.Context, pathToRepo string) {
-	log.Info(ctx, "Installing go-bindata")
-	cmd := exec.Command("go", "get", "github.com/kevinburke/go-bindata/go-bindata")
-	cmd.Dir = pathToRepo
-	err := cmd.Run()
-	if err != nil {
-		log.Error(ctx, "error installing kevinburke go-bindata", err)
-	}
 }
 
 func generateGoCode(ctx context.Context, pathToRepo string) {
