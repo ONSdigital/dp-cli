@@ -1,7 +1,8 @@
 # {{.Name}}
+
 {{.Description}}
 
-### Getting started
+## Getting started
 
 * Run `make debug` to run application on http://localhost:{{.Port}}
 * Run `make help` to see full list of make targets
@@ -40,7 +41,7 @@ An example event can be created using the helper script, `make produce`.
 
 [kafka TLS doc]: https://github.com/ONSdigital/dp-kafka/tree/main/examples#tls
 
-### Healthcheck
+## Healthcheck
 
  The `/health` endpoint returns the current status of the service. Dependent services are health checked on an interval defined by the `HEALTHCHECK_INTERVAL` environment variable.
 
@@ -48,11 +49,11 @@ An example event can be created using the helper script, `make produce`.
 
  `curl localhost:8125/health`
 
-### Contributing
+## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-### License
+## License
 
 Copyright © {{.Year}}, Office for National Statistics (https://www.ons.gov.uk)
 
