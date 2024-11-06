@@ -33,9 +33,11 @@ This tool can be used in conjunction with the repository creation tool, for furt
 Although these flags are optional, for most, if they are not provided then the user will be prompted for details.
 
 - --name :              The name of the application, if Dissemination specific application it should be prepended with 'dis-'
+- --description:        Description for the application
 - --go-version :        The version of Go the application should use (Not used on generic-projects)
 - --project-location :  Location to generate project in
 - --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO
+- --port :              Port number for the application
 - --type :              Type of application to generate, values can be: `generic-project`, `base-application`, `api`, `controller`, `event-driven`, `library`
 - --team-slugs :        Comma separated list of team slugs for ownership
 
