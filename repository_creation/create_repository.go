@@ -197,7 +197,6 @@ func setBranchProtections(ctx context.Context, client *github.Client, repoName, 
 	requiredPullRequestReviewsEnforcementRequest := github.PullRequestReviewsEnforcementRequest{
 		DismissalRestrictionsRequest: &dismissalRestrictionsRequest,
 		DismissStaleReviews:          true,
-		RequireCodeOwnerReviews:      true,
 		RequiredApprovingReviewCount: 1,
 	}
 
