@@ -21,6 +21,7 @@ func generateProjectSubCommand() *cobra.Command {
 	command.Flags().String("name", "", "The name of the application, if Digital specific application it should be prepended with 'dp-'")
 	command.Flags().String("description", "", "A short sentence to describe the application")
 	command.Flags().String("go-version", "", "The version of Go the application should use")
+	command.Flags().String("project-language", "", "The language the project should be generated in")
 	command.Flags().String("project-location", "", "Location to generate project in")
 	command.Flags().String("create-repository", "n", "Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
 	command.Flags().String("type", "", "Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
@@ -39,6 +40,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 	appDescription, _ := cmd.Flags().GetString("description")
 	goVer, _ := cmd.Flags().GetString("go-version")
 	port, _ := cmd.Flags().GetString("port")
+	projectLanguage, _ := cmd.Flags().GetString("project-language")
 	projectLocation, _ := cmd.Flags().GetString("project-location")
 	projectType, _ := cmd.Flags().GetString("type")
 	createRepositoryInput, _ := cmd.Flags().GetString("create-repository")
@@ -97,7 +99,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 			log.Error(ctx, "failed to clone repository", err)
 			return err
 		}
-		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, listOfArguments["teamSlugs"].OutputVal, true)
+		err = project_generation.GenerateProject(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, listOfArguments["projectType"].OutputVal, listOfArguments["projectLocation"].OutputVal, goVer, port, listOfArguments["teamSlugs"].OutputVal, listOfArguments["projectLanguage"].OutputVal, true)
 		if err != nil {
 			log.Error(ctx, "failed to generate project on github", err)
 			return err
@@ -109,7 +111,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 		}
 		return nil
 	}
-	err = project_generation.GenerateProject(nameOfApp, appDescription, projectType, projectLocation, goVer, port, teamSlugs, false)
+	err = project_generation.GenerateProject(nameOfApp, appDescription, projectType, projectLocation, goVer, port, teamSlugs, projectLanguage, false)
 	if err != nil {
 		return err
 	}
