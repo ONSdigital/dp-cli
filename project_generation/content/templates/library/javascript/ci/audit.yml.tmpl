@@ -8,7 +8,7 @@ image_resource:
     tag: latest
 
 inputs:
-  - name: dis-auth-test
+  - name: {{.Name}}
 
 run:
-  path: dis-auth-test/ci/scripts/audit.sh
+  path: {{.Name}}/ci/scripts/audit.sh

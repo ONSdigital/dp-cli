@@ -9,7 +9,7 @@ image_resource:
     tag: latest
 
 inputs:
-  - name: dis-auth-test
+  - name: {{.Name}}
 
 run:
-  path: dis-auth-test/ci/scripts/lint.sh
+  path: {{.Name}}/ci/scripts/lint.sh

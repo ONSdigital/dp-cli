@@ -9,10 +9,10 @@ image_resource:
     tag: latest
 
 inputs:
-  - name: dis-auth-test
+  - name: {{.Name}}
 
 outputs:
   - name: build
 
 run:
-  path: dis-auth-test/ci/scripts/build.sh
+  path: {{.Name}}/ci/scripts/build.sh
