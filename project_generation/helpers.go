@@ -2,6 +2,7 @@ package project_generation
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -24,7 +25,7 @@ type Argument struct {
 	OutputVal string
 }
 
-func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, goVersion, port string, teamSlugs string) (an, ad, pt, pl, gv, prt string, ts []string, err error) {
+func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, goVersion, port, teamSlugs, projectLanguage string) (an, ad, pt, pl, gv, prt string, ts []string, plang string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
 		InputVal:  appName,
@@ -46,17 +47,15 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 		Context:   ctx,
 		Validator: ValidateProjectLocation,
 	}
-
 	listOfArguments["teamSlugs"] = &Argument{
 		InputVal:  teamSlugs,
 		Context:   ctx,
 		Validator: ValidateTeamSlugs,
 	}
-
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", []string{}, err
+		return "", "", "", "", "", "", []string{}, "", err
 	}
 	an = listOfArguments["appName"].OutputVal
 	ad = listOfArguments["description"].OutputVal
@@ -76,6 +75,16 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 		gv = goVersion
 	}
 
+	langUnset := projectLanguage == ""
+	if langUnset && ProjectType(pt) == Library {
+		listOfArguments["projectLanguage"] = &Argument{
+			InputVal:  projectLanguage,
+			Context:   ctx,
+			Validator: ValidateProjectLanguage,
+		}
+	} else {
+		plang = projectLanguage
+	}
 	listOfArguments["port"] = &Argument{
 		InputVal:  port,
 		Context:   ctx,
@@ -85,13 +94,17 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", []string{}, err
+		return "", "", "", "", "", "", []string{}, "", err
 	}
 	prt = listOfArguments["port"].OutputVal
 	if goVerUnset && ProjectType(pt) != GenericProject {
 		gv = listOfArguments["goVersion"].OutputVal
 	}
-	return an, ad, pt, pl, gv, prt, ts, nil
+	if langUnset && ProjectType(pt) == Library {
+		plang = listOfArguments["projectLanguage"].OutputVal
+	}
+
+	return an, ad, pt, pl, gv, prt, ts, plang, nil
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
@@ -178,6 +191,25 @@ func ValidatePortNumber(ctx context.Context, port string) (validatedPort string,
 		}
 	}
 	return port, nil
+}
+
+// ValidateProjectLanguage will ensure that the project language provided by the users is one that can be boilerplate
+func ValidateProjectLanguage(ctx context.Context, projectLanguage string) (validatedProjectType string, err error) {
+	options := []string{"go", "javascript"}
+
+	if projectLanguage != "" {
+		for _, option := range options {
+			if projectLanguage == option {
+				return projectLanguage, err
+			}
+		}
+	}
+	prompt := "Please specify the project type"
+	projectLanguage, err = OptionPromptInput(ctx, prompt, options...)
+	if err != nil {
+		return "", err
+	}
+	return projectLanguage, err
 }
 
 // ValidateProjectLocation will ensure that the projects location has been provided and is acceptable.
@@ -437,6 +469,30 @@ func FinaliseModules(ctx context.Context, pathToRepo string, opts ...AppOptions)
 	if len(opts) > 0 && opts[0].Type == Controller {
 		cleanupAssets(ctx, pathToRepo)
 	}
+}
+
+// FinaliseJSModules runs `npm install` to ensure dependencies are up to date and clean.
+func FinaliseJSModules(ctx context.Context, pathToRepo string) {
+	cmd := exec.Command("npm", "install")
+	cmd.Dir = pathToRepo
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Error(ctx, "error during js install step", err, log.Data{
+			"stdout": out.String(),
+			"stderr": stderr.String(),
+		})
+		return
+	}
+
+	log.Info(ctx, "npm install completed successfully", log.Data{
+		"stdout": out.String(),
+	})
 }
 
 // runGoModTidy will download all the dependencies that are required for your source file and updates go mod with

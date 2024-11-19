@@ -60,13 +60,13 @@ func SetTemplatePath(path string) {
 }
 
 // GenerateProject is the entry point into generating a project
-func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port string, teamSlugs string, repositoryCreated bool) error {
+func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port, teamSlugs, projectLanguage string, repositoryCreated bool) error {
 	ctx := context.Background()
 	var err error
 
 	const dc = "bullseye"
 
-	an, ad, pt, pl, gv, prt, ts, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, goVer, port, teamSlugs)
+	an, ad, pt, pl, gv, prt, ts, plang, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, goVer, port, teamSlugs, projectLanguage)
 	if err != nil {
 		log.Error(ctx, "error configuring and validating arguments", err)
 		return err
@@ -134,16 +134,24 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port st
 		FinaliseModules(ctx, newApp.pathToRepo)
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	case Library:
-		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
-		if err != nil {
-			return err
+		if plang == "go" {
+			err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+			if err != nil {
+				return err
+			}
+			err = newApp.generateLibraryContent()
+			if err != nil {
+				return err
+			}
+			FinaliseModules(ctx, newApp.pathToRepo)
+			FormatGoFiles(ctx, newApp.pathToRepo)
+		} else {
+			err = newApp.generateJSLibraryContent()
+			if err != nil {
+				return err
+			}
+			FinaliseJSModules(ctx, newApp.pathToRepo)
 		}
-		err = newApp.generateLibraryContent()
-		if err != nil {
-			return err
-		}
-		FinaliseModules(ctx, newApp.pathToRepo)
-		FormatGoFiles(ctx, newApp.pathToRepo)
 	default:
 		log.Error(ctx, "unable to generate project due to unknown project type given", err)
 	}
@@ -168,6 +176,13 @@ func (a application) createApplicationContentDirectoryStructure() error {
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createLibraryContentDirectoryStructure() error {
 	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
+	return nil
+}
+
+// createApplicationContentDirectoryStructure will create child directories for Application content at a given path
+func (a application) createJSLibraryContentDirectoryStructure() error {
+	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
+	os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
 	return nil
 }
 
@@ -291,6 +306,25 @@ func (a application) generateLibraryContent() error {
 	}
 
 	err = a.generateBatchOfFileTemplates(libraryFiles)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a application) generateJSLibraryContent() error {
+	err := a.generateGenericContent()
+	if err != nil {
+		return err
+	}
+
+	err = a.createJSLibraryContentDirectoryStructure()
+	if err != nil {
+		return err
+	}
+
+	err = a.generateBatchOfFileTemplates(jsLibraryFiles)
 	if err != nil {
 		return err
 	}

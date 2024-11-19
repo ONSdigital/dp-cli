@@ -240,6 +240,103 @@ var libraryFiles = []fileGen{
 	},
 }
 
+var jsLibraryFiles = []fileGen{
+	{
+		templatePath: "library/javascript/package.json",
+		outputPath:   "package",
+		extension:    ".json",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/ci/build.yml",
+		outputPath:   "ci/build",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/ci/unit.yml",
+		outputPath:   "ci/unit",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/ci/audit.yml",
+		outputPath:   "ci/audit",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/ci/lint.yml",
+		outputPath:   "ci/lint",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/ci/scripts/build.sh",
+		outputPath:   "ci/scripts/build",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/javascript/ci/scripts/unit.sh",
+		outputPath:   "ci/scripts/unit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/javascript/ci/scripts/audit.sh",
+		outputPath:   "ci/scripts/audit",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/javascript/ci/scripts/lint.sh",
+		outputPath:   "ci/scripts/lint",
+		extension:    ".sh",
+		filePrefix:   "",
+		executable:   true,
+	},
+	{
+		templatePath: "library/javascript/Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/README.md",
+		outputPath:   "README",
+		extension:    ".md",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/index.js",
+		outputPath:   "src/index",
+		extension:    ".js",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/hello_world.test.js",
+		outputPath:   "src/hello_world",
+		extension:    ".test.js",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/babel.config.cjs",
+		outputPath:   "babel",
+		extension:    ".config.cjs",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/eslint.config.js",
+		outputPath:   "eslint",
+		extension:    ".config.js",
+		filePrefix:   "",
+	},
+}
+
 var controllerFiles = []fileGen{
 	{
 		templatePath: "controller/.golangci.yml",
