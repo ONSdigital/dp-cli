@@ -329,6 +329,27 @@ func (a application) generateJSLibraryContent() error {
 		return err
 	}
 
+	err = a.appendToGitignore("\n# Node modules\nnode_modules/\n")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a application) appendToGitignore(text string) error {
+	gitignorePath := filepath.Join(a.pathToRepo, ".gitignore")
+	f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(text)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
