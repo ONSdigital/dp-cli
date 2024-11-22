@@ -204,7 +204,7 @@ func ValidateProjectLanguage(ctx context.Context, projectLanguage string) (valid
 			}
 		}
 	}
-	prompt := "Please specify the project type"
+	prompt := "Please specify the project language, we accept go or javascript"
 	projectLanguage, err = OptionPromptInput(ctx, prompt, options...)
 	if err != nil {
 		return "", err
