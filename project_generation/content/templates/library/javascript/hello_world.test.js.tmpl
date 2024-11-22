@@ -1,6 +1,6 @@
 // TODO replace helloworld tests
 
-import { newHelloWorld } from './index.js';
+import newHelloWorld from './index';
 
 describe('NewHelloWorld', () => {
   const message = 'hello new world!';

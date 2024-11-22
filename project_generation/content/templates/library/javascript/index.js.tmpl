@@ -6,5 +6,6 @@ class HelloWorld {
   }
 }
 
-export const newHelloWorld = (message = "Hello world!") => new HelloWorld(message);
+const newHelloWorld = (message = 'Hello world!') => new HelloWorld(message);
 
+export default newHelloWorld;
