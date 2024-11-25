@@ -1,9 +1,9 @@
 // eslint.config.js
-import { FlatCompat } from "@eslint/eslintrc";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import jest from "eslint-plugin-jest";
-import babelParser from "@babel/eslint-parser";
+import { FlatCompat } from '@eslint/eslintrc';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import jest from 'eslint-plugin-jest';
+import babelParser from '@babel/eslint-parser';
 
 // airbnb base config isn't compatible with eslint 7/8/9 so we need to use flat compat
 const __filename = fileURLToPath(import.meta.url);
@@ -14,29 +14,32 @@ const compat = new FlatCompat({
 });
 
 export default [
-  ...compat.extends("airbnb-base"),
   {
-    files: ["**/*.js"],
+    ignores: ['dist/**'],
+  },
+  ...compat.extends('airbnb-base'),
+  {
+    files: ['**/*.js'],
     languageOptions: {
       parser: babelParser,
       parserOptions: {
         babelOptions: {
-          presets: ["@babel/preset-env"],
+          presets: ['@babel/preset-env'],
         },
-        ecmaVersion: "2024",
-        sourceType: "module",
+        ecmaVersion: '2024',
+        sourceType: 'module',
       },
       globals: {
-        window: "readonly",
-        document: "readonly",
+        window: 'readonly',
+        document: 'readonly',
       },
     },
     rules: {
-      "no-underscore-dangle": "off",
+      'no-underscore-dangle': 'off',
     },
   },
   {
-    files: ["**/*.test.js"],
+    files: ['**/*.test.js'],
     languageOptions: {
       globals: {
         ...jest.environments.globals.globals,
@@ -48,4 +51,3 @@ export default [
     rules: {},
   },
 ];
-

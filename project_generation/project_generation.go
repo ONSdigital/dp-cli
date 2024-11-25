@@ -330,6 +330,7 @@ func (a application) generateJSLibraryContent() error {
 	}
 
 	err = a.appendToGitignore("\n# Node modules\nnode_modules/\n")
+	err = a.appendToGitignore("\n# Build\ndist/\n")
 	if err != nil {
 		return err
 	}

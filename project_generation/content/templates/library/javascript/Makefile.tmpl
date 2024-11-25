@@ -13,7 +13,11 @@ audit: ## Runs checks for security vulnerabilities on dependencies (including tr
 
 .PHONY: build
 build: ## Builds binary of library code
-	exit
+	npm run build
+
+.PHONY: clean
+clean: ## Cleans up build directory
+	npm run clean
 
 .PHONY: install
 install: ## Installs dependencies
@@ -28,7 +32,7 @@ lint: ## Used in ci to run linters against JS code
 	npm run lint
 
 .PHONY: lint-fix
-lint-fix: ## Fixes linting issues
+lint-fix: ## Used in ci to run linters against JS code
 	npm run lint:fix
 
 .PHONY: test
