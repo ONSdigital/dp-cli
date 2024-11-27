@@ -1,6 +1,6 @@
 #!/bin/bash -eux
 
 pushd {{.Name}}
-  npm ci
+  npm ci --silent
   make lint
 popd

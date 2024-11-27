@@ -1,5 +1,6 @@
 #!/bin/bash -eux
 
 pushd {{.Name}}
+  npm ci --silent
   make test
 popd

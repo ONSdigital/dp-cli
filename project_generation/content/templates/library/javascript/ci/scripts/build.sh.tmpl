@@ -1,5 +1,9 @@
 #!/bin/bash -eux
 
 pushd {{.Name}}
+  npm ci --silent
   make build
+
+  # copy build to the location expected by the CI
+  cp -r build package.json package-lock.json ../build
 popd
