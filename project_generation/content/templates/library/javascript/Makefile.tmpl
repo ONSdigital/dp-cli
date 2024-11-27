@@ -39,10 +39,6 @@ lint-fix: ## Used in ci to run linters against JS code
 test: ## Runs unit tests including checks for race conditions and returns coverage
 	npm test
 
-.PHONY: test-component
-test-component: ## Runs component test suite
-	exit
-
 .PHONY: help
 help: ## Show help page for list of make targets
 	@echo ''

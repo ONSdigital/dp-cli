@@ -335,6 +335,18 @@ var jsLibraryFiles = []fileGen{
 		extension:    ".config.js",
 		filePrefix:   "",
 	},
+	{
+		templatePath: "library/javascript/.nvmrc",
+		outputPath:   ".nvmrc",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/javascript/CONTRIBUTING.md",
+		outputPath:   "CONTRIBUTING",
+		extension:    ".md",
+		filePrefix:   "",
+	},
 }
 
 var controllerFiles = []fileGen{
