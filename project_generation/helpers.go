@@ -187,32 +187,27 @@ func ValidateProjectType(ctx context.Context, projectType string) (validatedProj
 
 // ValidateGoVersion will ensure that the golang docker hub image version provided by the user is valid
 func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
-	var err error = nil
-	if ValidVersionNumber(goVer) {
-		return goVer, nil
-	}
-	for !ValidVersionNumber(goVer) {
-		goVer, err = PromptForInput(ctx, "Please specify the docker hub image version of GO to use:e.g.(1.x.x)")
-		if err != nil {
-			return "", err
-		}
-	}
-	return goVer, nil
+	return ValidateVersion(ctx, goVer, "Please specify the docker hub image version of GO to use:e.g.(1.x.x)")
 }
 
-// ValidateNodeVersion will ensure that the golang docker hub image version provided by the user is valid
-func ValidateNodeVersion(ctx context.Context, goVer string) (string, error) {
+// ValidateNodeVersion will ensure that the node docker hub image version provided by the user is valid
+func ValidateNodeVersion(ctx context.Context, nodeVer string) (string, error) {
+	return ValidateVersion(ctx, nodeVer, "Please specify the docker hub image version of Node to use:e.g.(20.x.x)")
+}
+
+// ValidateVersion will ensure that the provided version is valid
+func ValidateVersion(ctx context.Context, version, prompt string) (string, error) {
 	var err error = nil
-	if ValidVersionNumber(goVer) {
-		return goVer, nil
+	if ValidVersionNumber(version) {
+		return version, nil
 	}
-	for !ValidVersionNumber(goVer) {
-		goVer, err = PromptForInput(ctx, "Please specify the docker hub image version of Node to use:e.g.(20.x.x)")
+	for !ValidVersionNumber(version) {
+		version, err = PromptForInput(ctx, prompt)
 		if err != nil {
 			return "", err
 		}
 	}
-	return goVer, nil
+	return version, nil
 }
 
 func ValidatePortNumber(ctx context.Context, port string) (validatedPort string, err error) {
