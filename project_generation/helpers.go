@@ -64,16 +64,6 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	ts = strings.Split(listOfArguments["teamSlugs"].OutputVal, ",")
 
 	listOfArguments = make(ListOfArguments)
-	goVerUnset := goVersion == ""
-	if goVerUnset && ProjectType(pt) != GenericProject {
-		listOfArguments["goVersion"] = &Argument{
-			InputVal:  goVersion,
-			Context:   ctx,
-			Validator: ValidateGoVersion,
-		}
-	} else {
-		gv = goVersion
-	}
 
 	langUnset := projectLanguage == ""
 	if langUnset && ProjectType(pt) == Library {
@@ -97,11 +87,38 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 		return "", "", "", "", "", "", []string{}, "", err
 	}
 	prt = listOfArguments["port"].OutputVal
-	if goVerUnset && ProjectType(pt) != GenericProject {
-		gv = listOfArguments["goVersion"].OutputVal
-	}
 	if langUnset && ProjectType(pt) == Library {
 		plang = listOfArguments["projectLanguage"].OutputVal
+	}
+
+	listOfArguments = make(ListOfArguments)
+	goVerUnset := goVersion == ""
+	if goVerUnset && ProjectType(pt) != GenericProject {
+		if plang == "go" {
+			listOfArguments["goVersion"] = &Argument{
+				InputVal:  goVersion,
+				Context:   ctx,
+				Validator: ValidateGoVersion,
+			}
+		} else {
+			listOfArguments["goVersion"] = &Argument{
+				InputVal:  goVersion,
+				Context:   ctx,
+				Validator: ValidateNodeVersion,
+			}
+		}
+	} else {
+		gv = goVersion
+	}
+
+	listOfArguments, err = ValidateArguments(listOfArguments)
+	if err != nil {
+		log.Error(ctx, "validation error", err)
+		return "", "", "", "", "", "", []string{}, "", err
+	}
+
+	if goVerUnset && ProjectType(pt) != GenericProject {
+		gv = listOfArguments["goVersion"].OutputVal
 	}
 
 	return an, ad, pt, pl, gv, prt, ts, plang, nil
@@ -176,6 +193,21 @@ func ValidateGoVersion(ctx context.Context, goVer string) (string, error) {
 	}
 	for !ValidVersionNumber(goVer) {
 		goVer, err = PromptForInput(ctx, "Please specify the docker hub image version of GO to use:e.g.(1.x.x)")
+		if err != nil {
+			return "", err
+		}
+	}
+	return goVer, nil
+}
+
+// ValidateNodeVersion will ensure that the golang docker hub image version provided by the user is valid
+func ValidateNodeVersion(ctx context.Context, goVer string) (string, error) {
+	var err error = nil
+	if ValidVersionNumber(goVer) {
+		return goVer, nil
+	}
+	for !ValidVersionNumber(goVer) {
+		goVer, err = PromptForInput(ctx, "Please specify the docker hub image version of Node to use:e.g.(20.x.x)")
 		if err != nil {
 			return "", err
 		}
