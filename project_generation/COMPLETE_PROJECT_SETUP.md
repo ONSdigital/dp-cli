@@ -55,7 +55,7 @@ $ dp generate-project --create-repository yes --name {name-of-repository} --proj
 For example `dp-topic-api` was created with:
 
 ```shell
-$ dp generate-project --create-repository yes --description "Enables greater flexibility in creating journeys through the website" --go-version 1.17 --name dp-topic-api --port 25300 --project-location . --strategy git --type api
+$ dp generate-project --create-repository yes --description "Enables greater flexibility in creating journeys through the website" --rt-version 1.17 --name dp-topic-api --port 25300 --project-location . --strategy git --type api
 ```
 
 **NOTE:** In the above example `--project-location .` uses a full stop to create the project within the current directory, for example:

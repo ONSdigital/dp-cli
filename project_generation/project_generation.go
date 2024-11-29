@@ -14,7 +14,7 @@ type TemplateModel struct {
 	Name           string
 	Description    string
 	Year           int
-	GoVersion      string
+	RuntimeVersion string
 	DebianCodename string
 	Port           string
 	TeamSlugs      []string
@@ -60,13 +60,13 @@ func SetTemplatePath(path string) {
 }
 
 // GenerateProject is the entry point into generating a project
-func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port, teamSlugs, projectLanguage string, repositoryCreated bool) error {
+func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage string, repositoryCreated bool) error {
 	ctx := context.Background()
 	var err error
 
 	const dc = "bullseye"
 
-	an, ad, pt, pl, gv, prt, ts, plang, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, goVer, port, teamSlugs, projectLanguage)
+	an, ad, pt, pl, rv, prt, ts, plang, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage)
 	if err != nil {
 		log.Error(ctx, "error configuring and validating arguments", err)
 		return err
@@ -80,7 +80,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, goVer, port, t
 		pathToRepo:    filepath.Join(pl, an),
 		projectType:   ProjectType(pt),
 		name:          an,
-		templateModel: PopulateTemplateModel(an, ad, gv, dc, prt, ts),
+		templateModel: PopulateTemplateModel(an, ad, rv, dc, prt, ts),
 	}
 
 	switch newApp.projectType {

@@ -25,7 +25,7 @@ type Argument struct {
 	OutputVal string
 }
 
-func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, goVersion, port, teamSlugs, projectLanguage string) (an, ad, pt, pl, gv, prt string, ts []string, plang string, err error) {
+func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, runtimeVersion, port, teamSlugs, projectLanguage string) (an, ad, pt, pl, rv, prt string, ts []string, plang string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
 		InputVal:  appName,
@@ -92,23 +92,23 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	}
 
 	listOfArguments = make(ListOfArguments)
-	goVerUnset := goVersion == ""
+	goVerUnset := runtimeVersion == ""
 	if goVerUnset && ProjectType(pt) != GenericProject {
 		if plang == "go" {
-			listOfArguments["goVersion"] = &Argument{
-				InputVal:  goVersion,
+			listOfArguments["runtimeVersion"] = &Argument{
+				InputVal:  runtimeVersion,
 				Context:   ctx,
 				Validator: ValidateGoVersion,
 			}
 		} else {
-			listOfArguments["goVersion"] = &Argument{
-				InputVal:  goVersion,
+			listOfArguments["runtimeVersion"] = &Argument{
+				InputVal:  runtimeVersion,
 				Context:   ctx,
 				Validator: ValidateNodeVersion,
 			}
 		}
 	} else {
-		gv = goVersion
+		rv = runtimeVersion
 	}
 
 	listOfArguments, err = ValidateArguments(listOfArguments)
@@ -118,10 +118,10 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	}
 
 	if goVerUnset && ProjectType(pt) != GenericProject {
-		gv = listOfArguments["goVersion"].OutputVal
+		rv = listOfArguments["runtimeVersion"].OutputVal
 	}
 
-	return an, ad, pt, pl, gv, prt, ts, plang, nil
+	return an, ad, pt, pl, rv, prt, ts, plang, nil
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
@@ -374,14 +374,14 @@ func IsEmptyDir(path string) (isEmptyDir bool, err error) {
 }
 
 // PopulateTemplateModel will populate the templating model with variables that can be used in templates
-func PopulateTemplateModel(name, desc, goVer, debCN, port string, teamSlugs []string) TemplateModel {
+func PopulateTemplateModel(name, desc, runtimeVer, debCN, port string, teamSlugs []string) TemplateModel {
 	// UTC to avoid any sketchy BST timing
 	year := time.Now().UTC().Year()
 	return TemplateModel{
 		Name:           name,
 		Description:    desc,
 		Year:           year,
-		GoVersion:      goVer,
+		RuntimeVersion: runtimeVer,
 		DebianCodename: debCN,
 		Port:           port,
 		TeamSlugs:      teamSlugs,

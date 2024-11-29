@@ -34,7 +34,8 @@ Although these flags are optional, for most, if they are not provided then the u
 
 - --name :              The name of the application, if Dissemination specific application it should be prepended with 'dis-'
 - --description:        Description for the application
-- --go-version :        The version of Go the application should use (Not used on generic-projects)
+- --rt-version :        The version of the runtime (Go or Node.js) the application should use (Not used on generic-projects; Node.js is only used when generating a library)
+- --go-version :        (Deprecated) Use --rt-version instead. The version of Go the application should use (Not used on generic-projects)
 - --project-location :  Location to generate project in
 - --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO
 - --port :              Port number for the application
