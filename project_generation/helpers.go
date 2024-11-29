@@ -92,8 +92,8 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	}
 
 	listOfArguments = make(ListOfArguments)
-	goVerUnset := runtimeVersion == ""
-	if goVerUnset && ProjectType(pt) != GenericProject {
+	runtimeVerUnset := runtimeVersion == ""
+	if runtimeVerUnset && ProjectType(pt) != GenericProject {
 		if plang == "javascript" {
 			listOfArguments["runtimeVersion"] = &Argument{
 				InputVal:  runtimeVersion,
@@ -117,7 +117,7 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 		return "", "", "", "", "", "", []string{}, "", err
 	}
 
-	if goVerUnset && ProjectType(pt) != GenericProject {
+	if runtimeVerUnset && ProjectType(pt) != GenericProject {
 		rv = listOfArguments["runtimeVersion"].OutputVal
 	}
 
