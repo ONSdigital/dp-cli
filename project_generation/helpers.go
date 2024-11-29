@@ -94,17 +94,17 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	listOfArguments = make(ListOfArguments)
 	goVerUnset := runtimeVersion == ""
 	if goVerUnset && ProjectType(pt) != GenericProject {
-		if plang == "go" {
+		if plang == "javascript" {
 			listOfArguments["runtimeVersion"] = &Argument{
 				InputVal:  runtimeVersion,
 				Context:   ctx,
-				Validator: ValidateGoVersion,
+				Validator: ValidateNodeVersion,
 			}
 		} else {
 			listOfArguments["runtimeVersion"] = &Argument{
 				InputVal:  runtimeVersion,
 				Context:   ctx,
-				Validator: ValidateNodeVersion,
+				Validator: ValidateGoVersion,
 			}
 		}
 	} else {
