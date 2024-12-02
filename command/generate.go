@@ -20,7 +20,7 @@ func generateProjectSubCommand() *cobra.Command {
 
 	command.Flags().String("name", "", "The name of the application, if Digital specific application it should be prepended with 'dp-'")
 	command.Flags().String("description", "", "A short sentence to describe the application")
-	command.Flags().String("rt-version", "", "The version of Go the application should use")
+	command.Flags().String("rt-version", "", "The version of the core runtime langauge the application should use")
 	command.Flags().String("project-language", "", "The language the project should be generated in, values can be: 'go', 'javascript'")
 	command.Flags().String("project-location", "", "Location to generate project in")
 	command.Flags().String("create-repository", "n", "Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
