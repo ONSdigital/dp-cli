@@ -44,6 +44,14 @@ linters-settings:
   funlen:
   # lines: 100
   # statements: 100
+  revive:
+    rules:
+      # disabled as parameter names are useful for context even when unused, especially in interface implementations
+      - name: unused-parameter
+        severity: warning
+        disabled: true
+    include:
+      - "**/*_test.go" # Specify test files to include
 
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
