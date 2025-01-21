@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -27,7 +28,7 @@ func TestUnitMapper(t *testing.T) {
 			HelloWorldEmphasise:        true,
 		}
 
-		req := httptest.NewRequest("GET", "http://localhost/hello-world", nil)
+		req := httptest.NewRequest("GET", "http://localhost/hello-world", http.NoBody)
 
 		basePageModel := model.NewPage("", "localhost")
 

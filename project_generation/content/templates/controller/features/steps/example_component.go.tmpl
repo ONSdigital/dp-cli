@@ -3,7 +3,6 @@ package steps
 import (
 	"context"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/ONSdigital/dp-api-clients-go/v2/health"
@@ -20,12 +19,11 @@ import (
 
 type Component struct {
 	componenttest.ErrorFeature
-	Config           *config.Config
-	killChannel   chan os.Signal
+	Config         *config.Config
 	HTTPServer     *http.Server
 	ServiceRunning bool
-	svc           *service.Service
-	svcErrors     chan error
+	svc            *service.Service
+	svcErrors      chan error
 	StartTime      time.Time
 	uiFeature *componenttest.UIFeature
 }
@@ -33,7 +31,9 @@ type Component struct {
 // NewComponent creates and returns a new component instance.
 func NewComponent() (*Component, error) {
 	c := &Component{
-		HTTPServer: &http.Server{},
+		HTTPServer: &http.Server{
+			ReadHeaderTimeout: 5 * time.Second,
+		},
 		svcErrors: make(chan error, 1),
 		ServiceRunning: false,
 		}
