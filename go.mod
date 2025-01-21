@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/ONSdigital/dp-api-clients-go/v2 v2.261.0 // indirect
+	github.com/ONSdigital/dp-api-clients-go/v2 v2.263.0 // indirect
 	github.com/ONSdigital/dp-net/v2 v2.12.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

@@ -1,5 +1,7 @@
-github.com/ONSdigital/dp-api-clients-go/v2 v2.261.0 h1:fRiQosE+hGGh32n1lrT3pHKbnXvCnYADuNt6epCTKDM=
-github.com/ONSdigital/dp-api-clients-go/v2 v2.261.0/go.mod h1:+4jW6BFCJwldSIwNVcclrTVrFVlx0D3e3C3CzUMvsuA=
+github.com/ONSdigital/dp-api-clients-go/v2 v2.262.1 h1:OxkMJqyWdJ39wJ1d8KQZP+uApI9NhYQ111lXp4t/o70=
+github.com/ONSdigital/dp-api-clients-go/v2 v2.262.1/go.mod h1:+4jW6BFCJwldSIwNVcclrTVrFVlx0D3e3C3CzUMvsuA=
+github.com/ONSdigital/dp-api-clients-go/v2 v2.263.0 h1:vIAhsWAck+wRB8nGzyqQGQUxZvMHwGej/BTLYl2kR6k=
+github.com/ONSdigital/dp-api-clients-go/v2 v2.263.0/go.mod h1:CBojolwIGblIxhVOxO9u7T5YXd0i8usNufPhcvqwwLs=
 github.com/ONSdigital/dp-net/v2 v2.12.0 h1:eV/kVVHXRZP0Ad9r42a9YcTce/zGezixWKFz8qmjrUs=
 github.com/ONSdigital/dp-net/v2 v2.12.0/go.mod h1:QKnUJ0ih9Xii2MEPM25a01btDl3J+UTOOHbkSj93Sko=
 github.com/ONSdigital/log.go/v2 v2.4.3 h1:zTW5ZV3+ytqypS7opcDkjBP+k45I+XoTuP/IPlm5oUg=
