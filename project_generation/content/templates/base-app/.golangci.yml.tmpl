@@ -90,6 +90,12 @@ issues:
         - errcheck
         - dupl
         - gosec
+    # Allow dot import in test files for goconvey
+    - path: _test.go
+      text: "dot-imports"
+      linters:
+        - revive
+      source: "github.com/smartystreets/goconvey/convey"
   new: false
 
 # golangci.com configuration

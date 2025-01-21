@@ -99,6 +99,12 @@ issues:
     - path: features/steps/example_component.go
       linters:
         - typecheck # assets may not exist as they are auto generated
+    # Allow dot import in test files for goconvey
+    - path: _test.go
+      text: "dot-imports"
+      linters:
+        - revive
+      source: "github.com/smartystreets/goconvey/convey"
   new: false
 
 # golangci.com configuration
