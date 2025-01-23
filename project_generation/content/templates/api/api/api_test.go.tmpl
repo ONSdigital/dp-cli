@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -24,7 +25,7 @@ func TestSetup(t *testing.T) {
 }
 
 func hasRoute(r *mux.Router, path, method string) bool {
-	req := httptest.NewRequest(method, path, nil)
+	req := httptest.NewRequest(method, path, http.NoBody)
 	match := &mux.RouteMatch{}
 	return r.Match(req, match)
 }

@@ -18,7 +18,7 @@ func TestHelloHandler(t *testing.T) {
 		helloHandler := HelloHandler(ctx)
 
 		Convey("when a good response is returned", func() {
-			req := httptest.NewRequest("GET", "http://localhost:8080/hello", nil)
+			req := httptest.NewRequest("GET", "http://localhost:8080/hello", http.NoBody)
 			resp := httptest.NewRecorder()
 
 			helloHandler.ServeHTTP(resp, req)
