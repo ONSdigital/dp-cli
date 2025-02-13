@@ -319,9 +319,9 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 	}
 	if teamSlugsInput == "" {
 		prompt := "Please set at least one team in a comma separated list who will be responsible for this repo."
-		repoTeamSlugsInput = PromptForInput(prompt)
+		teamSlugsInput = PromptForInput(prompt)
 	}
-	return accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput
+	return accessToken, repoName, repoDescription, defaultBranch, teamSlugsInput
 }
 
 // PromptForInput gives a user a message and expect input to be provided
