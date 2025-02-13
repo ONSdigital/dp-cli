@@ -84,7 +84,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 			Validator: project_generation.ValidateTeamSlugs,
 		}
 		listOfArguments["projectLanguage"] = &project_generation.Argument{
-			InputVal:  teamSlugs,
+			InputVal:  projectLanguage,
 			Context:   ctx,
 			Validator: project_generation.ValidateProjectLanguage,
 		}
