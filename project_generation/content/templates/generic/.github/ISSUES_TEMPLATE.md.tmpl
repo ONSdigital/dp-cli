@@ -12,7 +12,8 @@ Provide a detailed step by step method on how to reliably recreate the issue
 
 ### Environment information
 
-Provide information relevant to the issue such as 
+Provide information relevant to the issue such as:
+
 * Operating system
 * Browser
 * Relevant environment variables
