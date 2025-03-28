@@ -153,7 +153,7 @@ func (cfg Config) GetMyIP() (string, error) {
 		return ip, nil
 	}
 
-	// otherwise, use remote service to obtain IP
+	// use remote service to obtain IP
 	res, err := httpClient.Get("https://api.ipify.org")
 	if err != nil {
 		return "", fmt.Errorf("cannot get IP from service (consider using `--ip` flag instead): %w", err)

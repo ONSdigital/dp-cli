@@ -30,7 +30,7 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	subCommands := []*cobra.Command{
 		allowCommand(cfg.UserName, cfg.Environments, cfg),
 		denyCommand(cfg.UserName, cfg.Environments, cfg),
-		loginCommand(cfg.UserName, cfg.Environments, cfg),
+		loginCommand(cfg.Environments, cfg),
 	}
 
 	cmd.AddCommand(subCommands...)
@@ -105,7 +105,7 @@ func denyCommand(userName *string, envs []config.Environment, cfg *config.Config
 }
 
 // loginCommand - build the `login` sub-command - has a sub-command for each environment
-func loginCommand(userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
+func loginCommand(envs []config.Environment, cfg *config.Config) *cobra.Command {
 
 	c := &cobra.Command{
 		Use:   "login",

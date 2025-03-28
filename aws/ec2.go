@@ -39,13 +39,13 @@ type EC2Result struct {
 
 var resultCache = make(map[string][]EC2Result)
 
-func getEC2Service(environment, profile string) *ec2.EC2 {
+func getEC2Service(profile string) *ec2.EC2 {
 	// Create new EC2 client
-	return ec2.New(getAWSSession(environment, profile))
+	return ec2.New(getAWSSession(profile))
 }
 
 func getNamedSG(name, environment, profile string, userName *string, ports []int64, cfg *config.Config) (sg secGroup, err error) {
-	ec2Svc := getEC2Service(environment, profile)
+	ec2Svc := getEC2Service(profile)
 	filters := []*ec2.Filter{
 		{
 			Name:   aws.String("tag:Name"),
@@ -191,7 +191,7 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 	var sg secGroup
 	var ec2Svc *ec2.EC2
 	if cfg.IsCI(environment) {
-		ec2Svc = getEC2Service(environment, profile)
+		ec2Svc = getEC2Service(profile)
 		if sg, err = getConcourseWebSG(userName, profile, cfg); err != nil {
 			return err
 		}
@@ -203,14 +203,14 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 		secGroups = append(secGroups, sg)
 
 	} else if cfg.IsNisra(environment) {
-		ec2Svc = getEC2Service(environment, profile)
+		ec2Svc = getEC2Service(profile)
 		if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 	} else {
-		ec2Svc = getEC2Service(environment, profile)
+		ec2Svc = getEC2Service(profile)
 		if sg, err = getBastionSGForEnvironment(environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
 			return err
 		}
@@ -240,7 +240,7 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 
 		countPerms += len(perms)
 
-		// changingIPs is used to show what it being changed (maps IPs to ports)
+		// changingIPs is used to show what is being changed (maps IPs to ports)
 		changingIPs := map[string][]int64{}
 		for _, perm := range perms {
 			for _, ipr := range perm.IpRanges {
@@ -306,7 +306,7 @@ func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, erro
 	}
 	resultCache[environment] = make([]EC2Result, 0)
 
-	ec2Svc := getEC2Service(environment, profile)
+	ec2Svc := getEC2Service(profile)
 
 	var result *ec2.DescribeInstancesOutput
 	var err error
