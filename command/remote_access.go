@@ -14,10 +14,15 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 		Short: "Allow or deny remote access to environment",
 	}
 
-	ipFlag := cmd.PersistentFlags().String("ip", "", "The IP for ssh,remote sub-commands")
-	if ipFlag != nil && len(*ipFlag) > 0 {
+	ipDefault := ""
+	if cfg.IPAddress != nil {
+		ipDefault = *cfg.IPAddress
+	}
+	ipFlag := cmd.PersistentFlags().String("ip", ipDefault, "The IP for ssh,remote sub-commands")
+	if ipFlag != nil {
 		cfg.IPAddress = ipFlag
 	}
+
 	userDefault := ""
 	if cfg.UserName != nil {
 		userDefault = *cfg.UserName
