@@ -3,7 +3,7 @@ module github.com/ONSdigital/dp-cli
 go 1.24
 
 require (
-	github.com/ONSdigital/log.go/v2 v2.4.4
+	github.com/ONSdigital/log.go/v2 v2.4.5
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/fatih/color v1.18.0
 	github.com/google/go-github/v66 v66.0.0
@@ -17,9 +17,8 @@ require (
 )
 
 require (
-	github.com/ONSdigital/dp-api-clients-go/v2 v2.264.0 // indirect
-	github.com/ONSdigital/dp-net/v2 v2.22.0 // indirect
-	github.com/ONSdigital/dp-net/v3 v3.0.0 // indirect
+	github.com/ONSdigital/dp-api-clients-go/v2 v2.266.0 // indirect
+	github.com/ONSdigital/dp-net/v3 v3.3.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -36,5 +35,5 @@ require (
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 )
