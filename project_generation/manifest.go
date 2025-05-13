@@ -242,7 +242,7 @@ var libraryFiles = []fileGen{
 
 var gaTestLibraryFiles = []fileGen{
 	{
-		templatePath: "generic/.github/workflows/ci.yml",
+		templatePath: "library/go/.github/workflows/ci.yml",
 		outputPath:   ".github/workflows/ci",
 		extension:    ".yml",
 		filePrefix:   "",
