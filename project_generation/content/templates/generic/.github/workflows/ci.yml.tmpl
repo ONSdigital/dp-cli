@@ -1,0 +1,64 @@
+---
+name: CI
+on: 
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{"{{"}} github.workflow }}-${{ "{{" }} github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  {{.Name}}-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.2'
+
+  {{.Name}}-audit:
+    needs: {{.Name}}-setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Generate Go Module List
+        run: go list -json -m all > go.list
+      - name: Run audit check with Nancy
+        uses: sonatype-nexus-community/nancy-github-action@main
+        with:
+          nancyVersion: latest
+
+  {{.Name}}-build:
+    needs: {{.Name}}-setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run build test
+        run: make build
+
+  {{.Name}}-lint:
+    needs: {{.Name}}-setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run lint checks
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.64.6
+
+  {{.Name}}-unit:
+    needs: {{.Name}}-setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run unit tests
+        run: make test
