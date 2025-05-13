@@ -60,13 +60,13 @@ func SetTemplatePath(path string) {
 }
 
 // GenerateProject is the entry point into generating a project
-func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage string, repositoryCreated bool) error {
+func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage, ciTest string, repositoryCreated bool) error {
 	ctx := context.Background()
 	var err error
 
 	const dc = "bullseye"
 
-	an, ad, pt, pl, rv, prt, ts, plang, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage)
+	an, ad, pt, pl, rv, prt, ts, plang, ct, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage, ciTest)
 	if err != nil {
 		log.Error(ctx, "error configuring and validating arguments", err)
 		return err
@@ -139,7 +139,11 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 			if err != nil {
 				return err
 			}
-			err = newApp.generateLibraryContent()
+			if ct == "github-actions" {
+				err = newApp.generateGATestLibraryContent()
+			} else {
+				err = newApp.generateLibraryContent()
+			}
 			if err != nil {
 				return err
 			}
@@ -182,6 +186,13 @@ func (a application) createLibraryContentDirectoryStructure() error {
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createJSLibraryContentDirectoryStructure() error {
 	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
+	os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
+	return nil
+}
+
+// createApplicationContentDirectoryStructure will create child directories for Application content at a given path
+func (a application) createGATestLibraryContentDirectoryStructure() error {
+	os.MkdirAll(filepath.Join(a.pathToRepo, ".github/workflows"), os.ModePerm)
 	os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
 	return nil
 }
@@ -306,6 +317,25 @@ func (a application) generateLibraryContent() error {
 	}
 
 	err = a.generateBatchOfFileTemplates(libraryFiles)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a application) generateGATestLibraryContent() error {
+	err := a.generateGenericContent()
+	if err != nil {
+		return err
+	}
+
+	err = a.createGATestLibraryContentDirectoryStructure()
+	if err != nil {
+		return err
+	}
+
+	err = a.generateBatchOfFileTemplates(gaTestLibraryFiles)
 	if err != nil {
 		return err
 	}

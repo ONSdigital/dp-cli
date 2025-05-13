@@ -240,6 +240,39 @@ var libraryFiles = []fileGen{
 	},
 }
 
+var gaTestLibraryFiles = []fileGen{
+	{
+		templatePath: "generic/.github/workflows/ci.yml",
+		outputPath:   ".github/workflows/ci",
+		extension:    ".yml",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/go/Makefile",
+		outputPath:   "Makefile",
+		extension:    "",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/go/README.md",
+		outputPath:   "README",
+		extension:    ".md",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/go/hello_world.go",
+		outputPath:   "hello_world",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+	{
+		templatePath: "library/go/hello_world_test.go",
+		outputPath:   "hello_world_test",
+		extension:    ".go",
+		filePrefix:   "",
+	},
+}
+
 var jsLibraryFiles = []fileGen{
 	{
 		templatePath: "library/javascript/package.json",

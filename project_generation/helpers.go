@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"slices"
+
 	"github.com/ONSdigital/log.go/v2/log"
 )
 
@@ -25,7 +27,7 @@ type Argument struct {
 	OutputVal string
 }
 
-func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, runtimeVersion, port, teamSlugs, projectLanguage string) (an, ad, pt, pl, rv, prt string, ts []string, plang string, err error) {
+func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, runtimeVersion, port, teamSlugs, projectLanguage, ciTest string) (an, ad, pt, pl, rv, prt string, ts []string, plang, ct string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
 		InputVal:  appName,
@@ -55,7 +57,7 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", []string{}, "", err
+		return "", "", "", "", "", "", []string{}, "", "", err
 	}
 	an = listOfArguments["appName"].OutputVal
 	ad = listOfArguments["description"].OutputVal
@@ -84,7 +86,7 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", []string{}, "", err
+		return "", "", "", "", "", "", []string{}, "", "", err
 	}
 	prt = listOfArguments["port"].OutputVal
 	if langUnset && ProjectType(pt) == Library {
@@ -101,6 +103,13 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 				Validator: ValidateNodeVersion,
 			}
 		} else {
+			if ProjectType(pt) == Library {
+				listOfArguments["ciTest"] = &Argument{
+					InputVal:  ciTest,
+					Context:   ctx,
+					Validator: ValidateCiTest,
+				}
+			}
 			listOfArguments["runtimeVersion"] = &Argument{
 				InputVal:  runtimeVersion,
 				Context:   ctx,
@@ -114,14 +123,17 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 	listOfArguments, err = ValidateArguments(listOfArguments)
 	if err != nil {
 		log.Error(ctx, "validation error", err)
-		return "", "", "", "", "", "", []string{}, "", err
+		return "", "", "", "", "", "", []string{}, "", "", err
 	}
 
 	if runtimeVerUnset && ProjectType(pt) != GenericProject {
+		if ProjectType(pt) == Library {
+			ct = listOfArguments["ciTest"].OutputVal
+		}
 		rv = listOfArguments["runtimeVersion"].OutputVal
 	}
 
-	return an, ad, pt, pl, rv, prt, ts, plang, nil
+	return an, ad, pt, pl, rv, prt, ts, plang, ct, nil
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
@@ -171,10 +183,8 @@ func ValidateProjectType(ctx context.Context, projectType string) (validatedProj
 	options := []string{"generic-project", "base-application", "api", "controller", "event-driven", "library"}
 
 	if projectType != "" {
-		for _, option := range options {
-			if projectType == option {
-				return projectType, err
-			}
+		if slices.Contains(options, projectType) {
+			return projectType, err
 		}
 	}
 	prompt := "Please specify the project type"
@@ -313,6 +323,26 @@ func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (s
 		branchingStrategy = strings.Replace(branchingStrategy, " flow", "", -1)
 	}
 	return branchingStrategy, nil
+}
+
+// ValidateCiTest will ensure that github actions is used for ci tests
+func ValidateCiTest(ctx context.Context, ciTest string) (validatedTestType string, err error) {
+	options := []string{"github-actions", "concourse"}
+
+	if ciTest != "" {
+		if slices.Contains(options, ciTest) {
+			return ciTest, err
+		}
+	}
+
+	prompt := "Please specify the type of ci test"
+	ciTest, err = OptionPromptInput(ctx, prompt, options...)
+
+	if err != nil {
+		return "", err
+	}
+
+	return ciTest, nil
 }
 
 // OfferPurgeProjectDestination will offer the user an option to purge the contents at a given location
