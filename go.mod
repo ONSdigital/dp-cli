@@ -3,15 +3,15 @@ module github.com/ONSdigital/dp-cli
 go 1.24
 
 require (
-	github.com/ONSdigital/log.go/v2 v2.4.5
-	github.com/aws/aws-sdk-go v1.55.6
+	github.com/ONSdigital/log.go/v2 v2.4.6
+	github.com/aws/aws-sdk-go v1.55.7
 	github.com/fatih/color v1.18.0
 	github.com/google/go-github/v66 v66.0.0
 	github.com/johnnadratowski/golang-neo4j-bolt-driver v0.0.0-20200323142034-807201386efa
 	github.com/pkg/errors v0.9.1
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/spf13/cobra v1.9.1
-	golang.org/x/oauth2 v0.28.0
+	golang.org/x/oauth2 v0.30.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -35,5 +35,5 @@ require (
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
 )
