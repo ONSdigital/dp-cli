@@ -90,7 +90,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 			return err
 		}
 	case BaseApplication:
-		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name, rv)
 		if err != nil {
 			return err
 		}
@@ -101,7 +101,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 		FinaliseModules(ctx, newApp.pathToRepo)
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	case API:
-		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name, rv)
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 		FinaliseModules(ctx, newApp.pathToRepo)
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	case Controller:
-		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name, rv)
 		if err != nil {
 			return err
 		}
@@ -123,7 +123,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 		FinaliseModules(ctx, newApp.pathToRepo, AppOptions{Type: Controller})
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	case EventDriven:
-		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+		err := InitGoModules(ctx, newApp.pathToRepo, newApp.name, rv)
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 		FormatGoFiles(ctx, newApp.pathToRepo)
 	case Library:
 		if plang == "go" {
-			err := InitGoModules(ctx, newApp.pathToRepo, newApp.name)
+			err := InitGoModules(ctx, newApp.pathToRepo, newApp.name, rv)
 			if err != nil {
 				return err
 			}
