@@ -17,7 +17,7 @@ all: delimiter-AUDIT audit delimiter-LINTERS lint delimiter-UNIT-TESTS test deli
 
 .PHONY: audit
 audit: ## Runs checks for security vulnerabilities on dependencies (including transient ones)
-	go list -json -m all | nancy sleuth
+	dis-vulncheck
 
 .PHONY: build
 build: ## Builds binary of application code and stores in bin directory as {{.Name}}
@@ -41,11 +41,7 @@ fmt: ## Run Go formatting on code
 	go fmt ./...
 
 .PHONY: lint
-lint: ## Used in ci to run linters against Go code
-	golangci-lint run ./...
-
-.PHONY: lint-local
-lint-local: ## Use locally to run linters against Go code
+lint:
 	golangci-lint run ./...
 
 .PHONY: test
