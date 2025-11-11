@@ -21,7 +21,7 @@ test:
 	go test -race -cover ./...
 
 audit:
-	go list -m all | nancy sleuth
+	dis-vulncheck
 
 lint:
 	exit

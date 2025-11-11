@@ -80,6 +80,14 @@ In order to use the `dp import cmd` sub-command (e.g. when you are using **Neo4j
   git clone git@github.com:ONSdigital/dp-hierarchy-builder
   ```
 
+### Tools
+
+To run some of our tests you will need additional tooling:
+
+#### Audit
+
+We use `dis-vulncheck` to do auditing, which you will [need to install](https://github.com/ONSdigital/dis-vulncheck).
+
 ### Configuration
 
 Configuration is defined in a YAML file:
