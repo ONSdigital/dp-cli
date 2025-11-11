@@ -510,6 +510,14 @@ func InitGoModules(ctx context.Context, pathToRepo, name string, goVersion strin
 	if err != nil {
 		log.Error(ctx, "error initialising go modules", err)
 	}
+	// Reset the go minimum version to the 0 patch
+	minVersion := goVersion[:strings.LastIndex(goVersion, ".")] + ".0"
+	cmd = exec.Command("go", "mod", "edit", "-go="+minVersion)
+	cmd.Dir = pathToRepo
+	err = cmd.Run()
+	if err != nil {
+		log.Error(ctx, "error setting go module minimum version", err)
+	}
 	return nil
 }
 
