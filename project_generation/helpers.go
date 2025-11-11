@@ -492,7 +492,7 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 }
 
 // InitGoModules will initialise the go modules for a project at a given directory unless go.mod already exists
-func InitGoModules(ctx context.Context, pathToRepo, name string) error {
+func InitGoModules(ctx context.Context, pathToRepo, name string, goVersion string) error {
 	_, err := os.Stat(pathToRepo + "/go.mod")
 	if os.IsExist(err) {
 		return err // file already exists but there's some other error with it
@@ -500,7 +500,10 @@ func InitGoModules(ctx context.Context, pathToRepo, name string) error {
 	if err == nil {
 		return nil // file already exists, do nothing
 	}
-
+	err = os.Setenv("GOTOOLCHAIN", "go"+goVersion)
+	if err != nil {
+		return err
+	}
 	cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
 	cmd.Dir = pathToRepo
 	err = cmd.Run()
