@@ -3,7 +3,7 @@ package handlers
 import (
 	"io"
 
-	"github.com/ONSdigital/dp-renderer/v2/model"
+	"github.com/ONSdigital/dis-design-system-go/model"
 )
 
 //go:generate moq -out clients_mock.go -pkg handlers . ClientError RenderClient
