@@ -64,7 +64,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 	ctx := context.Background()
 	var err error
 
-	const dc = "bullseye"
+	const dc = "bookworm"
 
 	an, ad, pt, pl, rv, prt, ts, plang, ct, err := configureAndValidateArguments(ctx, appName, appDesc, projType, projectLocation, runtimeVer, port, teamSlugs, projectLanguage, ciTest)
 	if err != nil {
