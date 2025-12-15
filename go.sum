@@ -2,11 +2,11 @@ github.com/ONSdigital/dp-api-clients-go/v2 v2.266.0 h1:NQbu+x2Q7ZhrjGKvN73qVxG/n
 github.com/ONSdigital/dp-api-clients-go/v2 v2.266.0/go.mod h1:bLseTP21r8LCStUEeOdVPyqtrTomOFP/azPjKWW4deA=
 github.com/ONSdigital/dp-net/v3 v3.3.0 h1:NAH9z+nvbJxoK6OnDpOyJJ+52dqBhVtaugk5bqEDt0Y=
 github.com/ONSdigital/dp-net/v3 v3.3.0/go.mod h1:ur4LLCvd2xW2jpa785pElE6HB2bPvszZxdAjqv0XFGg=
-github.com/ONSdigital/log.go/v2 v2.4.6 h1:GgJOFLQvGiZmVjsHDD91xgovSCtHf0UIdJmlRCzp/pE=
-github.com/ONSdigital/log.go/v2 v2.4.6/go.mod h1:0ilpZzc5lVoBlXC/s5m8EaQETbe0yT8Z+p4QhKy0fpY=
 github.com/aws/aws-sdk-go v1.55.7 h1:UJrkFq7es5CShfBwlWAC8DA077vp8PyVbQd3lqLiztE=
 github.com/aws/aws-sdk-go v1.55.7/go.mod h1:eRwEWoyTWFMVYVQzKMNHWP5/RV4xIUGMQfXQHfHkpNU=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
+github.com/ONSdigital/log.go/v2 v2.5.1 h1:GCM270UHSP5+mv4OaQ2oHiWp0FiSgfnM6imW2zpAslw=
+github.com/ONSdigital/log.go/v2 v2.5.1/go.mod h1:KZNEweCUHD8dKwhlvoRvgd2Y2aUIuU3H9/MmbFyVzW8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

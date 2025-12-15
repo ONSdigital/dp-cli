@@ -1,9 +1,9 @@
 module github.com/ONSdigital/dp-cli
 
-go 1.24
+go 1.24.0
 
 require (
-	github.com/ONSdigital/log.go/v2 v2.4.6
+	github.com/ONSdigital/log.go/v2 v2.5.1
 	github.com/aws/aws-sdk-go v1.55.7
 	github.com/fatih/color v1.18.0
 	github.com/google/go-github/v66 v66.0.0
