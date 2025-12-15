@@ -1,6 +1,8 @@
 package command
 
 import (
+	"context"
+
 	"github.com/ONSdigital/dp-cli/aws"
 	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
@@ -8,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func remoteAccess(cfg *config.Config) *cobra.Command {
+func remoteAccess(ctx context.Context, cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remote",
 		Short: "Allow or deny remote access to environment",
@@ -33,9 +35,9 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 	}
 
 	subCommands := []*cobra.Command{
-		allowCommand(cfg.UserName, cfg.Environments, cfg),
-		denyCommand(cfg.UserName, cfg.Environments, cfg),
-		loginCommand(cfg.Environments, cfg),
+		allowCommand(ctx, cfg.UserName, cfg.Environments, cfg),
+		denyCommand(ctx, cfg.UserName, cfg.Environments, cfg),
+		loginCommand(ctx, cfg.Environments, cfg),
 	}
 
 	cmd.AddCommand(subCommands...)
@@ -43,7 +45,7 @@ func remoteAccess(cfg *config.Config) *cobra.Command {
 }
 
 // build the allow sub command - has a sub commands for each environment.
-func allowCommand(userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
+func allowCommand(ctx context.Context, userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "allow",
 		Short: "allow access to environment",
@@ -63,10 +65,10 @@ func allowCommand(userName *string, envs []config.Environment, cfg *config.Confi
 				lvl := out.GetLevel(env)
 				if !*skipDeny {
 					out.Highlight(lvl, "removing existing access to %s", env.Name)
-					aws.DenyIPForEnvironment(userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
+					aws.DenyIPForEnvironment(ctx, userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
 				}
 				out.Highlight(lvl, "allowing access to %s", env.Name)
-				return aws.AllowIPForEnvironment(userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
+				return aws.AllowIPForEnvironment(ctx, userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
 			},
 		})
 	}
@@ -80,7 +82,7 @@ func allowCommand(userName *string, envs []config.Environment, cfg *config.Confi
 }
 
 // build the deny sub command - has a sub command for each environment
-func denyCommand(userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
+func denyCommand(ctx context.Context, userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "deny",
 		Short: "deny access to environment",
@@ -96,7 +98,7 @@ func denyCommand(userName *string, envs []config.Environment, cfg *config.Config
 			RunE: func(cmd *cobra.Command, args []string) error {
 				lvl := out.GetLevel(env)
 				out.Highlight(lvl, "denying access to %s", env.Name)
-				return aws.DenyIPForEnvironment(userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
+				return aws.DenyIPForEnvironment(ctx, userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
 			},
 		})
 	}
@@ -110,7 +112,7 @@ func denyCommand(userName *string, envs []config.Environment, cfg *config.Config
 }
 
 // loginCommand - build the `login` sub-command - has a sub-command for each environment
-func loginCommand(envs []config.Environment, cfg *config.Config) *cobra.Command {
+func loginCommand(ctx context.Context, envs []config.Environment, cfg *config.Config) *cobra.Command {
 
 	c := &cobra.Command{
 		Use:   "login",
@@ -124,7 +126,7 @@ func loginCommand(envs []config.Environment, cfg *config.Config) *cobra.Command 
 			lvl := out.GetLevel(firstEnv)
 			loginCmd := "aws sso login --profile " + cfg.GetProfile(firstEnv.Name)
 			out.Highlight(lvl, "logging in to %s using %s", firstEnv.Name, loginCmd)
-			return cli.ExecCommand(loginCmd, ".")
+			return cli.ExecCommand(ctx, loginCmd, ".")
 		}
 	} else {
 		out.WarnFHighlight("Warning: No environments found in config - `dp remote login` will not work")

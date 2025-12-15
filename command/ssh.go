@@ -1,6 +1,7 @@
 package command
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,7 +22,7 @@ import (
 //	    environment 	# sandbox
 //		group		# publishing_mount
 //		    instance	# 1
-func sshCommand(cfg *config.Config) (*cobra.Command, error) {
+func sshCommand(ctx context.Context, cfg *config.Config) (*cobra.Command, error) {
 	sshC := &cobra.Command{
 		Use:   "ssh",
 		Short: "Access an environment using ssh",
@@ -34,7 +35,7 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 		InstanceNumMax: sshC.PersistentFlags().IntP("to", "t", -1, "max instance number to run against (0 for highest)"),
 	}
 
-	environmentCommands, err := createEnvironmentSubCommands(cfg, sshOpts)
+	environmentCommands, err := createEnvironmentSubCommands(ctx, cfg, sshOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +48,7 @@ func sshCommand(cfg *config.Config) (*cobra.Command, error) {
 }
 
 // create a array of environment sub commands available to ssh to.
-func createEnvironmentSubCommands(cfg *config.Config, opts ssh.SSHOpts) ([]*cobra.Command, error) {
+func createEnvironmentSubCommands(ctx context.Context, cfg *config.Config, opts ssh.SSHOpts) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for _, env := range cfg.Environments {
@@ -56,7 +57,7 @@ func createEnvironmentSubCommands(cfg *config.Config, opts ssh.SSHOpts) ([]*cobr
 			Short: "ssh to " + env.Name,
 		}
 
-		groupCommands, err := createEnvironmentGroupSubCommands(env, cfg, opts)
+		groupCommands, err := createEnvironmentGroupSubCommands(ctx, env, cfg, opts)
 		if err != nil {
 			out.WarnFHighlight("warning: unable to create ssh group commands for env: %s", err)
 			continue
@@ -69,7 +70,7 @@ func createEnvironmentSubCommands(cfg *config.Config, opts ssh.SSHOpts) ([]*cobr
 }
 
 // create a array of environment group sub commands available to ssh to.
-func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Config, opts ssh.SSHOpts) ([]*cobra.Command, error) {
+func createEnvironmentGroupSubCommands(ctx context.Context, env config.Environment, cfg *config.Config, opts ssh.SSHOpts) ([]*cobra.Command, error) {
 	path := cfg.GetPath(env)
 
 	groups, err := ansible.GetGroupsForEnvironment(path, env.Name)
@@ -81,7 +82,7 @@ func createEnvironmentGroupSubCommands(env config.Environment, cfg *config.Confi
 	seenIP := make(map[string]bool)
 
 	for _, grp := range groups {
-		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, cfg.GetProfile(env.Name), grp, cfg)
+		instances, err := aws.ListEC2ByAnsibleGroup(ctx, env.Name, cfg.GetProfile(env.Name), grp, cfg)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}

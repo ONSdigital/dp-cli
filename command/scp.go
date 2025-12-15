@@ -1,6 +1,7 @@
 package command
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -24,7 +25,7 @@ import (
 //	    [--pull]
 //	     <fromFile>
 //	      <toFile>
-func scpCommand(cfg *config.Config) (*cobra.Command, error) {
+func scpCommand(ctx context.Context, cfg *config.Config) (*cobra.Command, error) {
 	scpC := &cobra.Command{
 		Use:   "scp",
 		Short: "Push (or `--pull`) a file to (from) an environment using scp",
@@ -35,7 +36,8 @@ func scpCommand(cfg *config.Config) (*cobra.Command, error) {
 		IsRecursing: scpC.PersistentFlags().BoolP("recurse", "r", false, "recurse - copy recursively"),
 		Verbosity:   scpC.PersistentFlags().CountP("verbose", "v", "verbose - increase scp verbosity"),
 	}
-	environmentCommands, err := createEnvironmentSCPSubCommands(cfg, scpOpts)
+
+	environmentCommands, err := createEnvironmentSCPSubCommands(ctx, cfg, scpOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +50,7 @@ func scpCommand(cfg *config.Config) (*cobra.Command, error) {
 }
 
 // create an array of environment sub-commands available to `scp`
-func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
+func createEnvironmentSCPSubCommands(ctx context.Context, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
 	for _, env := range cfg.Environments {
@@ -57,7 +59,7 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([
 			Short: "scp on " + env.Name,
 		}
 
-		groupCommands, err := createEnvironmentGroupSCPSubCommands(env, cfg, scpOpts)
+		groupCommands, err := createEnvironmentGroupSCPSubCommands(ctx, env, cfg, scpOpts)
 		if err != nil {
 			out.WarnFHighlight("warning: unable to create scp group commands for env: %s", err)
 			continue
@@ -70,7 +72,7 @@ func createEnvironmentSCPSubCommands(cfg *config.Config, scpOpts scp.Options) ([
 }
 
 // create an array of environment group sub-commands available to `scp env`
-func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
+func createEnvironmentGroupSCPSubCommands(ctx context.Context, env config.Environment, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
 	path := cfg.GetPath(env)
 
 	groups, err := ansible.GetGroupsForEnvironment(path, env.Name)
@@ -81,7 +83,7 @@ func createEnvironmentGroupSCPSubCommands(env config.Environment, cfg *config.Co
 	commands := make([]*cobra.Command, 0)
 
 	for _, grp := range groups {
-		instances, err := aws.ListEC2ByAnsibleGroup(env.Name, cfg.GetProfile(env.Name), grp, cfg)
+		instances, err := aws.ListEC2ByAnsibleGroup(ctx, env.Name, cfg.GetProfile(env.Name), grp, cfg)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}

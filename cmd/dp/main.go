@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/ONSdigital/dp-cli/command"
@@ -17,12 +18,14 @@ func main() {
 
 // run the dp application
 func run(args []string) error {
+	ctx := context.Background()
+
 	cfg, err := config.Get()
 	if err != nil {
 		return err
 	}
 
-	root, err := command.Load(cfg)
+	root, err := command.Load(ctx, cfg)
 	if err != nil {
 		return err
 	}

@@ -1,13 +1,15 @@
 package command
 
 import (
+	"context"
+
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/customisemydata"
 
 	"github.com/spf13/cobra"
 )
 
-func importDataSubCommand(cfg *config.Config) *cobra.Command {
+func importDataSubCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 	command := &cobra.Command{
 		Use:   "import",
 		Short: "Import data into your local developer environment",
@@ -19,12 +21,12 @@ func importDataSubCommand(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-			err = customisemydata.ImportGenericHierarchies(cfg)
+			err = customisemydata.ImportGenericHierarchies(ctx, cfg)
 			if err != nil {
 				return err
 			}
 
-			err = customisemydata.ImportCodeLists(cfg)
+			err = customisemydata.ImportCodeLists(ctx, cfg)
 			if err != nil {
 				return err
 			}
@@ -37,19 +39,19 @@ func importDataSubCommand(cfg *config.Config) *cobra.Command {
 }
 
 // initCustomiseMyData import the prerequisite CMD data into your Mongo/Neo4j databases
-func initCustomiseMyData(cfg *config.Config) *cobra.Command {
+func initCustomiseMyData(ctx context.Context, cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:   "cmd",
 		Short: "Import the prerequisite codelists and generic hierarchy data into your CMD environment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 
-			err = customisemydata.ImportGenericHierarchies(cfg)
+			err = customisemydata.ImportGenericHierarchies(ctx, cfg)
 			if err != nil {
 				return err
 			}
 
-			err = customisemydata.ImportCodeLists(cfg)
+			err = customisemydata.ImportCodeLists(ctx, cfg)
 			if err != nil {
 				return err
 			}

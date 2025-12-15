@@ -61,9 +61,9 @@ type Environment struct {
 
 // ExtraPorts is a list of ports for the given Security Group
 type ExtraPorts struct {
-	Bastion    []int64 `yaml:"bastion"`
-	Publishing []int64 `yaml:"publishing"`
-	Web        []int64 `yaml:"web"`
+	Bastion    []int32 `yaml:"bastion"`
+	Publishing []int32 `yaml:"publishing"`
+	Web        []int32 `yaml:"web"`
 }
 
 // Get returns the config struct by parsing the YML file

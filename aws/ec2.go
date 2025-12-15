@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -11,8 +12,9 @@ import (
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 const CONCOURSE_SSH_PORT = 22
@@ -22,8 +24,8 @@ const CONCOURSE_HTTPS_PORT = 443
 type secGroup struct {
 	id          string
 	name        string
-	ports       []int64
-	portToMyIPs map[int64][]string
+	ports       []int32
+	portToMyIPs map[int32][]string
 }
 
 // EC2Result is the information returned for an individual EC2 instance
@@ -39,17 +41,17 @@ type EC2Result struct {
 
 var resultCache = make(map[string][]EC2Result)
 
-func getEC2Service(profile string) *ec2.EC2 {
+func getEC2Service(ctx context.Context, profile string) *ec2.Client {
 	// Create new EC2 client
-	return ec2.New(getAWSSession(profile))
+	return ec2.NewFromConfig(getAWSConfig(ctx, profile))
 }
 
-func getNamedSG(name, environment, profile string, userName *string, ports []int64, cfg *config.Config) (sg secGroup, err error) {
-	ec2Svc := getEC2Service(profile)
-	filters := []*ec2.Filter{
+func getNamedSG(ctx context.Context, name, environment, profile string, userName *string, ports []int32, cfg *config.Config) (sg secGroup, err error) {
+	ec2Svc := getEC2Service(ctx, profile)
+	filters := []types.Filter{
 		{
 			Name:   aws.String("tag:Name"),
-			Values: []*string{aws.String(name)},
+			Values: []string{name},
 		},
 	}
 	if len(environment) > 0 {
@@ -57,13 +59,13 @@ func getNamedSG(name, environment, profile string, userName *string, ports []int
 		if cfg.IsCI(environment) {
 			expectEnvTag = "ci"
 		}
-		filters = append(filters, &ec2.Filter{
+		filters = append(filters, types.Filter{
 			Name:   aws.String("tag:Environment"),
-			Values: []*string{aws.String(expectEnvTag)},
+			Values: []string{expectEnvTag},
 		})
 	}
 
-	res, err := ec2Svc.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
+	res, err := ec2Svc.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{
 		Filters: filters,
 	})
 	if err != nil {
@@ -86,7 +88,7 @@ func getNamedSG(name, environment, profile string, userName *string, ports []int
 	sg.id = *res.SecurityGroups[0].GroupId
 	sg.name = name
 	sg.ports = ports
-	sg.portToMyIPs = make(map[int64][]string)
+	sg.portToMyIPs = make(map[int32][]string)
 
 	// we have an SG, so get its list of allowed IPs for userName
 	for _, sg1 := range res.SecurityGroups {
@@ -127,51 +129,51 @@ func getNamedSG(name, environment, profile string, userName *string, ports []int
 	return
 }
 
-func getBastionSGForEnvironment(environment, profile string, userName *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
+func getBastionSGForEnvironment(ctx context.Context, environment, profile string, userName *string, extraPorts []int32, cfg *config.Config) (secGroup, error) {
 	extraPorts = append(extraPorts, 443)
-	return getNamedSG(
+	return getNamedSG(ctx,
 		environment+" - bastion", environment, profile, userName,
 		extraPorts, cfg,
 	)
 }
 
-func getELBPublishingSGForEnvironment(environment, profile string, userName *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
-	return getNamedSG(
+func getELBPublishingSGForEnvironment(ctx context.Context, environment, profile string, userName *string, extraPorts []int32, cfg *config.Config) (secGroup, error) {
+	return getNamedSG(ctx,
 		environment+" - publishing elb", environment, profile, userName,
 		append(extraPorts, 443), cfg,
 	)
 }
 
-func getELBWebSGForEnvironment(environment, profile string, userName *string, extraPorts []int64, cfg *config.Config) (secGroup, error) {
+func getELBWebSGForEnvironment(ctx context.Context, environment, profile string, userName *string, extraPorts []int32, cfg *config.Config) (secGroup, error) {
 	sgName := environment + " - web elb"
 	if cfg.IsNisra(environment) {
 		sgName = environment + " - cantabular-ui elb"
 	}
-	return getNamedSG(
+	return getNamedSG(ctx,
 		sgName, environment, profile, userName,
 		append(extraPorts, 80, 443), cfg,
 	)
 }
 
-func getConcourseWebSG(userName *string, profile string, cfg *config.Config) (secGroup, error) {
-	return getNamedSG("concourse-ci-web", "", profile, userName, []int64{CONCOURSE_SSH_PORT, CONCOURSE_HTTP_PORT, CONCOURSE_HTTPS_PORT}, cfg)
+func getConcourseWebSG(ctx context.Context, userName *string, profile string, cfg *config.Config) (secGroup, error) {
+	return getNamedSG(ctx, "concourse-ci-web", "", profile, userName, []int32{CONCOURSE_SSH_PORT, CONCOURSE_HTTP_PORT, CONCOURSE_HTTPS_PORT}, cfg)
 }
 
-func getConcourseWorkerSG(userName *string, profile string, cfg *config.Config) (secGroup, error) {
-	return getNamedSG("concourse-ci-worker", "", profile, userName, []int64{CONCOURSE_SSH_PORT}, cfg)
+func getConcourseWorkerSG(ctx context.Context, userName *string, profile string, cfg *config.Config) (secGroup, error) {
+	return getNamedSG(ctx, "concourse-ci-worker", "", profile, userName, []int32{CONCOURSE_SSH_PORT}, cfg)
 }
 
 // AllowIPForEnvironment adds your IP to this environment
-func AllowIPForEnvironment(userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) error {
-	return changeIPsForEnvironment(true, userName, environment, profile, extraPorts, cfg)
+func AllowIPForEnvironment(ctx context.Context, userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) error {
+	return changeIPsForEnvironment(ctx, true, userName, environment, profile, extraPorts, cfg)
 }
 
 // DenyIPForEnvironment removes your IP - and any others for userName - for this environment
-func DenyIPForEnvironment(userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) error {
-	return changeIPsForEnvironment(false, userName, environment, profile, extraPorts, cfg)
+func DenyIPForEnvironment(ctx context.Context, userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) error {
+	return changeIPsForEnvironment(ctx, false, userName, environment, profile, extraPorts, cfg)
 }
 
-func changeIPsForEnvironment(isAllow bool, userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) (err error) {
+func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) (err error) {
 	if len(*userName) == 0 {
 		return errors.New("require `user-name` in config (or `--user` flag) to change remote access")
 	}
@@ -189,41 +191,41 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 	// build `secGroups` (wanted changes, per relevant security group) for `environment`
 	var secGroups []secGroup
 	var sg secGroup
-	var ec2Svc *ec2.EC2
+	var ec2Svc *ec2.Client
 	if cfg.IsCI(environment) {
-		ec2Svc = getEC2Service(profile)
-		if sg, err = getConcourseWebSG(userName, profile, cfg); err != nil {
+		ec2Svc = getEC2Service(ctx, profile)
+		if sg, err = getConcourseWebSG(ctx, userName, profile, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
-		if sg, err = getConcourseWorkerSG(userName, profile, cfg); err != nil {
+		if sg, err = getConcourseWorkerSG(ctx, userName, profile, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 	} else if cfg.IsNisra(environment) {
-		ec2Svc = getEC2Service(profile)
-		if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
+		ec2Svc = getEC2Service(ctx, profile)
+		if sg, err = getELBWebSGForEnvironment(ctx, environment, profile, userName, extraPorts.Web, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 	} else {
-		ec2Svc = getEC2Service(profile)
-		if sg, err = getBastionSGForEnvironment(environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
+		ec2Svc = getEC2Service(ctx, profile)
+		if sg, err = getBastionSGForEnvironment(ctx, environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
 
 		if !cfg.IsLive(environment) {
-			if sg, err = getELBPublishingSGForEnvironment(environment, profile, userName, extraPorts.Publishing, cfg); err != nil {
+			if sg, err = getELBPublishingSGForEnvironment(ctx, environment, profile, userName, extraPorts.Publishing, cfg); err != nil {
 				return err
 			}
 			secGroups = append(secGroups, sg)
 		}
 
-		if sg, err = getELBWebSGForEnvironment(environment, profile, userName, extraPorts.Web, cfg); err != nil {
+		if sg, err = getELBWebSGForEnvironment(ctx, environment, profile, userName, extraPorts.Web, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
@@ -241,7 +243,7 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 		countPerms += len(perms)
 
 		// changingIPs is used to show what is being changed (maps IPs to ports)
-		changingIPs := map[string][]int64{}
+		changingIPs := map[string][]int32{}
 		for _, perm := range perms {
 			for _, ipr := range perm.IpRanges {
 				changingIPs[*ipr.CidrIp] = append(changingIPs[*ipr.CidrIp], *perm.FromPort)
@@ -251,7 +253,7 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 		out.Highlight(out.INFO, verb+" %s via %s (%s) IP/ports: %v", *userName, sg.name, sg.id, changingIPs)
 
 		if isAllow {
-			_, err = ec2Svc.AuthorizeSecurityGroupIngress(&ec2.AuthorizeSecurityGroupIngressInput{
+			_, err = ec2Svc.AuthorizeSecurityGroupIngress(ctx, &ec2.AuthorizeSecurityGroupIngressInput{
 				GroupId:       aws.String(sg.id),
 				IpPermissions: perms,
 			})
@@ -259,7 +261,7 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 				return fmt.Errorf("error adding rules to %s SG: %s: %s", environment, sg.name, err)
 			}
 		} else {
-			_, err = ec2Svc.RevokeSecurityGroupIngress(&ec2.RevokeSecurityGroupIngressInput{
+			_, err = ec2Svc.RevokeSecurityGroupIngress(ctx, &ec2.RevokeSecurityGroupIngressInput{
 				GroupId:       aws.String(sg.id),
 				IpPermissions: perms,
 			})
@@ -280,8 +282,8 @@ func changeIPsForEnvironment(isAllow bool, userName *string, environment, profil
 }
 
 // ListEC2ByAnsibleGroup returns EC2 instances matching ansibleGroup for this env/profile
-func ListEC2ByAnsibleGroup(environment, profile string, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
-	r, err := ListEC2(environment, profile, cfg)
+func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile string, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
+	r, err := ListEC2(ctx, environment, profile, cfg)
 	if err != nil {
 		return r, err
 	}
@@ -300,13 +302,13 @@ func ListEC2ByAnsibleGroup(environment, profile string, ansibleGroup string, cfg
 }
 
 // ListEC2 returns a list of EC2 instances which match the environment name
-func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, error) {
+func ListEC2(ctx context.Context, environment, profile string, cfg *config.Config) ([]EC2Result, error) {
 	if r, ok := resultCache[environment]; ok {
 		return r, nil
 	}
 	resultCache[environment] = make([]EC2Result, 0)
 
-	ec2Svc := getEC2Service(profile)
+	ec2Svc := getEC2Service(ctx, profile)
 
 	var result *ec2.DescribeInstancesOutput
 	var err error
@@ -315,14 +317,14 @@ func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, erro
 		expectEnvTag = "ci"
 	}
 	request := &ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
+		Filters: []types.Filter{
 			{
 				Name:   aws.String("tag:Environment"),
-				Values: []*string{aws.String(expectEnvTag)},
+				Values: []string{expectEnvTag},
 			},
 			{
 				Name:   aws.String("instance-state-name"),
-				Values: []*string{aws.String(ec2.InstanceStateNameRunning)},
+				Values: []string{string(types.InstanceStateNameRunning)},
 			},
 		},
 	}
@@ -332,10 +334,10 @@ func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, erro
 			if result.NextToken == nil {
 				break
 			}
-			request.SetNextToken(*result.NextToken)
+			request.NextToken = result.NextToken
 		}
 
-		if result, err = ec2Svc.DescribeInstances(request); err != nil {
+		if result, err = ec2Svc.DescribeInstances(ctx, request); err != nil {
 			return nil, err
 		}
 
@@ -399,8 +401,8 @@ func ListEC2(environment, profile string, cfg *config.Config) ([]EC2Result, erro
 }
 
 // getIPPermsForSG returns the permissions for all ports for this SG
-func getIPPermsForSG(isAllow bool, sg secGroup, myIP string, userName *string) (ipPerms []*ec2.IpPermission) {
-	var portsToChange []int64
+func getIPPermsForSG(isAllow bool, sg secGroup, myIP string, userName *string) (ipPerms []types.IpPermission) {
+	var portsToChange []int32
 	if isAllow {
 		portsToChange = sg.ports
 	} else {
@@ -413,10 +415,10 @@ func getIPPermsForSG(isAllow bool, sg secGroup, myIP string, userName *string) (
 		if len(ipRanges) == 0 {
 			continue
 		}
-		ipPerms = append(ipPerms, &ec2.IpPermission{
+		ipPerms = append(ipPerms, types.IpPermission{
 			IpProtocol: aws.String("tcp"),
-			FromPort:   aws.Int64(port),
-			ToPort:     aws.Int64(port),
+			FromPort:   aws.Int32(port),
+			ToPort:     aws.Int32(port),
 			IpRanges:   ipRanges,
 		})
 	}
@@ -427,7 +429,7 @@ func getIPPermsForSG(isAllow bool, sg secGroup, myIP string, userName *string) (
 // Skips:
 // - for `allow`: existing IPs for this SG/port
 // - for `deny`:  missing IPs for this SG/port
-func getIPRangesForPort(isAllow bool, sg secGroup, myIP string, userName *string, port int64) (ipr []*ec2.IpRange) {
+func getIPRangesForPort(isAllow bool, sg secGroup, myIP string, userName *string, port int32) (ipr []types.IpRange) {
 	if isAllow {
 		if !strings.Contains(myIP, "/") {
 			myIP += "/32"
@@ -438,13 +440,13 @@ func getIPRangesForPort(isAllow bool, sg secGroup, myIP string, userName *string
 				return
 			}
 		}
-		ipr = append(ipr, &ec2.IpRange{
+		ipr = append(ipr, types.IpRange{
 			CidrIp:      aws.String(myIP),
 			Description: aws.String(*userName),
 		})
 	} else {
 		for _, cidr := range sg.portToMyIPs[port] {
-			ipr = append(ipr, &ec2.IpRange{
+			ipr = append(ipr, types.IpRange{
 				CidrIp:      aws.String(cidr),
 				Description: aws.String(*userName),
 			})

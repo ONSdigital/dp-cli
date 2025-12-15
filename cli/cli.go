@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"time"
@@ -8,7 +9,7 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 )
 
-func ExecCommand(command string, wrkDir string) error {
+func ExecCommand(ctx context.Context, command string, wrkDir string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout

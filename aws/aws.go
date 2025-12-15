@@ -1,15 +1,27 @@
 package aws
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-func getAWSSession(profile string) *session.Session {
-	opts := session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}
+func getAWSConfig(ctx context.Context, profile string) aws.Config {
+	var configOpts []func(*config.LoadOptions) error
+
+	configOpts = append(configOpts, config.WithRegion("eu-west-2"))
+
 	if profile != "" {
-		opts.Profile = profile
+		configOpts = append(configOpts, config.WithSharedConfigProfile(profile))
 	}
-	return session.Must(session.NewSessionWithOptions(opts))
+
+	cfg, err := config.LoadDefaultConfig(ctx,
+		configOpts...,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return cfg
 }

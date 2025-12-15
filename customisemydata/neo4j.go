@@ -1,6 +1,7 @@
 package customisemydata
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -34,7 +35,7 @@ func DropNeo4jData(cfg *config.Config) error {
 	return nil
 }
 
-func ImportGenericHierarchies(cfg *config.Config) error {
+func ImportGenericHierarchies(ctx context.Context, cfg *config.Config) error {
 	if len(cfg.CMD.Hierarchies) == 0 {
 		out.Info("no hierarchies defined in config skipping step")
 		return nil
@@ -48,7 +49,7 @@ func ImportGenericHierarchies(cfg *config.Config) error {
 	for _, script := range cfg.CMD.Hierarchies {
 		command := fmt.Sprintf("cypher-shell < %s", script)
 
-		if err := cli.ExecCommand(command, filepath.Join(cfg.DPHierarchyBuilderPath, "cypher-scripts")); err != nil {
+		if err := cli.ExecCommand(ctx, command, filepath.Join(cfg.DPHierarchyBuilderPath, "cypher-scripts")); err != nil {
 			stopC <- true
 			return err
 		}
@@ -60,7 +61,7 @@ func ImportGenericHierarchies(cfg *config.Config) error {
 	return nil
 }
 
-func ImportCodeLists(cfg *config.Config) error {
+func ImportCodeLists(ctx context.Context, cfg *config.Config) error {
 	if len(cfg.CMD.Codelists) == 0 {
 		out.Info("no code lists defined in config skipping step")
 		return nil
@@ -74,7 +75,7 @@ func ImportCodeLists(cfg *config.Config) error {
 	for _, codelist := range cfg.CMD.Codelists {
 		command := fmt.Sprintf("./load -q=%s -f=%s", "cypher", codelist)
 
-		if err := cli.ExecCommand(command, filepath.Join(cfg.DPCodeListScriptsPath, "code-list-scripts")); err != nil {
+		if err := cli.ExecCommand(ctx, command, filepath.Join(cfg.DPCodeListScriptsPath, "code-list-scripts")); err != nil {
 			stopC <- true
 			return err
 		}
