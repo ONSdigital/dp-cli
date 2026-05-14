@@ -33,6 +33,8 @@ type Config struct {
 	SSHUser                *string       `yaml:"ssh-user"`
 	UserName               *string       `yaml:"user-name"`
 	IPAddress              *string       `yaml:"ip-address"`
+	IPv4Address            *string       `yaml:"ipv4-address"`
+	IPv6Address            *string       `yaml:"ipv6-address"`
 	HttpOnly               *bool         `yaml:"http-only"`
 	DPSetupPath            string        `yaml:"dp-setup-path"`
 	NisraPath              string        `yaml:"dp-nisra-path"`
@@ -177,6 +179,59 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	return string(b), nil
+}
+
+// GetMyIPs2 returns both IPv4 and IPv6 addresses, checking config > cli > env, then external service if needed.
+func (cfg Config) GetMyIPs2() (ipv4 string, ipv6 string, err error) {
+	// 1. Check config/env for explicit values
+	if cfg.IPv4Address != nil && len(*cfg.IPv4Address) > 0 {
+		ipv4 = *cfg.IPv4Address
+	} else if cfg.IPAddress != nil && len(*cfg.IPAddress) > 0 { // legacy fallback
+		ipv4 = *cfg.IPAddress
+	} else if ip := os.Getenv("MY_IPV4"); len(ip) > 0 {
+		ipv4 = ip
+	}
+
+	if cfg.IPv6Address != nil && len(*cfg.IPv6Address) > 0 {
+		ipv6 = *cfg.IPv6Address
+	} else if ip := os.Getenv("MY_IPV6"); len(ip) > 0 {
+		ipv6 = ip
+	}
+
+	// 2. If not set, fetch from external service
+	if ipv4 == "" {
+		res, err4 := httpClient.Get("https://api.ipify.org")
+		if err4 == nil && res.StatusCode == 200 {
+			b, errRead := io.ReadAll(res.Body)
+			res.Body.Close()
+			if errRead == nil {
+				s := string(b)
+				if isValidIP, _ := cfg.checkGotIP(s); isValidIP {
+					ipv4 = s
+				}
+			}
+		}
+	}
+	if ipv6 == "" {
+		res, err6 := httpClient.Get("https://api64.ipify.org")
+		if err6 == nil && res.StatusCode == 200 {
+			b, errRead := io.ReadAll(res.Body)
+			res.Body.Close()
+			if errRead == nil {
+				s := string(b)
+				// TODO: improve IPv6 validation
+				if len(s) > 0 {
+					ipv6 = s
+				}
+			}
+		}
+	}
+
+	// 3. Validate at least one IP found
+	if ipv4 == "" && ipv6 == "" {
+		err = fmt.Errorf("could not determine IPv4 or IPv6 address from config, env, or external service")
+	}
+	return
 }
 
 func (env Environment) hasTag(tag string) bool {
