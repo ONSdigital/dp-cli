@@ -1,0 +1,279 @@
+package command
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/ONSdigital/dp-cli/aws"
+	"github.com/ONSdigital/dp-cli/config"
+	"github.com/ONSdigital/dp-cli/out"
+	"github.com/spf13/cobra"
+)
+
+// buildRemoteAccessPayload collects user/IPs from cfg and builds the JSON payload.
+// action must be one of: "add", "revoke".
+func buildRemoteAccessPayload(cfg *config.Config, enableEKS bool, action string) ([]byte, error) {
+	if cfg.UserName == nil || len(*cfg.UserName) == 0 {
+		return nil, fmt.Errorf("no user provided (use --user)")
+	}
+
+	// If explicit IPs were provided, use only those (avoid external lookup)
+	ipv4 := ""
+	if cfg.IPv4Address != nil && len(*cfg.IPv4Address) > 0 {
+		ipv4 = *cfg.IPv4Address
+	}
+	ipv6 := ""
+	if cfg.IPv6Address != nil && len(*cfg.IPv6Address) > 0 {
+		ipv6 = *cfg.IPv6Address
+	}
+	if ipv4 == "" && ipv6 == "" {
+		var err error
+		ipv4, ipv6, err = cfg.GetMyIPs2()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	ips := make([]string, 0)
+	if len(ipv4) > 0 {
+		ips = append(ips, ipv4)
+	}
+	if len(ipv6) > 0 {
+		ips = append(ips, ipv6)
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("no IPv4 or IPv6 address resolved")
+	}
+
+	payload := map[string]interface{}{
+		"action": action,
+		"user":   *cfg.UserName,
+		"ips":    ips,
+	}
+	if enableEKS {
+		payload["enable_eks"] = true
+	}
+
+	return json.Marshal(payload)
+}
+
+// LambdaResult represents a single item from the Lambda response array
+type LambdaResult struct {
+	Status             string `json:"status"`
+	Message            string `json:"message"`
+	ResourceID         string `json:"resource_id"`
+	ResourceType       string `json:"resource_type"`
+	Action             string `json:"action"`
+	TableUpdated       bool   `json:"table_updated"`
+	SGGroupName        string `json:"sg_group_name,omitempty"`
+	CloudflareListName string `json:"cloudflare_list_name,omitempty"`
+	IPVersion          string `json:"ip_version,omitempty"`
+	ExpiresAt          *int64 `json:"expires_at,omitempty"`
+	RevokedAt          *int64 `json:"revoked_at,omitempty"`
+}
+
+func formatUnix(ts int64) string {
+	// dd/mm/yyyy hh:mm:ss
+	return time.Unix(ts, 0).Local().Format("02/01/2006 15:04:05")
+}
+
+func renderLambdaResults(lvl out.Level, envName string, user string, results []LambdaResult) {
+	for _, r := range results {
+		verb := "allowing"
+		if r.Action == "revoke" {
+			verb = "denying"
+		}
+
+		// Resource label: prefer SG group name for SGs, otherwise type(id)
+		label := r.ResourceType
+		switch r.ResourceType {
+		case "sg":
+			if r.SGGroupName != "" {
+				label = fmt.Sprintf("sg %s (%s)", r.SGGroupName, r.ResourceID)
+			} else {
+				label = fmt.Sprintf("sg (%s)", r.ResourceID)
+			}
+		case "cloudflare":
+			if r.CloudflareListName != "" {
+				label = fmt.Sprintf("cloudflare %s (%s)", r.CloudflareListName, r.ResourceID)
+			} else {
+				label = fmt.Sprintf("cloudflare (%s)", r.ResourceID)
+			}
+		default:
+			if r.ResourceID != "" {
+				label = fmt.Sprintf("%s (%s)", r.ResourceType, r.ResourceID)
+			}
+		}
+
+		// Optional timestamp suffix
+		suffix := ""
+		if r.ExpiresAt != nil {
+			suffix = fmt.Sprintf(" (expires: %s)", formatUnix(*r.ExpiresAt))
+		} else if r.RevokedAt != nil {
+			suffix = fmt.Sprintf(" (revoked: %s)", formatUnix(*r.RevokedAt))
+		}
+
+		// Compose line similar to existing output, using the Lambda message
+		// Example: [dp] allowing bob via sandbox - remote-allow-test-1 (sg-...) <message> (expires: ...)
+		out.Highlight(lvl, "%s %s via %s - %s %s%s", verb, user, envName, label, r.Message, suffix)
+	}
+}
+
+// remote2Access creates the new remote2 command for the new remote allow service.
+func remote2Access(ctx context.Context, cfg *config.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "remote2",
+		Short: "(NEW) Allow or deny remote access to environment using the new remote allow service",
+	}
+	ipv4Default := ""
+	if cfg.IPv4Address != nil {
+		ipv4Default = *cfg.IPv4Address
+	}
+	ipv4Flag := cmd.PersistentFlags().String("ipv4", ipv4Default, "The IPv4 address for remote2 sub-commands")
+	if ipv4Flag != nil {
+		cfg.IPv4Address = ipv4Flag
+	}
+
+	ipv6Default := ""
+	if cfg.IPv6Address != nil {
+		ipv6Default = *cfg.IPv6Address
+	}
+	ipv6Flag := cmd.PersistentFlags().String("ipv6", ipv6Default, "The IPv6 address for remote2 sub-commands")
+	if ipv6Flag != nil {
+		cfg.IPv6Address = ipv6Flag
+	}
+
+	userDefault := ""
+	if cfg.UserName != nil {
+		userDefault = *cfg.UserName
+	}
+	userFlag := cmd.PersistentFlags().String("user", userDefault, "The user for access lists")
+	if userFlag != nil {
+		cfg.UserName = userFlag
+	}
+
+	cmd.AddCommand(remote2AllowCommand(ctx, cfg))
+	cmd.AddCommand(remote2DenyCommand(ctx, cfg))
+
+	return cmd
+}
+
+// remote2AllowCommand creates the allow subcommand for remote2
+func remote2AllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
+
+	cmd := &cobra.Command{
+		Use:   "allow",
+		Short: "allow access to environment",
+	}
+
+	envSubCmds := make([]*cobra.Command, 0)
+
+	// Optional flag to enable EKS operations in the payload
+	enableEKS := cmd.PersistentFlags().Bool("enable-eks", false, "Enable EKS management for this operation")
+
+	// create subcommands for each environment from the config
+	for _, e := range cfg.Environments {
+		env := e
+		envSubCmds = append(envSubCmds, &cobra.Command{
+			Use:   e.Name,
+			Short: "allow access to " + env.Name,
+			RunE: func(cmd *cobra.Command, args []string) error {
+				lvl := out.Level(out.GetLevel(env))
+
+				// Build payload
+				payload, err := buildRemoteAccessPayload(cfg, enableEKS != nil && *enableEKS, "add")
+				if err != nil {
+					out.Warn(fmt.Sprintf("Warning: %v. Aborting allow.", err))
+					return nil
+				}
+
+				// Lambda function name pattern: dis-<env>-remote-allow
+				functionName := fmt.Sprintf("dis-%s-remote-allow", env.Name)
+
+				out.Highlight(lvl, "invoking lambda %s for %s", functionName, env.Name)
+				resp, err := aws.InvokeLambda(ctx, cfg.GetProfile(env.Name), functionName, payload)
+				if err != nil {
+					return fmt.Errorf("lambda invoke failed: %w", err)
+				}
+				// Parse and render response as highlighted lines
+				var results []LambdaResult
+				if err := json.Unmarshal([]byte(resp), &results); err != nil {
+					// Fallback to raw output if not JSON array
+					cmd.Printf("%s\n", resp)
+					return nil
+				}
+				user := ""
+				if cfg.UserName != nil {
+					user = *cfg.UserName
+				}
+				renderLambdaResults(lvl, env.Name, user, results)
+				return nil
+			},
+		})
+	}
+
+	if len(envSubCmds) == 0 {
+		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
+	}
+
+	cmd.AddCommand(envSubCmds...)
+	return cmd
+}
+
+// remote2DenyCommand creates the deny subcommand for remote2
+func remote2DenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deny",
+		Short: "deny access to environment",
+	}
+
+	envSubCmds := make([]*cobra.Command, 0)
+	enableEKS := cmd.PersistentFlags().Bool("enable-eks", false, "Enable EKS management for this operation")
+
+	for _, e := range cfg.Environments {
+		env := e
+		envSubCmds = append(envSubCmds, &cobra.Command{
+			Use:   e.Name,
+			Short: "deny access to " + env.Name,
+			RunE: func(cmd *cobra.Command, args []string) error {
+				lvl := out.Level(out.GetLevel(env))
+
+				// Build payload with action revoke
+				payload, err := buildRemoteAccessPayload(cfg, enableEKS != nil && *enableEKS, "revoke")
+				if err != nil {
+					out.Warn(fmt.Sprintf("Warning: %v. Aborting deny.", err))
+					return nil
+				}
+
+				functionName := fmt.Sprintf("dis-%s-remote-allow", env.Name)
+				profile := cfg.GetProfile(env.Name)
+
+				out.Highlight(lvl, "invoking lambda %s for %s", functionName, env.Name)
+				resp, err := aws.InvokeLambda(ctx, profile, functionName, payload)
+				if err != nil {
+					return fmt.Errorf("lambda invoke failed: %w", err)
+				}
+				var results []LambdaResult
+				if err := json.Unmarshal([]byte(resp), &results); err != nil {
+					cmd.Printf("%s\n", resp)
+					return nil
+				}
+				user := ""
+				if cfg.UserName != nil {
+					user = *cfg.UserName
+				}
+				renderLambdaResults(lvl, env.Name, user, results)
+				return nil
+			},
+		})
+	}
+
+	if len(envSubCmds) == 0 {
+		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
+	}
+
+	cmd.AddCommand(envSubCmds...)
+	return cmd
+}
