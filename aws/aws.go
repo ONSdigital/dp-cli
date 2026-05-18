@@ -7,7 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-func getAWSConfig(ctx context.Context, profile string) aws.Config {
+// GetAWSConfig loads the AWS SDK config for the given profile.
+// Region is determined by the SDK's default resolution chain
+// (environment variables, shared config file, then falls back to eu-west-2).
+func GetAWSConfig(ctx context.Context, profile string) (aws.Config, error) {
 	var configOpts []func(*config.LoadOptions) error
 
 	configOpts = append(configOpts, config.WithRegion("eu-west-2"))
@@ -16,12 +19,14 @@ func getAWSConfig(ctx context.Context, profile string) aws.Config {
 		configOpts = append(configOpts, config.WithSharedConfigProfile(profile))
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx,
-		configOpts...,
-	)
+	return config.LoadDefaultConfig(ctx, configOpts...)
+}
+
+// TODO: Remove the use of getAWSConfig, this was the legacy internal helper that panics on error. Existing code in this package uses it; new code should use GetAWSConfig and legacy refactored.
+func getAWSConfig(ctx context.Context, profile string) aws.Config {
+	cfg, err := GetAWSConfig(ctx, profile)
 	if err != nil {
 		panic(err)
 	}
-
 	return cfg
 }
