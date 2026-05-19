@@ -14,7 +14,7 @@ import (
 
 // buildRemoteAccessPayload collects user/IPs from cfg and builds the JSON payload.
 // action must be one of: "add", "revoke".
-func buildRemoteAccessPayload(cfg *config.Config, enableEKS bool, action string) ([]byte, error) {
+func buildRemoteAccessPayload(cfg *config.Config, action string) ([]byte, error) {
 	if cfg.UserName == nil || len(*cfg.UserName) == 0 {
 		return nil, fmt.Errorf("no user provided (use --user)")
 	}
@@ -51,9 +51,6 @@ func buildRemoteAccessPayload(cfg *config.Config, enableEKS bool, action string)
 		"action": action,
 		"user":   *cfg.UserName,
 		"ips":    ips,
-	}
-	if enableEKS {
-		payload["enable_eks"] = true
 	}
 
 	return json.Marshal(payload)
@@ -170,9 +167,6 @@ func remote2AllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command
 
 	envSubCmds := make([]*cobra.Command, 0)
 
-	// Optional flag to enable EKS operations in the payload
-	enableEKS := cmd.PersistentFlags().Bool("enable-eks", false, "Enable EKS management for this operation")
-
 	// create subcommands for each environment from the config
 	for _, e := range cfg.Environments {
 		env := e
@@ -183,7 +177,7 @@ func remote2AllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command
 				lvl := out.Level(out.GetLevel(env))
 
 				// Build payload
-				payload, err := buildRemoteAccessPayload(cfg, enableEKS != nil && *enableEKS, "add")
+				payload, err := buildRemoteAccessPayload(cfg, "add")
 				if err != nil {
 					out.Warn(fmt.Sprintf("Warning: %v. Aborting allow.", err))
 					return nil
@@ -230,7 +224,6 @@ func remote2DenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command 
 	}
 
 	envSubCmds := make([]*cobra.Command, 0)
-	enableEKS := cmd.PersistentFlags().Bool("enable-eks", false, "Enable EKS management for this operation")
 
 	for _, e := range cfg.Environments {
 		env := e
@@ -241,7 +234,7 @@ func remote2DenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command 
 				lvl := out.Level(out.GetLevel(env))
 
 				// Build payload with action revoke
-				payload, err := buildRemoteAccessPayload(cfg, enableEKS != nil && *enableEKS, "revoke")
+				payload, err := buildRemoteAccessPayload(cfg, "revoke")
 				if err != nil {
 					out.Warn(fmt.Sprintf("Warning: %v. Aborting deny.", err))
 					return nil
