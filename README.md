@@ -1,18 +1,27 @@
 # dp-cli
 
-Command-line client providing *handy helper tools* for the ONS Dissemination Platform software engineering team
+> [!WARNING]
+> This tool is primarily for internal use at ONS but feel free to fork for your own use.
+>
+> If you notice any bugs/issues please open a GitHub issue.
 
-:warning: Still in active development. If you notice any bugs/issues please open a GitHub issue.
+Command-line client providing *handy helper tools* for the ONS Dissemination Platform software engineering team
 
 ## Getting started
 
-Clone the code (not needed if you [brew install on macOS](#brew-installation) :warning:)
+If using macOS, you can install using `brew`:
 
-```shell
-git clone git@github.com:ONSdigital/dp-cli.git
-```
+- Create tap
 
-:warning: `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
+  ```shell
+  brew tap ONSdigital/homebrew-dp-cli git@github.com:ONSdigital/homebrew-dp-cli
+  ```
+
+- Run brew install
+
+   ```shell
+   brew install dp-cli
+   ```
 
 ### Prerequisites
 
@@ -56,7 +65,7 @@ In order to use the `dp ssh` sub-command you will need:
   git clone git@github.com:ONSdigital/dp-nisra-infrastructure
   ```
 
-Note: Make sure your repo's are on the right branches and are uptodate:
+Note: Make sure your repo's are on the right branches and are up-to-date:
 
 - `dp-setup` is on the `awsb` (or `main`) branch
 - `dp-ci` is on the `main` branch
@@ -116,30 +125,19 @@ update the paths and `user-name`:
 
 You can uncomment more `environments` values as and when you get access to them.
 
-### Brew Installation
+## Binary build and run
 
-If using macOS, you can install using `brew`:
-
-- Create tap
-
-  ```shell
-  brew tap ONSdigital/homebrew-dp-cli git@github.com:ONSdigital/homebrew-dp-cli
-  ```
-
-- Run brew install
-
-   ```shell
-   brew install dp-cli
-   ```
-
-### Build and run
-
-If not using the *brew* installation (above), you can build, install and start the CLI thus:
+```shell
+git clone git@github.com:ONSdigital/dp-cli.git
+```
 
 ```shell
 make install
 dp
 ```
+
+> [!IMPORTANT]
+> `dp-cli` uses Go Modules and **must** be cloned to a location outside of your `$GOPATH`.
 
 - If you get:
 
@@ -170,14 +168,16 @@ Usage:
 
 Available Commands:
   clean            Delete data from your local environment
-  create-repo      Creates a new repository with the typical Dissemination Platform configurations
+  completion       Generate the autocompletion script for the specified shell
+  create-repo      Creates a new repository with the typical Dissemination Platform configurations 
+  eks              EKS cluster management commands
   generate-project Generates the boilerplate for a given project type
   help             Help about any command
   import           Import data into your local developer environment
+  override-key     Generates an overrideKey to bypass the Florence dataset version validation step when approving a collection
   remote           Allow or deny remote access to environment
-  scp              Push (or `--pull`) a file to (from) an environment using scp
+  remote2          (NEW) Allow or deny remote access to environment using the new remote allow service
   spew             Log out some useful debugging info
-  ssh              Access an environment using ssh
   version          Print the app version
 
 Flags:
@@ -188,9 +188,9 @@ Use "dp [command] --help" for more information about a command.
 
 Use the available commands for more info on the functionality available.
 
-### Common issues
+## Common issues
 
-#### Credentials error
+### Credentials error
 
 1. If sandbox/prod/staging are not in the dp cli output try unsetting `AWS_REGION` and `AWS_DEFAULT_REGION`
 
@@ -219,7 +219,7 @@ Use the available commands for more info on the functionality available.
         profile:
     ```
 
-#### SSH/SCP command fails
+### SSH/SCP command fails
 
 ```shell
 $ dp ssh sandbox
@@ -229,7 +229,7 @@ ssh to sandbox
 
 If the SSH or SCP command fails, ensure that the `dp remote allow` command has been run for the environment you want to connect to.
 
-#### Remote Allow security group error
+### Remote Allow security group error
 
 `Error: no security groups matching environment: "sandbox" with name "sandbox - bastion"`
 
@@ -246,7 +246,7 @@ Example:
 export AWS_PROFILE=dp-staging
 ```
 
-#### Remote Allow security group rule already exists error
+### Remote Allow security group rule already exists error
 
 ```shell
 $ dp remote allow sandbox
@@ -258,13 +258,14 @@ Error: error adding rules to bastionSG: InvalidPermission.Duplicate: the specifi
 The error occurs when rules have previously been added and the command is run again.
 Use (e.g.) `dp remote deny sandbox` to clear out existing rules and try again.
 
-Note: *This error should no longer appear* - the code should now avoid re-adding existing rules.
-However, it is possible that the rule has been added with a description that does not match your username.
-If so, you will have to use the AWS web UI/console to remove any offending Security Group rules.
+> [!NOTE]
+> *This error should no longer appear* - the code should now avoid re-adding existing rules.
+> However, it is possible that the rule has been added with a description that does not match your username.
+> If so, you will have to use the AWS web UI/console to remove any offending Security Group rules.
 
-### Advanced use
+## Advanced use
 
-#### ssh commands
+### ssh commands
 
 You can run ssh commands from the command-line, for example to determine the time on a given host:
 
@@ -285,7 +286,7 @@ $ dp ssh sandbox web 1 --to 0 -- ls -la
 # runs `ls -la` on ALL web boxes
 ```
 
-#### Manually configuring your IP or user
+### Manually configuring your IP or user
 
 Optionally, (e.g. to avoid the program looking-up your IP),
 you can use the `--ip` flag (or an environment variable `MY_IP`) to force the IP used when running `dp remote allow`.
@@ -303,7 +304,7 @@ Similarly, use the `--user` flag to change the label attached to the IP that is 
 dp remote --user MyColleaguesName --ip 192.168.44.55 --http-only allow sandbox
 ```
 
-#### Remote allow extra ports
+### Remote allow extra ports
 
 You can expand the allowed ports in your config for `publishing`, `web` or `bastion` with:
 
@@ -315,7 +316,7 @@ environments:
         - 80
 ```
 
-#### AWS Command Line Access
+### AWS Command Line Access
 
 Follow the guide in [dp](https://github.com/ONSdigital/dp/blob/main/guides/AWS_ACCOUNT_ACCESS.md)
 
