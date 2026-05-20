@@ -22,7 +22,8 @@ func GetAWSConfig(ctx context.Context, profile string) (aws.Config, error) {
 	return config.LoadDefaultConfig(ctx, configOpts...)
 }
 
-// TODO: Remove the use of getAWSConfig, this was the legacy internal helper that panics on error. Existing code in this package uses it; new code should use GetAWSConfig and legacy refactored.
+// Deprecated: The use of getAWSConfig will be removed, this was the legacy internal helper that panics on error.
+// Existing code in this package uses it; new code should use GetAWSConfig and legacy refactored.
 func getAWSConfig(ctx context.Context, profile string) aws.Config {
 	cfg, err := GetAWSConfig(ctx, profile)
 	if err != nil {

@@ -25,21 +25,11 @@ If using macOS, you can install using `brew`:
 
 ### Prerequisites
 
-**Required:**
+The cli tool will do its best to check you have the required supporting tools installed, but you will need to have the following installed to use the tool:
 
-Check that `session-manager-plugin` is installed by running the following command
-
-```shell
-which session-manager-plugin
-```
-
-if not installed, you can install it using the following:
-
-```shell
-brew install --cask session-manager-plugin
-```
-
-or by follow this [doc](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos).
+- **aws cli** - Either `brew install awscli` or follow the [AWS docs](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html)
+- **aws session manager plugin** - Either `brew install --cask session-manager-plugin` or follow the [AWS docs](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos)
+- **socat** - Either `brew install socat`
 
 #### Optional but common requirements
 
