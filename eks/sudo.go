@@ -18,7 +18,7 @@ func EnsureSudo(reason string) error {
 	// Explain why we need sudo
 	fmt.Println()
 	fmt.Printf("  sudo access required: %s\n", reason)
-	fmt.Println("  Enter your macOS password when prompted.")
+	fmt.Println("  Enter your password when prompted.")
 	fmt.Println()
 
 	// Run sudo -v to cache credentials (this will prompt)

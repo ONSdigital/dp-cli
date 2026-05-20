@@ -1,12 +1,12 @@
 package eks
 
 import (
-	"crypto/tls"
 	"fmt"
-	"net/http"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -64,26 +64,40 @@ func AllocateLoopbackIP() (string, error) {
 	return "", fmt.Errorf("no available loopback IP found (all 127.0.0.1-254 have port 443 in use)")
 }
 
-// EnsureLoopbackAlias creates a loopback alias on macOS for addresses other than 127.0.0.1
+// EnsureLoopbackAlias creates a loopback alias for addresses other than 127.0.0.1
 func EnsureLoopbackAlias(ip string) error {
 	if ip == "127.0.0.1" {
 		return nil
 	}
 
-	// Check if alias already exists
-	out, err := exec.Command("ifconfig", "lo0").Output()
-	if err != nil {
-		return fmt.Errorf("failed to check loopback interfaces: %w", err)
+	switch runtime.GOOS {
+	case "darwin":
+		out, err := exec.Command("ifconfig", "lo0").Output()
+		if err != nil {
+			return fmt.Errorf("failed to check loopback interfaces: %w", err)
+		}
+		if strings.Contains(string(out), "inet "+ip+" ") {
+			return nil
+		}
+		cmd := exec.Command("sudo", "ifconfig", "lo0", "alias", ip)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	case "linux":
+		out, err := exec.Command("ip", "addr", "show", "dev", "lo").Output()
+		if err != nil {
+			return fmt.Errorf("failed to check loopback interfaces: %w", err)
+		}
+		if strings.Contains(string(out), " "+ip+"/") {
+			return nil
+		}
+		cmd := exec.Command("sudo", "ip", "addr", "add", ip+"/8", "dev", "lo")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	default:
+		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
-	if strings.Contains(string(out), "inet "+ip+" ") {
-		return nil
-	}
-
-	// Create the alias
-	cmd := exec.Command("sudo", "ifconfig", "lo0", "alias", ip)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }
 
 // StartSSMPortForward starts an SSM port forwarding session in the background.
@@ -196,14 +210,36 @@ func AddHostsEntry(ip, hostname, clusterName string) error {
 
 // RemoveHostsEntry removes a managed hosts entry for the given hostname
 func RemoveHostsEntry(hostname string) {
-	// Use sed to remove the line (macOS sed syntax)
-	exec.Command("sudo", "sed", "-i", "", fmt.Sprintf("/%s.*%s/d", hostname, hostsMarker), "/etc/hosts").Run()
+	content, err := os.ReadFile("/etc/hosts")
+	if err != nil {
+		return
+	}
+	var filtered []string
+	for _, line := range strings.Split(string(content), "\n") {
+		if !(strings.Contains(line, hostname) && strings.Contains(line, hostsMarker)) {
+			filtered = append(filtered, line)
+		}
+	}
+	cmd := exec.Command("sudo", "tee", "/etc/hosts")
+	cmd.Stdin = strings.NewReader(strings.Join(filtered, "\n"))
+	cmd.Stdout = nil
+	cmd.Run()
 }
 
-// FlushDNSCache flushes the macOS DNS cache
+// FlushDNSCache flushes the OS DNS cache. Behaviour is OS-specific and best-effort.
 func FlushDNSCache() {
-	exec.Command("sudo", "dscacheutil", "-flushcache").Run()
-	exec.Command("sudo", "killall", "-HUP", "mDNSResponder").Run()
+	switch runtime.GOOS {
+	case "darwin":
+		exec.Command("sudo", "dscacheutil", "-flushcache").Run()
+		exec.Command("sudo", "killall", "-HUP", "mDNSResponder").Run()
+	case "linux":
+		// Try resolvectl (systemd 239+), then systemd-resolve, then nscd — all best-effort
+		if exec.Command("resolvectl", "flush-caches").Run() != nil {
+			if exec.Command("systemd-resolve", "--flush-caches").Run() != nil {
+				exec.Command("sudo", "systemctl", "restart", "nscd").Run()
+			}
+		}
+	}
 }
 
 // SaveTunnelState persists tunnel state to disk
@@ -364,27 +400,14 @@ func CleanupStaleTunnels() {
 	}
 }
 
-// CheckAPIConnectivity performs an end-to-end check by making an HTTPS request
-// to the EKS API endpoint through the tunnel. A successful TCP+TLS handshake
-// confirms the tunnel is passing traffic, regardless of the HTTP status code
-// (EKS returns 401/403 without auth, which still proves connectivity).
+// CheckAPIConnectivity performs an end-to-end check by opening a TCP connection
+// to the EKS API endpoint on port 443. A successful dial confirms the tunnel is
+// routing traffic without requiring TLS validation or valid auth credentials.
 func CheckAPIConnectivity(endpoint string) bool {
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true, //nolint:gosec // We only care about reachability, not cert validation
-			},
-		},
-	}
-
-	url := fmt.Sprintf("https://%s/healthz", endpoint)
-	resp, err := client.Get(url)
+	conn, err := net.DialTimeout("tcp", endpoint+":443", 5*time.Second)
 	if err != nil {
 		return false
 	}
-	resp.Body.Close()
-
-	// Any HTTP response (even 401/403) means the tunnel is working
+	conn.Close()
 	return true
 }
