@@ -16,7 +16,7 @@ import (
 
 const (
 	// BastionRoleTag is the tag value used to identify EKS bastion instances
-	BastionRoleTag = "eks-bastion"
+	BastionRoleTag = "eks-session-tunnel"
 	// ClusterAccessTag is the tag key used to identify clusters available for tunnel access
 	ClusterAccessTag = "ssm-tunnel-access"
 )
