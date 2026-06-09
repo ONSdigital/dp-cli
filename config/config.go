@@ -29,6 +29,7 @@ var httpClient = &http.Client{
 
 type Config struct {
 	CMD                    CMD           `yaml:"cmd"`
+	EKS                    EKS           `yaml:"eks"`
 	Environments           []Environment `yaml:"environments"`
 	SSHUser                *string       `yaml:"ssh-user"`
 	UserName               *string       `yaml:"user-name"`
@@ -42,6 +43,12 @@ type Config struct {
 	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
 	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
 	DPCLIPath              string        `yaml:"dp-cli-path"`
+}
+
+// EKS holds optional overrides for EKS tunnel discovery tags
+type EKS struct {
+	TunnelBoxRoleTag string `yaml:"tunnel-box-role-tag"`
+	ClusterAccessTag string `yaml:"cluster-access-tag"`
 }
 
 type CMD struct {

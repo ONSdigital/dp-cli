@@ -15,11 +15,32 @@ import (
 )
 
 const (
-	// BastionRoleTag is the tag value used to identify EKS bastion instances
-	BastionRoleTag = "eks-session-tunnel"
-	// ClusterAccessTag is the tag key used to identify clusters available for tunnel access
-	ClusterAccessTag = "ssm-tunnel-access"
+	// DefaultTunnelBoxRoleTag is the default tag value used to discover the Session Tunnel Box
+	DefaultTunnelBoxRoleTag = "session-tunnel-box"
+	// DefaultClusterAccessTag is the default tag key used to identify clusters available for tunnel access
+	DefaultClusterAccessTag = "ssm-tunnel-access"
 )
+
+// DiscoveryTags holds the resolved tag values for discovery
+type DiscoveryTags struct {
+	TunnelBoxRoleTag string
+	ClusterAccessTag string
+}
+
+// NewDiscoveryTags returns tags with config overrides applied, falling back to defaults
+func NewDiscoveryTags(tunnelBoxRoleTag, clusterAccessTag string) DiscoveryTags {
+	tags := DiscoveryTags{
+		TunnelBoxRoleTag: DefaultTunnelBoxRoleTag,
+		ClusterAccessTag: DefaultClusterAccessTag,
+	}
+	if tunnelBoxRoleTag != "" {
+		tags.TunnelBoxRoleTag = tunnelBoxRoleTag
+	}
+	if clusterAccessTag != "" {
+		tags.ClusterAccessTag = clusterAccessTag
+	}
+	return tags
+}
 
 // ClusterInfo holds discovered EKS cluster information
 type ClusterInfo struct {
@@ -27,15 +48,14 @@ type ClusterInfo struct {
 	Endpoint string
 }
 
-// BastionInfo holds discovered bastion instance information
-type BastionInfo struct {
+// TunnelBoxInfo holds discovered tunnel box instance information
+type TunnelBoxInfo struct {
 	InstanceID string
 	Name       string
 }
 
-// FindBastion discovers the EKS bastion instance by tags.
-// Scoped to the AWS account via the profile.
-func FindBastion(ctx context.Context, profile string) (*BastionInfo, error) {
+// FindTunnelBox discovers the Secure Session Tunnel Box instance by tags.
+func FindTunnelBox(ctx context.Context, profile string, tags DiscoveryTags) (*TunnelBoxInfo, error) {
 	cfg, err := aws.GetAWSConfig(ctx, profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
@@ -47,7 +67,7 @@ func FindBastion(ctx context.Context, profile string) (*BastionInfo, error) {
 		Filters: []ec2types.Filter{
 			{
 				Name:   sdkaws.String("tag:Role"),
-				Values: []string{BastionRoleTag},
+				Values: []string{tags.TunnelBoxRoleTag},
 			},
 			{
 				Name:   sdkaws.String("instance-state-name"),
@@ -70,19 +90,18 @@ func FindBastion(ctx context.Context, profile string) (*BastionInfo, error) {
 					name = *tag.Value
 				}
 			}
-			return &BastionInfo{
+			return &TunnelBoxInfo{
 				InstanceID: *instance.InstanceId,
 				Name:       name,
 			}, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no running EKS bastion found (looking for tag Role=%s)", BastionRoleTag)
+	return nil, fmt.Errorf("no running tunnel box found (looking for tag Role=%s)", tags.TunnelBoxRoleTag)
 }
 
 // FindClusters discovers EKS clusters available for tunnel access.
-// Scoped to the AWS account via the profile — uses ssm-tunnel-access tag as opt-in.
-func FindClusters(ctx context.Context, profile string) ([]ClusterInfo, error) {
+func FindClusters(ctx context.Context, profile string, tags DiscoveryTags) ([]ClusterInfo, error) {
 	cfg, err := aws.GetAWSConfig(ctx, profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
@@ -109,7 +128,7 @@ func FindClusters(ctx context.Context, profile string) ([]ClusterInfo, error) {
 			continue
 		}
 
-		accessTag, hasAccess := cluster.Tags[ClusterAccessTag]
+		accessTag, hasAccess := cluster.Tags[tags.ClusterAccessTag]
 		if !hasAccess || accessTag != "true" {
 			continue
 		}
@@ -126,14 +145,14 @@ func FindClusters(ctx context.Context, profile string) ([]ClusterInfo, error) {
 	}
 
 	if len(clusters) == 0 {
-		return nil, fmt.Errorf("no EKS clusters found with tag %s=true", ClusterAccessTag)
+		return nil, fmt.Errorf("no EKS clusters found with tag %s=true", tags.ClusterAccessTag)
 	}
 
 	return clusters, nil
 }
 
-// ResolveEndpointIPv4 resolves an EKS endpoint to its IPv4 address via the bastion using SSM RunCommand
-func ResolveEndpointIPv4(ctx context.Context, profile, bastionID, endpoint string) (string, error) {
+// ResolveEndpointIPv4 resolves an EKS endpoint to its IPv4 address via the tunnel box using SSM RunCommand
+func ResolveEndpointIPv4(ctx context.Context, profile, tunnelBoxID, endpoint string) (string, error) {
 	cfg, err := aws.GetAWSConfig(ctx, profile)
 	if err != nil {
 		return "", fmt.Errorf("failed to load AWS config: %w", err)
@@ -142,14 +161,14 @@ func ResolveEndpointIPv4(ctx context.Context, profile, bastionID, endpoint strin
 	client := ssm.NewFromConfig(cfg)
 
 	sendResult, err := client.SendCommand(ctx, &ssm.SendCommandInput{
-		InstanceIds:  []string{bastionID},
+		InstanceIds:  []string{tunnelBoxID},
 		DocumentName: sdkaws.String("AWS-RunShellScript"),
 		Parameters: map[string][]string{
 			"commands": {fmt.Sprintf("dig +short A %s | head -1", endpoint)},
 		},
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to send command to bastion: %w", err)
+		return "", fmt.Errorf("failed to send command to tunnel box: %w", err)
 	}
 
 	if sendResult.Command == nil || sendResult.Command.CommandId == nil {
@@ -174,7 +193,7 @@ func ResolveEndpointIPv4(ctx context.Context, profile, bastionID, endpoint strin
 
 		getResult, err := client.GetCommandInvocation(ctx, &ssm.GetCommandInvocationInput{
 			CommandId:  sdkaws.String(commandID),
-			InstanceId: sdkaws.String(bastionID),
+			InstanceId: sdkaws.String(tunnelBoxID),
 		})
 		if err != nil {
 			continue
@@ -189,12 +208,12 @@ func ResolveEndpointIPv4(ctx context.Context, profile, bastionID, endpoint strin
 			if getResult.StandardErrorContent != nil {
 				stderr = *getResult.StandardErrorContent
 			}
-			return "", fmt.Errorf("command failed on bastion: %s", stderr)
+			return "", fmt.Errorf("command failed on tunnel box: %s", stderr)
 		}
 	}
 
 	if ipv4 == "" {
-		return "", fmt.Errorf("failed to resolve IPv4 for %s (timed out waiting for bastion response)", endpoint)
+		return "", fmt.Errorf("failed to resolve IPv4 for %s (timed out waiting for tunnel box response)", endpoint)
 	}
 
 	return ipv4, nil

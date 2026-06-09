@@ -28,7 +28,7 @@ func eksCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 func eksSessionCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "session",
-		Short: "Manage EKS tunnel sessions via bastion",
+		Short: "Manage EKS secure session tunnels",
 	}
 
 	cmd.AddCommand(eksSessionStartCommand(ctx, cfg))
@@ -96,20 +96,21 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 	}
 
 	profile := cfg.GetProfile(env.Name)
+	tags := eks.NewDiscoveryTags(cfg.EKS.TunnelBoxRoleTag, cfg.EKS.ClusterAccessTag)
 
 	out.InfoFHighlight("Starting EKS session for environment: %s", env.Name)
 
-	// Discover bastion
-	out.Info("  Discovering bastion...")
-	bastion, err := eks.FindBastion(ctx, profile)
+	// Discover tunnel box
+	out.Info("  Discovering tunnel box...")
+	tunnelBox, err := eks.FindTunnelBox(ctx, profile, tags)
 	if err != nil {
-		return fmt.Errorf("bastion discovery failed: %w", err)
+		return fmt.Errorf("tunnel box discovery failed: %w", err)
 	}
-	out.InfoFHighlight("  ✓ Found bastion: %s (%s)", bastion.Name, bastion.InstanceID)
+	out.InfoFHighlight("  ✓ Found tunnel box: %s (%s)", tunnelBox.Name, tunnelBox.InstanceID)
 
 	// Discover clusters
 	out.Info("  Discovering EKS clusters...")
-	clusters, err := eks.FindClusters(ctx, profile)
+	clusters, err := eks.FindClusters(ctx, profile, tags)
 	if err != nil {
 		return fmt.Errorf("cluster discovery failed: %w", err)
 	}
@@ -163,9 +164,9 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 			stopTunnel(*existing)
 		}
 
-		// Resolve IPv4 via bastion
-		out.Info("    Resolving endpoint IPv4 via bastion...")
-		ipv4, err := eks.ResolveEndpointIPv4(ctx, profile, bastion.InstanceID, cluster.Endpoint)
+		// Resolve IPv4 via tunnel box
+		out.Info("    Resolving endpoint IPv4 via tunnel box...")
+		ipv4, err := eks.ResolveEndpointIPv4(ctx, profile, tunnelBox.InstanceID, cluster.Endpoint)
 		if err != nil {
 			out.WarnFHighlight("    ⚠ Failed to resolve %s: %s", cluster.Name, err.Error())
 			continue
@@ -182,7 +183,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 
 		// Start SSM port forward
 		out.Info("    Starting SSM session...")
-		ssmPid, err := eks.StartSSMPortForward(bastion.InstanceID, ipv4, localPort, profile)
+		ssmPid, err := eks.StartSSMPortForward(tunnelBox.InstanceID, ipv4, localPort, profile)
 		if err != nil {
 			out.WarnFHighlight("    ⚠ SSM session failed: %s", err.Error())
 			continue
@@ -227,7 +228,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 			out.WarnFHighlight("    ⚠ Failed to save tunnel state: %s", err.Error())
 		}
 
-		out.InfoFHighlight("    ✓ Tunnel active: %s → %s:443 → bastion → %s:443", cluster.Endpoint, loopbackIP, ipv4)
+		out.InfoFHighlight("    ✓ Tunnel active: %s → %s:443 → tunnel box → %s:443", cluster.Endpoint, loopbackIP, ipv4)
 	}
 
 	// Flush DNS cache
@@ -244,7 +245,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		out.InfoFHighlight("    ✓ %s", msg)
 	}
 
-	out.Info("  ✓ All tunnels active. kubectl, Terraform, and k9s can route through the bastion.")
+	out.Info("  ✓ All tunnels active. kubectl, Terraform, and k9s can route through the tunnel box.")
 	out.Info("  All access is auditable via CloudTrail SSM session logs.")
 	out.Info("")
 	out.Info("  Run 'dp eks session status' to check tunnel health.")
@@ -263,7 +264,6 @@ func runSessionStopEnv(environment string) error {
 	for _, t := range tunnels {
 		if strings.Contains(t.ClusterName, environment) {
 			if !found {
-				// Only prompt for sudo on first match
 				if err := eks.EnsureSudo("killing socat processes and cleaning /etc/hosts"); err != nil {
 					return err
 				}
@@ -363,7 +363,7 @@ func runSessionStatus() error {
 		}
 		out.InfoFHighlight("    Endpoint: %s", t.Endpoint)
 
-		// End-to-end connectivity check: curl the EKS API via the tunnel
+		// End-to-end connectivity check
 		apiStatus := "SKIPPED"
 		if ssmAlive && socatAlive && t.Endpoint != "" {
 			apiReachable := eks.CheckAPIConnectivity(t.Endpoint)
@@ -381,7 +381,7 @@ func runSessionStatus() error {
 			out.WarnFHighlight("    API:      %s (processes not healthy)", apiStatus)
 		}
 
-		out.InfoFHighlight("    Route:    %s → %s:443 → 127.0.0.1:%s → bastion → EKS", t.Endpoint, t.LoopbackIP, fmt.Sprintf("%d", t.LocalPort))
+		out.InfoFHighlight("    Route:    %s → %s:443 → 127.0.0.1:%s → tunnel box → EKS", t.Endpoint, t.LoopbackIP, fmt.Sprintf("%d", t.LocalPort))
 	}
 
 	return nil
