@@ -43,7 +43,6 @@ func getSubCommands(ctx context.Context, cfg *config.Config) ([]*cobra.Command, 
 		spew(),
 		remoteAccess(ctx, cfg),
 		eksCommand(ctx, cfg),
-		overrideKey(),
 	}
 
 	ssh, err := sshCommand(ctx, cfg)

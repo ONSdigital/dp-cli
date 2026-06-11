@@ -166,7 +166,6 @@ Available Commands:
   import           Import data into your local developer environment
   override-key     Generates an overrideKey to bypass the Florence dataset version validation step when approving a collection
   remote           Allow or deny remote access to environment
-  remote2          (NEW) Allow or deny remote access to environment using the new remote allow service
   spew             Log out some useful debugging info
   version          Print the app version
 
