@@ -164,7 +164,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 			stopTunnel(*existing)
 		}
 
-		// Resolve IPv4 via tunnel box
+		// Resolve IPv4 via tunnel box (required for dualstack clusters to force A record)
 		out.Info("    Resolving endpoint IPv4 via tunnel box...")
 		ipv4, err := eks.ResolveEndpointIPv4(ctx, profile, tunnelBox.InstanceID, cluster.Endpoint)
 		if err != nil {

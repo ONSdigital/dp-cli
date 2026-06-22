@@ -151,7 +151,9 @@ func FindClusters(ctx context.Context, profile string, tags DiscoveryTags) ([]Cl
 	return clusters, nil
 }
 
-// ResolveEndpointIPv4 resolves an EKS endpoint to its IPv4 address via the tunnel box using SSM RunCommand
+// ResolveEndpointIPv4 resolves an EKS endpoint to its IPv4 address via the tunnel box using SSM RunCommand.
+// Uses the custom DIS-ResolveDNS document which restricts execution to dig lookups only.
+// This is required for dualstack clusters to force A record resolution.
 func ResolveEndpointIPv4(ctx context.Context, profile, tunnelBoxID, endpoint string) (string, error) {
 	cfg, err := aws.GetAWSConfig(ctx, profile)
 	if err != nil {
@@ -162,9 +164,9 @@ func ResolveEndpointIPv4(ctx context.Context, profile, tunnelBoxID, endpoint str
 
 	sendResult, err := client.SendCommand(ctx, &ssm.SendCommandInput{
 		InstanceIds:  []string{tunnelBoxID},
-		DocumentName: sdkaws.String("AWS-RunShellScript"),
+		DocumentName: sdkaws.String("DIS-ResolveDNS"),
 		Parameters: map[string][]string{
-			"commands": {fmt.Sprintf("dig +short A %s | head -1", endpoint)},
+			"hostname": {endpoint},
 		},
 	})
 	if err != nil {
