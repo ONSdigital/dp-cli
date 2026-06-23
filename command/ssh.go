@@ -82,8 +82,13 @@ func createEnvironmentGroupSubCommands(ctx context.Context, env config.Environme
 	seenIP := make(map[string]bool)
 
 	for _, grp := range groups {
-		instances, err := aws.ListEC2ByAnsibleGroup(ctx, env.Name, cfg.GetProfile(env.Name), grp, cfg)
+		instances, err := aws.ListEC2ByAnsibleGroup(ctx, env.Name, cfg.GetProfileForCommand(env.Name, "ssh.list"), grp, cfg)
 		if err != nil {
+			if aws.IsAccessError(err) {
+				out.ErrorFHighlight("  %s Failed to list instances for %s", "✗", env.Name)
+				out.ErrorFHighlight("  %s", err)
+				out.AccessDeniedGuidance(cfg.GetProfileForCommand(env.Name, "ssh.list"))
+			}
 			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}
 

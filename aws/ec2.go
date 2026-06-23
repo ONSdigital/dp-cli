@@ -42,8 +42,11 @@ type EC2Result struct {
 var resultCache = make(map[string][]EC2Result)
 
 func getEC2Service(ctx context.Context, profile string) *ec2.Client {
-	// Create new EC2 client
-	return ec2.NewFromConfig(getAWSConfig(ctx, profile))
+	cfg, err := GetAWSConfig(ctx, profile)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get shared config profile, %s", profile))
+	}
+	return ec2.NewFromConfig(cfg)
 }
 
 func getNamedSG(ctx context.Context, name, environment, profile string, userName *string, ports []int32, cfg *config.Config) (sg secGroup, err error) {
@@ -307,6 +310,11 @@ func ListEC2(ctx context.Context, environment, profile string, cfg *config.Confi
 		return r, nil
 	}
 	resultCache[environment] = make([]EC2Result, 0)
+
+	// Validate profile exists before attempting AWS calls
+	if _, err := GetAWSConfig(ctx, profile); err != nil {
+		return nil, fmt.Errorf("profile %s: %w", profile, err)
+	}
 
 	ec2Svc := getEC2Service(ctx, profile)
 

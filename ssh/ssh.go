@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -66,7 +67,14 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 		if env.IsAWSA() {
 			userHost = fmt.Sprintf("%s@%s", sshUser, instance.IPAddress)
 		} else {
-			os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+			profile := cfg.GetProfileForCommand(env.Name, "ssh")
+			// Validate credentials before launching SSH
+			if err := aws.ValidateCredentials(context.Background(), profile); err != nil {
+				out.ErrorFHighlight("  %s Access denied for profile: %s", "✗", profile)
+				out.AccessDeniedGuidance(profile)
+				return nil
+			}
+			os.Setenv("AWS_PROFILE", profile)
 			userHost = fmt.Sprintf("%s@%s", sshUser, instance.InstanceId)
 		}
 		for v := 0; v < *opts.VerboseCount; v++ {

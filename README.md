@@ -115,6 +115,51 @@ update the paths and `user-name`:
 
 You can uncomment more `environments` values as and when you get access to them.
 
+### AWS Profile Setup
+
+The CLI uses role-based AWS profiles to enforce least-privilege access. Each environment needs up to three profiles in your `~/.aws/config`:
+
+```ini
+# Sandbox - view only (default for read operations)
+[profile dp-sandbox-view-only]
+sso_start_url = https://<your-org>.awsapps.com/start
+sso_region = eu-west-2
+sso_account_id = <account-id>
+sso_role_name = dis_view_only_access
+region = eu-west-2
+output = json
+
+# Sandbox - engineer (for write operations, ssh, terraform apply)
+[profile dp-sandbox-engineer]
+sso_start_url = https://<your-org>.awsapps.com/start
+sso_region = eu-west-2
+sso_account_id = <account-id>
+sso_role_name = dis_engineer_access
+region = eu-west-2
+output = json
+
+# Sandbox - admin (break-glass only)
+[profile dp-sandbox-admin]
+sso_start_url = https://<your-org>.awsapps.com/start
+sso_region = eu-west-2
+sso_account_id = <account-id>
+sso_role_name = dis_admin_access
+region = eu-west-2
+output = json
+```
+
+Repeat for each environment (`dp-bleed-dev`, `dp-staging`, `dp-prod`, `dp-ci`, `dp-nisra-dev`, `dp-nisra-prod`).
+
+The `profile-suffixes` and `command-privileges` sections in `~/.dp-cli-config.yml` control which profile the CLI uses for each command:
+
+- **view** (`-view-only`) — read-only operations: `remote allow/deny`, `eks session`, instance listing
+- **engineer** (`-engineer`) — write operations: `ssh`, `scp`, terraform apply
+- **admin** (`-admin`) — break-glass: full admin access
+
+Commands that require elevated access will validate credentials before executing and show guidance if access is denied.
+
+For staging, production, and CI accounts, engineer and admin access requires approval via TAPS (your organisation's temporary access provisioning service).
+
 ## Binary build and run
 
 ```shell

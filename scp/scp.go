@@ -2,6 +2,7 @@ package scp
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -41,6 +42,16 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		return errors.New("missing `ssh-user` in config file")
 	}
 
+	// Validate credentials before attempting SCP
+	if !env.IsAWSA() {
+		profile := cfg.GetProfileForCommand(env.Name, "scp")
+		if err := aws.ValidateCredentials(context.Background(), profile); err != nil {
+			out.ErrorFHighlight("  %s Access denied for profile: %s", "✗", profile)
+			out.AccessDeniedGuidance(profile)
+			return nil
+		}
+	}
+
 	ansibleDir := cfg.GetAnsibleDirectory(env)
 
 	flags := "-p"
@@ -60,7 +71,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			if env.IsAWSA() {
 				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, srcFile)
 			} else {
-				os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+				os.Setenv("AWS_PROFILE", cfg.GetProfileForCommand(env.Name, "scp"))
 				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, srcFile)
 			}
 		} else {
@@ -86,7 +97,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		if env.IsAWSA() {
 			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, target)
 		} else {
-			os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+			os.Setenv("AWS_PROFILE", cfg.GetProfileForCommand(env.Name, "scp"))
 			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, target)
 		}
 	}
