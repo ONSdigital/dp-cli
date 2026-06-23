@@ -23,7 +23,8 @@ test:
 audit:
 	dis-vulncheck
 
+# https://golangci-lint.run/docs/welcome/install/local/#install-from-sources
 lint:
-	exit
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(shell cat .golangci-lint-version) run
 
 .PHONY: build install debug test audit lint
