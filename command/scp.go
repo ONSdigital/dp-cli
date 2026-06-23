@@ -117,7 +117,7 @@ func createEnvironmentGroupSCPSubCommands(ctx context.Context, env config.Enviro
 
 // create an array of instance sub-commands available to `scp env group`
 func createInstanceSCPSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result, scpOpts scp.Options) ([]*cobra.Command, error) {
-	commands := make([]*cobra.Command, 0)
+	commands := make([]*cobra.Command, 0, len(instances))
 
 	for i, instance := range instances {
 		e := env

@@ -312,7 +312,7 @@ func getConfigurationsForNewRepo(name, description string, projType project_gene
 		if err != nil {
 			log.Error(ctx, "error getting branch strategy", err)
 		}
-		branchStrategy = strings.Replace(branchStrategy, " flow", "", -1)
+		branchStrategy = strings.ReplaceAll(branchStrategy, " flow", "")
 	}
 	if projType == "generic-project" || branchStrategy == "github" {
 		defaultBranch = "main"

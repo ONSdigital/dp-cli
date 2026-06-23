@@ -89,10 +89,10 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 		}
 
 		if err = execCommand(ansibleDir, isQuiet, "ssh", args...); err != nil {
-			return
+			return err
 		}
 	}
-	return
+	return err
 }
 
 func execCommand(wrkDir string, isQuiet bool, command string, arg ...string) error {

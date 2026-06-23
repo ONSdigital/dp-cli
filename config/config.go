@@ -28,23 +28,23 @@ var httpClient = &http.Client{
 }
 
 type Config struct {
-	CMD                    CMD                `yaml:"cmd"`
-	EKS                    EKS                `yaml:"eks"`
-	Environments           []Environment      `yaml:"environments"`
-	ProfileSuffixes        map[string]string  `yaml:"profile-suffixes"`
-	CommandPrivileges      map[string]string  `yaml:"command-privileges"`
-	SSHUser                *string            `yaml:"ssh-user"`
-	UserName               *string            `yaml:"user-name"`
-	IPAddress              *string            `yaml:"ip-address"`
-	IPv4Address            *string            `yaml:"ipv4-address"`
-	IPv6Address            *string            `yaml:"ipv6-address"`
-	HttpOnly               *bool              `yaml:"http-only"`
-	DPSetupPath            string             `yaml:"dp-setup-path"`
-	NisraPath              string             `yaml:"dp-nisra-path"`
-	DPCIPath               string             `yaml:"dp-ci-path"`
-	DPHierarchyBuilderPath string             `yaml:"dp-hierarchy-builder-path"`
-	DPCodeListScriptsPath  string             `yaml:"dp-code-list-scripts-path"`
-	DPCLIPath              string             `yaml:"dp-cli-path"`
+	CMD                    CMD               `yaml:"cmd"`
+	EKS                    EKS               `yaml:"eks"`
+	Environments           []Environment     `yaml:"environments"`
+	ProfileSuffixes        map[string]string `yaml:"profile-suffixes"`
+	CommandPrivileges      map[string]string `yaml:"command-privileges"`
+	SSHUser                *string           `yaml:"ssh-user"`
+	UserName               *string           `yaml:"user-name"`
+	IPAddress              *string           `yaml:"ip-address"`
+	IPv4Address            *string           `yaml:"ipv4-address"`
+	IPv6Address            *string           `yaml:"ipv6-address"`
+	HttpOnly               *bool             `yaml:"http-only"`
+	DPSetupPath            string            `yaml:"dp-setup-path"`
+	NisraPath              string            `yaml:"dp-nisra-path"`
+	DPCIPath               string            `yaml:"dp-ci-path"`
+	DPHierarchyBuilderPath string            `yaml:"dp-hierarchy-builder-path"`
+	DPCodeListScriptsPath  string            `yaml:"dp-code-list-scripts-path"`
+	DPCLIPath              string            `yaml:"dp-cli-path"`
 }
 
 // EKS holds optional overrides for EKS tunnel discovery tags
@@ -240,7 +240,7 @@ func (cfg Config) GetMyIPs2() (ipv4 string, ipv6 string, err error) {
 	if ipv4 == "" && ipv6 == "" {
 		err = fmt.Errorf("could not determine IPv4 or IPv6 address from config, env, or external service")
 	}
-	return
+	return ipv4, ipv6, err
 }
 
 func (env Environment) hasTag(tag string) bool {

@@ -141,7 +141,7 @@ func createEnvironmentGroupSubCommands(ctx context.Context, env config.Environme
 
 // create a array of instance sub commands available to ssh to.
 func createInstanceSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result, opts ssh.SSHOpts) ([]*cobra.Command, error) {
-	commands := make([]*cobra.Command, 0)
+	commands := make([]*cobra.Command, 0, len(instances))
 
 	for i, instance := range instances {
 		e := env

@@ -306,7 +306,7 @@ func ValidateProjectDirectory(ctx context.Context, path, projectName string) err
 			return err
 		}
 	}
-	//everything is good and nothing needs to be done
+	// everything is good and nothing needs to be done
 	return nil
 }
 
@@ -320,7 +320,7 @@ func ValidateBranchingStrategy(ctx context.Context, branchingStrategy string) (s
 		if err != nil {
 			return "", err
 		}
-		branchingStrategy = strings.Replace(branchingStrategy, " flow", "", -1)
+		branchingStrategy = strings.ReplaceAll(branchingStrategy, " flow", "")
 	}
 	return branchingStrategy, nil
 }
@@ -360,7 +360,7 @@ func OfferPurgeProjectDestination(ctx context.Context, projectPath string) error
 	}
 
 	if !isEmpty {
-		//prompt user
+		// prompt user
 		maxUserInputAttempts := 3
 		deleteContents := PromptForConfirmation(ctx, "The directory "+projectPath+" was not empty would you "+
 			"like to purge its contents, this will also remove any git files if present?", maxUserInputAttempts)
@@ -432,9 +432,10 @@ func PromptForConfirmation(ctx context.Context, prompt string, maxInputAttempts 
 
 		response = strings.ToLower(strings.TrimSpace(response))
 
-		if response == "y" || response == "yes" {
+		switch response {
+		case "y", "yes":
 			return true
-		} else if response == "n" || response == "no" {
+		case "n", "no":
 			return false
 		}
 	}

@@ -24,8 +24,6 @@ type application struct {
 	templateModel TemplateModel
 	pathToRepo    string
 	name          string
-	license       string
-	port          string
 	projectType   ProjectType
 }
 

@@ -216,7 +216,7 @@ func RemoveHostsEntry(hostname string) {
 	}
 	var filtered []string
 	for _, line := range strings.Split(string(content), "\n") {
-		if !(strings.Contains(line, hostname) && strings.Contains(line, hostsMarker)) {
+		if !strings.Contains(line, hostname) || !strings.Contains(line, hostsMarker) {
 			filtered = append(filtered, line)
 		}
 	}

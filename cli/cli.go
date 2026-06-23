@@ -22,7 +22,7 @@ func ExecCommand(ctx context.Context, command string, wrkDir string) error {
 }
 
 func GetProgressTicker() (chan bool, func()) {
-	stopC := make(chan bool, 0)
+	stopC := make(chan bool)
 
 	progressTicker := func() {
 		done := false
@@ -36,7 +36,6 @@ func GetProgressTicker() (chan bool, func()) {
 				time.Sleep(time.Second * 1)
 			}
 		}
-
 	}
 
 	return stopC, progressTicker

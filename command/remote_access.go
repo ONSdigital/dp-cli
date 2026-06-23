@@ -159,13 +159,12 @@ func remoteAccess(ctx context.Context, cfg *config.Config) *cobra.Command {
 
 // remoteAllowCommand creates the allow subcommand for remote
 func remoteAllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:   "allow",
 		Short: "allow access to environment",
 	}
 
-	envSubCmds := make([]*cobra.Command, 0)
+	envSubCmds := make([]*cobra.Command, 0, len(cfg.Environments))
 
 	// create subcommands for each environment from the config
 	for _, e := range cfg.Environments {
@@ -174,7 +173,7 @@ func remoteAllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command 
 			Use:   e.Name,
 			Short: "allow access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				lvl := out.Level(out.GetLevel(env))
+				lvl := out.GetLevel(env)
 
 				// Build payload
 				payload, err := buildRemoteAccessPayload(cfg, "add")
@@ -225,7 +224,7 @@ func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 		Short: "deny access to environment",
 	}
 
-	envSubCmds := make([]*cobra.Command, 0)
+	envSubCmds := make([]*cobra.Command, 0, len(cfg.Environments))
 
 	for _, e := range cfg.Environments {
 		env := e
@@ -233,7 +232,7 @@ func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 			Use:   e.Name,
 			Short: "deny access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				lvl := out.Level(out.GetLevel(env))
+				lvl := out.GetLevel(env)
 
 				// Build payload with action revoke
 				payload, err := buildRemoteAccessPayload(cfg, "revoke")

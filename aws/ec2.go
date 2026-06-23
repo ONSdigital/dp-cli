@@ -72,20 +72,20 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 		Filters: filters,
 	})
 	if err != nil {
-		return
+		return sg, err
 	}
 
 	if len(res.SecurityGroups) < 1 {
 		err = fmt.Errorf("no security groups matching environment: %q with name %q and profile %q", environment, name, profile)
-		return
+		return sg, err
 	}
 	if len(res.SecurityGroups) > 1 {
 		err = fmt.Errorf("too many security groups matching environment: %s name: %q", environment, name)
-		return
+		return sg, err
 	}
 	if res.SecurityGroups[0].GroupId == nil {
 		err = fmt.Errorf("no groupId found for security group on environment: %q name: %q", environment, name)
-		return
+		return sg, err
 	}
 
 	sg.id = *res.SecurityGroups[0].GroupId
@@ -129,7 +129,7 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 		}
 	}
 
-	return
+	return sg, err
 }
 
 func getBastionSGForEnvironment(ctx context.Context, environment, profile string, userName *string, extraPorts []int32, cfg *config.Config) (secGroup, error) {
@@ -206,14 +206,12 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 			return err
 		}
 		secGroups = append(secGroups, sg)
-
 	} else if cfg.IsNisra(environment) {
 		ec2Svc = getEC2Service(ctx, profile)
 		if sg, err = getELBWebSGForEnvironment(ctx, environment, profile, userName, extraPorts.Web, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
-
 	} else {
 		ec2Svc = getEC2Service(ctx, profile)
 		if sg, err = getBastionSGForEnvironment(ctx, environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
@@ -232,7 +230,6 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 			return err
 		}
 		secGroups = append(secGroups, sg)
-
 	}
 
 	// apply `secGroups` changes
