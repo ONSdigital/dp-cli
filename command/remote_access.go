@@ -185,9 +185,11 @@ func remoteAllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command 
 
 				// Lambda function name pattern: dis-<env>-remote-allow
 				functionName := fmt.Sprintf("dis-%s-remote-allow", env.Name)
+				// Get the AWS profile for this environment and command
+				profile := cfg.GetProfileForCommand(env.Name, "remote.allow")
 
-				out.Highlight(lvl, "invoking lambda %s for %s", functionName, env.Name)
-				resp, err := aws.InvokeLambda(ctx, cfg.GetProfile(env.Name), functionName, payload)
+				out.Highlight(lvl, "invoking lambda %s for %s (profile: %s)", functionName, env.Name, profile)
+				resp, err := aws.InvokeLambda(ctx, profile, functionName, payload)
 				if err != nil {
 					return fmt.Errorf("lambda invoke failed: %w", err)
 				}
@@ -241,9 +243,10 @@ func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 				}
 
 				functionName := fmt.Sprintf("dis-%s-remote-allow", env.Name)
-				profile := cfg.GetProfile(env.Name)
+				// Get the AWS profile for this environment and command
+				profile := cfg.GetProfileForCommand(env.Name, "remote.deny")
 
-				out.Highlight(lvl, "invoking lambda %s for %s", functionName, env.Name)
+				out.Highlight(lvl, "invoking lambda %s for %s (profile: %s)", functionName, env.Name, profile)
 				resp, err := aws.InvokeLambda(ctx, profile, functionName, payload)
 				if err != nil {
 					return fmt.Errorf("lambda invoke failed: %w", err)

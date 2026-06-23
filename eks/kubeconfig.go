@@ -6,12 +6,16 @@ import (
 )
 
 // UpdateKubeconfig runs aws eks update-kubeconfig for the given cluster.
-// Region is determined by the AWS profile configuration.
-func UpdateKubeconfig(clusterName, profile string) (string, error) {
+// The context alias is always the cluster name (one context per cluster).
+// The user-alias includes the roleSuffix to ensure each role gets its own
+// credential entry, preventing profile cross-contamination.
+func UpdateKubeconfig(clusterName, profile, roleSuffix string) (string, error) {
+	userAlias := clusterName + roleSuffix
 	args := []string{
 		"eks", "update-kubeconfig",
 		"--name", clusterName,
 		"--alias", clusterName,
+		"--user-alias", userAlias,
 	}
 	if profile != "" {
 		args = append(args, "--profile", profile)

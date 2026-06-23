@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/ONSdigital/dp-cli/aws"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/eks"
 	"github.com/ONSdigital/dp-cli/out"
@@ -44,6 +45,8 @@ func eksSessionStartCommand(ctx context.Context, cfg *config.Config) *cobra.Comm
 		Short: "Start EKS tunnel sessions for an environment",
 	}
 
+	roleFlag := cmd.PersistentFlags().StringP("role", "r", "", "Override role (view, engineer, admin)")
+
 	// Create a subcommand for each environment
 	for _, e := range cfg.Environments {
 		env := e
@@ -51,7 +54,7 @@ func eksSessionStartCommand(ctx context.Context, cfg *config.Config) *cobra.Comm
 			Use:   env.Name,
 			Short: fmt.Sprintf("Start EKS tunnel sessions for %s", env.Name),
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return runSessionStart(ctx, cfg, env)
+				return runSessionStart(ctx, cfg, env, *roleFlag)
 			},
 		})
 	}
@@ -84,7 +87,7 @@ func eksSessionStatusCommand() *cobra.Command {
 	}
 }
 
-func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environment) error {
+func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environment, roleOverride string) error {
 	// Check dependencies
 	missing := eks.CheckDependencies()
 	if len(missing) > 0 {
@@ -95,16 +98,42 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		return fmt.Errorf("install missing dependencies before continuing")
 	}
 
-	profile := cfg.GetProfile(env.Name)
+	// Resolve profile based on role override or command default
+	var profile string
+	var roleSuffix string
+	if roleOverride != "" {
+		profile = cfg.GetProfileWithRole(env.Name, roleOverride)
+		roleSuffix = cfg.GetRoleSuffix(roleOverride)
+	} else {
+		// Get the AWS profile for this environment and command
+		profile = cfg.GetProfileForCommand(env.Name, "eks.session.start")
+		// Determine which role was resolved for the suffix
+		if profile != cfg.GetProfile(env.Name) {
+			// Find the suffix that was applied
+			base := cfg.GetProfile(env.Name)
+			roleSuffix = strings.TrimPrefix(profile, base)
+		} else {
+			roleSuffix = cfg.GetRoleSuffix("view")
+			if roleSuffix == "" {
+				roleSuffix = ""
+			}
+		}
+	}
+
 	tags := eks.NewDiscoveryTags(cfg.EKS.TunnelBoxRoleTag, cfg.EKS.ClusterAccessTag)
 
-	out.InfoFHighlight("Starting EKS session for environment: %s", env.Name)
+	out.InfoFHighlight("Starting EKS session for environment: %s (profile: %s)", env.Name, profile)
 
 	// Discover tunnel box
 	out.Info("  Discovering tunnel box...")
 	tunnelBox, err := eks.FindTunnelBox(ctx, profile, tags)
 	if err != nil {
-		return fmt.Errorf("tunnel box discovery failed: %w", err)
+		out.ErrorFHighlight("  %s Tunnel box discovery failed", "✗")
+		out.ErrorFHighlight("  %s", err)
+		if aws.IsAccessError(err) {
+			out.AccessDeniedGuidance(profile)
+		}
+		return nil
 	}
 	out.InfoFHighlight("  ✓ Found tunnel box: %s (%s)", tunnelBox.Name, tunnelBox.InstanceID)
 
@@ -112,7 +141,12 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 	out.Info("  Discovering EKS clusters...")
 	clusters, err := eks.FindClusters(ctx, profile, tags)
 	if err != nil {
-		return fmt.Errorf("cluster discovery failed: %w", err)
+		out.ErrorFHighlight("  %s Cluster discovery failed", "✗")
+		out.ErrorFHighlight("  %s", err)
+		if aws.IsAccessError(err) {
+			out.AccessDeniedGuidance(profile)
+		}
+		return nil
 	}
 	out.InfoFHighlight("  ✓ Found %s cluster(s)", fmt.Sprintf("%d", len(clusters)))
 	for _, c := range clusters {
@@ -143,6 +177,8 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 	eks.CleanupStaleTunnels()
 
 	// Start tunnels for each cluster
+	tunnelsEstablished := 0
+	var accessDenied bool
 	for _, cluster := range clusters {
 		// Allocate an available loopback IP
 		loopbackIP, err := eks.AllocateLoopbackIP()
@@ -153,10 +189,11 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 
 		out.InfoFHighlight("  Setting up tunnel for: %s", cluster.Name)
 
-		// Check if tunnel already running and healthy
+		// Check if tunnel already running and healthy - skip tunnel setup
 		existing, err := eks.LoadTunnelState(cluster.Name)
 		if err == nil && eks.IsProcessAlive(existing.SSMPid) && eks.IsProcessAlive(existing.SocatPid) {
 			out.InfoFHighlight("    Tunnel already active (SSM PID: %s)", fmt.Sprintf("%d", existing.SSMPid))
+			tunnelsEstablished++
 			continue
 		}
 		// If state exists but processes are dead, clean up first
@@ -168,7 +205,11 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		out.Info("    Resolving endpoint IPv4 via tunnel box...")
 		ipv4, err := eks.ResolveEndpointIPv4(ctx, profile, tunnelBox.InstanceID, cluster.Endpoint)
 		if err != nil {
-			out.WarnFHighlight("    ⚠ Failed to resolve %s: %s", cluster.Name, err.Error())
+			out.ErrorFHighlight("  %s Failed to resolve cluster: %s", "✗", cluster.Name)
+			out.ErrorFHighlight("  %s", err.Error())
+			if aws.IsAccessError(err) {
+				accessDenied = true
+			}
 			continue
 		}
 		out.InfoFHighlight("    IPv4: %s", ipv4)
@@ -229,15 +270,25 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		}
 
 		out.InfoFHighlight("    ✓ Tunnel active: %s → %s:443 → tunnel box → %s:443", cluster.Endpoint, loopbackIP, ipv4)
+		tunnelsEstablished++
 	}
 
 	// Flush DNS cache
 	eks.FlushDNSCache()
 
-	// Update kubeconfig for each cluster
-	out.Info("  Updating kubeconfig...")
+	// Only update kubeconfig and show success if tunnels were established in this run
+	if tunnelsEstablished == 0 {
+		out.ErrorFHighlight("  %s No tunnels established", "✗")
+		if accessDenied {
+			out.AccessDeniedGuidance(profile)
+		}
+		return nil
+	}
+
+	// Update kubeconfig for each cluster with an active tunnel
+	out.InfoFHighlight("  Updating kubeconfig (profile: %s, user-alias: *%s)...", profile, roleSuffix)
 	for _, cluster := range clusters {
-		msg, err := eks.UpdateKubeconfig(cluster.Name, profile)
+		msg, err := eks.UpdateKubeconfig(cluster.Name, profile, roleSuffix)
 		if err != nil {
 			out.WarnFHighlight("    ⚠ Failed to configure %s: %s", cluster.Name, err.Error())
 			continue

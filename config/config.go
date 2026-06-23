@@ -28,21 +28,23 @@ var httpClient = &http.Client{
 }
 
 type Config struct {
-	CMD                    CMD           `yaml:"cmd"`
-	EKS                    EKS           `yaml:"eks"`
-	Environments           []Environment `yaml:"environments"`
-	SSHUser                *string       `yaml:"ssh-user"`
-	UserName               *string       `yaml:"user-name"`
-	IPAddress              *string       `yaml:"ip-address"`
-	IPv4Address            *string       `yaml:"ipv4-address"`
-	IPv6Address            *string       `yaml:"ipv6-address"`
-	HttpOnly               *bool         `yaml:"http-only"`
-	DPSetupPath            string        `yaml:"dp-setup-path"`
-	NisraPath              string        `yaml:"dp-nisra-path"`
-	DPCIPath               string        `yaml:"dp-ci-path"`
-	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
-	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
-	DPCLIPath              string        `yaml:"dp-cli-path"`
+	CMD                    CMD                `yaml:"cmd"`
+	EKS                    EKS                `yaml:"eks"`
+	Environments           []Environment      `yaml:"environments"`
+	ProfileSuffixes        map[string]string  `yaml:"profile-suffixes"`
+	CommandPrivileges      map[string]string  `yaml:"command-privileges"`
+	SSHUser                *string            `yaml:"ssh-user"`
+	UserName               *string            `yaml:"user-name"`
+	IPAddress              *string            `yaml:"ip-address"`
+	IPv4Address            *string            `yaml:"ipv4-address"`
+	IPv6Address            *string            `yaml:"ipv6-address"`
+	HttpOnly               *bool              `yaml:"http-only"`
+	DPSetupPath            string             `yaml:"dp-setup-path"`
+	NisraPath              string             `yaml:"dp-nisra-path"`
+	DPCIPath               string             `yaml:"dp-ci-path"`
+	DPHierarchyBuilderPath string             `yaml:"dp-hierarchy-builder-path"`
+	DPCodeListScriptsPath  string             `yaml:"dp-code-list-scripts-path"`
+	DPCLIPath              string             `yaml:"dp-cli-path"`
 }
 
 // EKS holds optional overrides for EKS tunnel discovery tags
@@ -302,6 +304,56 @@ func (cfg Config) GetProfile(env string) string {
 	return "noEnv"
 }
 
+// GetProfileForCommand resolves the profile for a given environment and command path.
+// It walks from most specific to least specific command path (e.g. "eks.session.start" → "eks.session" → "eks").
+// If no match is found or profile-suffixes is not configured, returns the base profile (backwards compatible).
+func (cfg Config) GetProfileForCommand(env string, commandPath string) string {
+	base := cfg.GetProfile(env)
+
+	if len(cfg.ProfileSuffixes) == 0 || len(cfg.CommandPrivileges) == 0 {
+		return base
+	}
+
+	// Walk from most specific to least specific
+	path := commandPath
+	for path != "" {
+		if priv, ok := cfg.CommandPrivileges[path]; ok {
+			if suffix, ok := cfg.ProfileSuffixes[priv]; ok {
+				return base + suffix
+			}
+			return base
+		}
+		// Remove last segment
+		lastDot := strings.LastIndex(path, ".")
+		if lastDot < 0 {
+			break
+		}
+		path = path[:lastDot]
+	}
+
+	return base
+}
+
+// GetProfileWithRole resolves the profile for a given environment and explicit role override.
+// Used when a user passes -view, -engineer, or -admin flags.
+func (cfg Config) GetProfileWithRole(env string, role string) string {
+	base := cfg.GetProfile(env)
+	if role == "" || len(cfg.ProfileSuffixes) == 0 {
+		return base
+	}
+	if suffix, ok := cfg.ProfileSuffixes[role]; ok {
+		return base + suffix
+	}
+	return base
+}
+
+// GetRoleSuffix returns the suffix for a given role name, or empty string if not configured.
+func (cfg Config) GetRoleSuffix(role string) string {
+	if suffix, ok := cfg.ProfileSuffixes[role]; ok {
+		return suffix
+	}
+	return ""
+}
 func (cfg Config) GetPath(env Environment) string {
 	if env.IsCI() {
 		return cfg.DPCIPath
