@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Post to Slack
-        uses: slackapi/slack-github-action@b4590150a8e7f4894e855975a3c58c5e0dba9fdf # v3.0.3
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_CODE_REVIEW }}
           webhook-type: incoming-webhook
