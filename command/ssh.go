@@ -51,7 +51,7 @@ func sshCommand(ctx context.Context, cfg *config.Config) (*cobra.Command, error)
 func createEnvironmentSubCommands(ctx context.Context, cfg *config.Config, opts ssh.SSHOpts) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
-	for _, env := range cfg.Environments {
+	for _, env := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for environment config iteration
 		envC := &cobra.Command{
 			Use:   env.Name,
 			Short: "ssh to " + env.Name,

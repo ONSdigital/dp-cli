@@ -37,5 +37,3 @@ func importDataSubCommand(ctx context.Context, cfg *config.Config) *cobra.Comman
 
 	return command
 }
-
-

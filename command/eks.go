@@ -48,6 +48,7 @@ func eksSessionStartCommand(ctx context.Context, cfg *config.Config) *cobra.Comm
 	roleFlag := cmd.PersistentFlags().StringP("role", "r", "", "Override role (view, engineer, admin)")
 
 	// Create a subcommand for each environment
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
 	for _, e := range cfg.Environments {
 		env := e
 		cmd.AddCommand(&cobra.Command{

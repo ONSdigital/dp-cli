@@ -53,7 +53,7 @@ func scpCommand(ctx context.Context, cfg *config.Config) (*cobra.Command, error)
 func createEnvironmentSCPSubCommands(ctx context.Context, cfg *config.Config, scpOpts scp.Options) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
-	for _, env := range cfg.Environments {
+	for _, env := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for environment config iteration
 		envC := &cobra.Command{
 			Use:   env.Name,
 			Short: "scp on " + env.Name,

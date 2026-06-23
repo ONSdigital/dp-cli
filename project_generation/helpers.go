@@ -27,6 +27,7 @@ type Argument struct {
 	OutputVal string
 }
 
+//nolint:gocritic // legacy code - will be replaced with templates
 func configureAndValidateArguments(ctx context.Context, appName, appDesc, projectType, projectLocation, runtimeVersion, port, teamSlugs, projectLanguage, ciTest string) (an, ad, pt, pl, rv, prt string, ts []string, plang, ct string, err error) {
 	listOfArguments := make(ListOfArguments)
 	listOfArguments["appName"] = &Argument{
@@ -493,6 +494,8 @@ func OptionPromptInput(ctx context.Context, prompt string, options ...string) (s
 }
 
 // InitGoModules will initialise the go modules for a project at a given directory unless go.mod already exists
+//
+//nolint:gocritic // legacy code - will be replaced with templates
 func InitGoModules(ctx context.Context, pathToRepo, name string, goVersion string) error {
 	_, err := os.Stat(pathToRepo + "/go.mod")
 	if os.IsExist(err) {

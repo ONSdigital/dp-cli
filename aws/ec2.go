@@ -57,7 +57,7 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 			Values: []string{name},
 		},
 	}
-	if len(environment) > 0 {
+	if environment != "" {
 		expectEnvTag := environment
 		if cfg.IsCI(environment) {
 			expectEnvTag = "ci"
@@ -94,8 +94,9 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 	sg.portToMyIPs = make(map[int32][]string)
 
 	// we have an SG, so get its list of allowed IPs for userName
-	for _, sg1 := range res.SecurityGroups {
-		for _, ipperm := range sg1.IpPermissions {
+	for i := range res.SecurityGroups {
+		for j := range res.SecurityGroups[i].IpPermissions {
+			ipperm := &res.SecurityGroups[i].IpPermissions[j]
 			if *ipperm.IpProtocol != "tcp" || *ipperm.ToPort != *ipperm.FromPort {
 				continue
 			}
@@ -177,7 +178,7 @@ func DenyIPForEnvironment(ctx context.Context, userName *string, environment, pr
 }
 
 func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) (err error) {
-	if len(*userName) == 0 {
+	if *userName == "" {
 		return errors.New("require `user-name` in config (or `--user` flag) to change remote access")
 	}
 
@@ -244,6 +245,7 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 
 		// changingIPs is used to show what is being changed (maps IPs to ports)
 		changingIPs := map[string][]int32{}
+		//nolint:gocritic // rangeValCopy acceptable for security group permission iteration
 		for _, perm := range perms {
 			for _, ipr := range perm.IpRanges {
 				changingIPs[*ipr.CidrIp] = append(changingIPs[*ipr.CidrIp], *perm.FromPort)
@@ -282,7 +284,7 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 }
 
 // ListEC2ByAnsibleGroup returns EC2 instances matching ansibleGroup for this env/profile
-func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile string, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
+func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
 	r, err := ListEC2(ctx, environment, profile, cfg)
 	if err != nil {
 		return r, err
@@ -347,6 +349,7 @@ func ListEC2(ctx context.Context, environment, profile string, cfg *config.Confi
 		}
 
 		for _, r := range result.Reservations {
+			//nolint:gocritic // rangeValCopy acceptable for EC2 instance iteration
 			for _, i := range r.Instances {
 				var name, ansibleGroup string
 				for _, tag := range i.Tags {
@@ -362,7 +365,7 @@ func ListEC2(ctx context.Context, environment, profile string, cfg *config.Confi
 				if cfg.IsCI(environment) && cfg.IsAWSA(environment) {
 					if len(i.NetworkInterfaces) > 0 &&
 						i.NetworkInterfaces[0].Association != nil &&
-						len(*i.NetworkInterfaces[0].Association.PublicIp) > 0 &&
+						*i.NetworkInterfaces[0].Association.PublicIp != "" &&
 						i.NetworkInterfaces[0].Association.PublicIp != nil {
 						ipAddr = *i.NetworkInterfaces[0].Association.PublicIp
 					}

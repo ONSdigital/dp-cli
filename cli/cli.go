@@ -9,19 +9,19 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 )
 
-func ExecCommand(ctx context.Context, command string, wrkDir string) error {
+func ExecCommand(ctx context.Context, command, wrkDir string) error {
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
-	if len(wrkDir) > 0 {
+	if wrkDir != "" {
 		cmd.Dir = wrkDir
 	}
 
 	return cmd.Run()
 }
 
-func GetProgressTicker() (chan bool, func()) {
+func GetProgressTicker() (stopChan chan bool, cleanup func()) {
 	stopC := make(chan bool)
 
 	progressTicker := func() {

@@ -15,17 +15,17 @@ import (
 // buildRemoteAccessPayload collects user/IPs from cfg and builds the JSON payload.
 // action must be one of: "add", "revoke".
 func buildRemoteAccessPayload(cfg *config.Config, action string) ([]byte, error) {
-	if cfg.UserName == nil || len(*cfg.UserName) == 0 {
+	if cfg.UserName == nil || *cfg.UserName == "" {
 		return nil, fmt.Errorf("no user provided (use --user)")
 	}
 
 	// If explicit IPs were provided, use only those (avoid external lookup)
 	ipv4 := ""
-	if cfg.IPv4Address != nil && len(*cfg.IPv4Address) > 0 {
+	if cfg.IPv4Address != nil && *cfg.IPv4Address != "" {
 		ipv4 = *cfg.IPv4Address
 	}
 	ipv6 := ""
-	if cfg.IPv6Address != nil && len(*cfg.IPv6Address) > 0 {
+	if cfg.IPv6Address != nil && *cfg.IPv6Address != "" {
 		ipv6 = *cfg.IPv6Address
 	}
 	if ipv4 == "" && ipv6 == "" {
@@ -37,10 +37,10 @@ func buildRemoteAccessPayload(cfg *config.Config, action string) ([]byte, error)
 	}
 
 	ips := make([]string, 0)
-	if len(ipv4) > 0 {
+	if ipv4 != "" {
 		ips = append(ips, ipv4)
 	}
-	if len(ipv6) > 0 {
+	if ipv6 != "" {
 		ips = append(ips, ipv6)
 	}
 	if len(ips) == 0 {
@@ -76,7 +76,9 @@ func formatUnix(ts int64) string {
 	return time.Unix(ts, 0).Local().Format("02/01/2006 15:04:05")
 }
 
+//nolint:gocritic // paramTypeCombine - keeping params explicit for readability
 func renderLambdaResults(lvl out.Level, envName string, user string, results []LambdaResult) {
+	//nolint:gocritic // rangeValCopy acceptable for result iteration
 	for _, r := range results {
 		verb := "allowing"
 		if r.Action == "revoke" {
@@ -167,7 +169,8 @@ func remoteAllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command 
 	envSubCmds := make([]*cobra.Command, 0, len(cfg.Environments))
 
 	// create subcommands for each environment from the config
-	for _, e := range cfg.Environments {
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
+	for _, e := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for environment config iteration
 		env := e
 		envSubCmds = append(envSubCmds, &cobra.Command{
 			Use:   e.Name,
@@ -226,6 +229,7 @@ func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 
 	envSubCmds := make([]*cobra.Command, 0, len(cfg.Environments))
 
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
 	for _, e := range cfg.Environments {
 		env := e
 		envSubCmds = append(envSubCmds, &cobra.Command{

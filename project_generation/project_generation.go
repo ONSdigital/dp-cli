@@ -201,6 +201,7 @@ func (a application) createAPIContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
+	//nolint:gocritic // legacy code - unix-only paths, will be replaced with templates
 	err = os.MkdirAll(filepath.Join(a.pathToRepo, "service/mock"), os.ModePerm)
 	if err != nil {
 		return err

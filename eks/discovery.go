@@ -80,6 +80,7 @@ func FindTunnelBox(ctx context.Context, profile string, tags DiscoveryTags) (*Tu
 	}
 
 	for _, reservation := range result.Reservations {
+		//nolint:gocritic // rangeValCopy acceptable for EC2 instance iteration
 		for _, instance := range reservation.Instances {
 			if instance.InstanceId == nil {
 				continue

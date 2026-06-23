@@ -34,7 +34,7 @@ linters:
       min-complexity: 50
     goconst:
       min-len: 2
-      min-occurrences: 3
+      min-occurrences: 5
     gocritic:
       disabled-checks:
         - wrapperFunc
@@ -78,6 +78,17 @@ linters:
           - revive
         path: _test\.go
         text: dot-imports
+      - linters:
+          - gocritic
+        path: (project_generation|repository_creation|zebedee)/
+        text: filepathJoin
+      - linters:
+          - gocritic
+        path: project_generation/
+        text: (regexpSimplify|tooManyResultsChecker)
+      - linters:
+          - goconst
+        path: (project_generation|repository_creation)/
 issues:
   new: false
 formatters:

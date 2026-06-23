@@ -122,7 +122,7 @@ func expandPath(path string) string {
 
 func getConfigPath() (path string) {
 	path = os.Getenv("DP_CLI_CONFIG")
-	if len(path) == 0 {
+	if path == "" {
 		path = expandPath("~/.dp-cli-config.yml")
 	}
 	return
@@ -149,7 +149,7 @@ func (cfg Config) checkGotIP(ip string) (bool, error) {
 // GetMyIP returns first IP in: `--ip` flag, `MY_IP` env var, config file, external service
 func (cfg Config) GetMyIP() (string, error) {
 	// flag or config-file used?
-	if cfg.IPAddress != nil && len(*cfg.IPAddress) > 0 {
+	if cfg.IPAddress != nil && *cfg.IPAddress != "" {
 		if isValidIP, err := cfg.checkGotIP(*cfg.IPAddress); err != nil || !isValidIP {
 			return "", fmt.Errorf("unexpected format for IP (from --ip flag or config-file): %w", err)
 		}
@@ -157,7 +157,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	// env var used?
-	if ip := os.Getenv("MY_IP"); len(ip) > 0 {
+	if ip := os.Getenv("MY_IP"); ip != "" {
 		if isValidIP, err := cfg.checkGotIP(ip); err != nil || !isValidIP {
 			return "", fmt.Errorf("unexpected format for env var MY_IP: %w", err)
 		}
@@ -191,19 +191,19 @@ func (cfg Config) GetMyIP() (string, error) {
 }
 
 // GetMyIPs2 returns both IPv4 and IPv6 addresses, checking config > cli > env, then external service if needed.
-func (cfg Config) GetMyIPs2() (ipv4 string, ipv6 string, err error) {
+func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
 	// 1. Check config/env for explicit values
-	if cfg.IPv4Address != nil && len(*cfg.IPv4Address) > 0 {
+	if cfg.IPv4Address != nil && *cfg.IPv4Address != "" {
 		ipv4 = *cfg.IPv4Address
-	} else if cfg.IPAddress != nil && len(*cfg.IPAddress) > 0 { // legacy fallback
+	} else if cfg.IPAddress != nil && *cfg.IPAddress != "" { // legacy fallback
 		ipv4 = *cfg.IPAddress
-	} else if ip := os.Getenv("MY_IPV4"); len(ip) > 0 {
+	} else if ip := os.Getenv("MY_IPV4"); ip != "" {
 		ipv4 = ip
 	}
 
-	if cfg.IPv6Address != nil && len(*cfg.IPv6Address) > 0 {
+	if cfg.IPv6Address != nil && *cfg.IPv6Address != "" {
 		ipv6 = *cfg.IPv6Address
-	} else if ip := os.Getenv("MY_IPV6"); len(ip) > 0 {
+	} else if ip := os.Getenv("MY_IPV6"); ip != "" {
 		ipv6 = ip
 	}
 
@@ -229,7 +229,7 @@ func (cfg Config) GetMyIPs2() (ipv4 string, ipv6 string, err error) {
 			if errRead == nil {
 				s := string(b)
 				// TODO: improve IPv6 validation
-				if len(s) > 0 {
+				if s != "" {
 					ipv6 = s
 				}
 			}
@@ -253,6 +253,7 @@ func (env Environment) hasTag(tag string) bool {
 }
 
 func (cfg Config) hasTag(env, tag string) bool {
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
 	for _, e := range cfg.Environments {
 		if e.Name == env {
 			return e.hasTag(tag)
@@ -292,8 +293,9 @@ func (env Environment) IsSecure() bool {
 	return env.hasTag(TAG_SECURE)
 }
 
+//nolint:gocritic // rangeValCopy acceptable for environment config iteration
 func (cfg Config) GetProfile(env string) string {
-	for _, e := range cfg.Environments {
+	for _, e := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for config iteration
 		if e.Name == env {
 			if e.Profile != "" {
 				return e.Profile
@@ -307,7 +309,7 @@ func (cfg Config) GetProfile(env string) string {
 // GetProfileForCommand resolves the profile for a given environment and command path.
 // It walks from most specific to least specific command path (e.g. "eks.session.start" → "eks.session" → "eks").
 // If no match is found or profile-suffixes is not configured, returns the base profile (backwards compatible).
-func (cfg Config) GetProfileForCommand(env string, commandPath string) string {
+func (cfg Config) GetProfileForCommand(env, commandPath string) string {
 	base := cfg.GetProfile(env)
 
 	if len(cfg.ProfileSuffixes) == 0 || len(cfg.CommandPrivileges) == 0 {
@@ -336,7 +338,7 @@ func (cfg Config) GetProfileForCommand(env string, commandPath string) string {
 
 // GetProfileWithRole resolves the profile for a given environment and explicit role override.
 // Used when a user passes -view, -engineer, or -admin flags.
-func (cfg Config) GetProfileWithRole(env string, role string) string {
+func (cfg Config) GetProfileWithRole(env, role string) string {
 	base := cfg.GetProfile(env)
 	if role == "" || len(cfg.ProfileSuffixes) == 0 {
 		return base

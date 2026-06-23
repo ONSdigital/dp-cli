@@ -108,6 +108,7 @@ func StartSSMPortForward(bastionID, targetIP string, localPort int, profile stri
 		"ssm", "start-session",
 		"--target", bastionID,
 		"--document-name", "AWS-StartPortForwardingSessionToRemoteHost",
+		//nolint:gocritic // sprintfQuotedString - building JSON, not display strings
 		"--parameters", fmt.Sprintf(`{"host":["%s"],"portNumber":["443"],"localPortNumber":["%d"]}`, targetIP, localPort),
 	}
 	if profile != "" {

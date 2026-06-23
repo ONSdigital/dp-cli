@@ -9,7 +9,7 @@ import (
 )
 
 // InvokeLambda invokes a Lambda function with the provided JSON payload and returns the raw response payload as string.
-func InvokeLambda(ctx context.Context, profile string, functionName string, payload []byte) (string, error) {
+func InvokeLambda(ctx context.Context, profile, functionName string, payload []byte) (string, error) {
 	cfg, err := GetAWSConfig(ctx, profile)
 	if err != nil {
 		return "", fmt.Errorf("failed to load AWS config: %w", err)

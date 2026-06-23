@@ -52,8 +52,10 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 }
 
 // GenerateGithub is the entry point to generating the repository
-func GenerateGithub(name, description string, ProjectType project_generation.ProjectType, personalAccessToken, branchStrategy string, teamSlugsInput string) (cloneUrl string, err error) {
-	accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput := getConfigurationsForNewRepo(name, description, ProjectType, personalAccessToken, branchStrategy, teamSlugsInput)
+//
+//nolint:gocritic // legacy code - will be replaced with templates
+func GenerateGithub(name, description string, projectType project_generation.ProjectType, personalAccessToken, branchStrategy string, teamSlugsInput string) (cloneUrl string, err error) {
+	accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput := getConfigurationsForNewRepo(name, description, projectType, personalAccessToken, branchStrategy, teamSlugsInput)
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -94,7 +96,7 @@ func GenerateGithub(name, description string, ProjectType project_generation.Pro
 		return cloneUrl, err
 	}
 
-	if ProjectType != "generic-project" || branchStrategy == "git" {
+	if projectType != "generic-project" || branchStrategy == "git" {
 		err = createDevelopBranch(ctx, client, repoName)
 		if err != nil {
 			log.Error(ctx, "unable to create develop branch", err)
