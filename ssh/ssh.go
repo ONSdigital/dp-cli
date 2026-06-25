@@ -97,7 +97,7 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 }
 
 func execCommand(wrkDir string, isQuiet bool, command string, arg ...string) error {
-	c := exec.Command(command, arg...)
+	c := exec.CommandContext(context.Background(), command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout

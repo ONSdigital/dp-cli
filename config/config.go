@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -165,7 +166,11 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	// use remote service to obtain IP
-	res, err := httpClient.Get("https://api.ipify.org")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.ipify.org", http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("cannot create request for IP service: %w", err)
+	}
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("cannot get IP from service (consider using `--ip` flag instead): %w", err)
 	}
@@ -209,7 +214,8 @@ func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
 
 	// 2. If not set, fetch from external service
 	if ipv4 == "" {
-		res, err4 := httpClient.Get("https://api.ipify.org")
+		req4, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.ipify.org", http.NoBody)
+		res, err4 := httpClient.Do(req4)
 		if err4 == nil && res.StatusCode == 200 {
 			b, errRead := io.ReadAll(res.Body)
 			res.Body.Close()
@@ -222,7 +228,8 @@ func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
 		}
 	}
 	if ipv6 == "" {
-		res, err6 := httpClient.Get("https://api64.ipify.org")
+		req6, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api64.ipify.org", http.NoBody)
+		res, err6 := httpClient.Do(req6)
 		if err6 == nil && res.StatusCode == 200 {
 			b, errRead := io.ReadAll(res.Body)
 			res.Body.Close()

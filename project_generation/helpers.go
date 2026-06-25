@@ -138,7 +138,7 @@ func configureAndValidateArguments(ctx context.Context, appName, appDesc, projec
 }
 
 func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, error) {
-	var err error = nil
+	var err error
 	for key, value := range arguments {
 		arguments[key].OutputVal, err = value.Validator(value.Context, value.InputVal)
 		if err != nil {
@@ -153,7 +153,7 @@ func ValidateArguments(arguments map[string]*Argument) (map[string]*Argument, er
 // ValidateAppName will ensure that the app name has been provided and is acceptable, if not it will keep
 // prompting until it is
 func ValidateAppName(ctx context.Context, name string) (string, error) {
-	var err error = nil
+	var err error
 
 	for name == "" {
 		name, err = PromptForInput(ctx, "Please specify the name of the application, if this is a "+
@@ -168,7 +168,7 @@ func ValidateAppName(ctx context.Context, name string) (string, error) {
 // ValidateAppDescription will ensure that the app description has been provided and is acceptable, if not it will keep
 // prompting until it is
 func ValidateAppDescription(ctx context.Context, description string) (string, error) {
-	var err error = nil
+	var err error
 
 	for description == "" {
 		description, err = PromptForInput(ctx, "Please specify a short description of the application:")
@@ -208,7 +208,7 @@ func ValidateNodeVersion(ctx context.Context, nodeVer string) (string, error) {
 
 // ValidateVersion will ensure that the provided version is valid
 func ValidateVersion(ctx context.Context, version, prompt string) (string, error) {
-	var err error = nil
+	var err error
 	if ValidVersionNumber(version) {
 		return version, nil
 	}
@@ -253,7 +253,7 @@ func ValidateProjectLanguage(ctx context.Context, projectLanguage string) (valid
 // ValidateProjectLocation will ensure that the projects location has been provided and is acceptable.
 // It will ensure the directory exists and has the option to offer a purge of files at that location
 func ValidateProjectLocation(ctx context.Context, projectLocation string) (string, error) {
-	var err error = nil
+	var err error
 
 	for projectLocation == "" {
 		projectLocation, err = PromptForInput(ctx, "Please specify a directory for the project to be created in:")
@@ -508,7 +508,7 @@ func InitGoModules(ctx context.Context, pathToRepo, name string, goVersion strin
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name)
+	cmd := exec.Command("go", "mod", "init", "github.com/ONSdigital/"+name) //nolint:gosec,noctx // legacy code
 	cmd.Dir = pathToRepo
 	err = cmd.Run()
 	if err != nil {
@@ -529,7 +529,7 @@ func InitGoModules(ctx context.Context, pathToRepo, name string, goVersion strin
 func FinaliseModules(ctx context.Context, pathToRepo string, opts ...AppOptions) {
 	runGoModTidy(ctx, pathToRepo)
 
-	cmd := exec.Command("make", "build")
+	cmd := exec.Command("make", "build") //nolint:noctx // legacy code - will be replaced with templates
 	cmd.Dir = pathToRepo
 	err := cmd.Run()
 	if err != nil {
@@ -545,7 +545,7 @@ func FinaliseModules(ctx context.Context, pathToRepo string, opts ...AppOptions)
 
 // FinaliseJSModules runs `npm install` to ensure dependencies are up to date and clean.
 func FinaliseJSModules(ctx context.Context, pathToRepo string) {
-	cmd := exec.Command("npm", "install")
+	cmd := exec.Command("npm", "install") //nolint:noctx // legacy code - will be replaced with templates
 	cmd.Dir = pathToRepo
 
 	var out bytes.Buffer

@@ -124,7 +124,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 }
 
 func execCommand(wrkDir, command string, arg ...string) error {
-	c := exec.Command(command, arg...)
+	c := exec.CommandContext(context.Background(), command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout

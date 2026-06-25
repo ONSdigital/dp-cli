@@ -304,6 +304,8 @@ func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile, ansibleGro
 }
 
 // ListEC2 returns a list of EC2 instances which match the environment name
+//
+//nolint:gocyclo // complex EC2 response parsing - legacy code
 func ListEC2(ctx context.Context, environment, profile string, cfg *config.Config) ([]EC2Result, error) {
 	if r, ok := resultCache[environment]; ok {
 		return r, nil

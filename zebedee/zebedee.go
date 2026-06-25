@@ -9,16 +9,15 @@ import (
 
 var zebedeeRoot string
 
-func init() {
-	zebedeeRoot = os.Getenv("zebedee_root")
-}
-
 func GetZebedeeRoot() string {
+	if zebedeeRoot == "" {
+		zebedeeRoot = os.Getenv("zebedee_root")
+	}
 	return zebedeeRoot
 }
 
 func DeleteCollections() error {
-	collectionsDir := filepath.Join(zebedeeRoot, "/zebedee/collections")
+	collectionsDir := filepath.Join(GetZebedeeRoot(), "/zebedee/collections")
 
 	files, err := filepath.Glob(filepath.Join(collectionsDir, "*"))
 	if err != nil {

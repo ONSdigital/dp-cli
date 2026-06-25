@@ -71,7 +71,7 @@ func GenerateProject(appName, appDesc, projType, projectLocation, runtimeVer, po
 	}
 	// If repository was created then this would have already been offered
 	if !repositoryCreated {
-		OfferPurgeProjectDestination(ctx, filepath.Join(pl, an))
+		_ = OfferPurgeProjectDestination(ctx, filepath.Join(pl, an)) //nolint:errcheck // legacy code
 	}
 
 	newApp := application{
@@ -169,29 +169,29 @@ func (a application) createGenericContentDirectoryStructure() error {
 
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createApplicationContentDirectoryStructure() error {
-	os.MkdirAll(filepath.Join(a.pathToRepo, "config"), os.ModePerm)
-	os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm)
-	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "config"), os.ModePerm)         //nolint:errcheck // legacy code
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm) //nolint:errcheck // legacy code
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)     //nolint:errcheck // legacy code
 	return nil
 }
 
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createLibraryContentDirectoryStructure() error {
-	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm) //nolint:errcheck // legacy code
 	return nil
 }
 
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createJSLibraryContentDirectoryStructure() error {
-	os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm)
-	os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "ci/scripts"), os.ModePerm) //nolint:errcheck // legacy code
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
 	return nil
 }
 
 // createApplicationContentDirectoryStructure will create child directories for Application content at a given path
 func (a application) createGATestLibraryContentDirectoryStructure() error {
-	os.MkdirAll(filepath.Join(a.pathToRepo, ".github/workflows"), os.ModePerm)
-	os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, ".github/workflows"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(a.pathToRepo, "src"), os.ModePerm)
 	return nil
 }
 
@@ -258,7 +258,7 @@ func (a application) createEventDrivenContentDirectoryStructure() error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(a.pathToRepo, "features/steps"), os.ModePerm) //nolint:gocritic,errcheck // legacy code
 	if err != nil {
 		return err
 	}

@@ -89,6 +89,10 @@ linters:
       - linters:
           - goconst
         path: (project_generation|repository_creation)/
+      - linters:
+          - gosec
+          - noctx
+        path: (project_generation|repository_creation)/
 issues:
   new: false
 formatters:

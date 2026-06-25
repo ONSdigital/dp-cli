@@ -1,6 +1,7 @@
 package eks
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -39,7 +40,7 @@ func EnsureTunnelDir() error {
 // AllocateLocalPort finds an available port in the range 9443-9500
 func AllocateLocalPort() (int, error) {
 	for port := basePort; port < maxPort; port++ {
-		cmd := exec.Command("lsof", "-i", fmt.Sprintf(":%d", port))
+		cmd := exec.CommandContext(context.Background(), "lsof", "-i", fmt.Sprintf(":%d", port)) //nolint:gosec // G204 - port is internally generated integer
 		if err := cmd.Run(); err != nil {
 			// lsof returns non-zero if port is not in use
 			return port, nil
@@ -55,7 +56,7 @@ func AllocateLoopbackIP() (string, error) {
 	for i := 1; i <= 254; i++ {
 		ip := fmt.Sprintf("127.0.0.%d", i)
 		// Check if port 443 is already bound on this IP (need sudo to see root processes)
-		cmd := exec.Command("sudo", "lsof", "-i", fmt.Sprintf("@%s:443", ip))
+		cmd := exec.CommandContext(context.Background(), "sudo", "lsof", "-i", fmt.Sprintf("@%s:443", ip)) //nolint:gosec // G204 - ip is internally resolved
 		if err := cmd.Run(); err != nil {
 			// lsof returns non-zero if nothing is bound — this IP is available
 			return ip, nil
@@ -72,26 +73,26 @@ func EnsureLoopbackAlias(ip string) error {
 
 	switch runtime.GOOS {
 	case "darwin":
-		out, err := exec.Command("ifconfig", "lo0").Output()
+		out, err := exec.CommandContext(context.Background(), "ifconfig", "lo0").Output()
 		if err != nil {
 			return fmt.Errorf("failed to check loopback interfaces: %w", err)
 		}
 		if strings.Contains(string(out), "inet "+ip+" ") {
 			return nil
 		}
-		cmd := exec.Command("sudo", "ifconfig", "lo0", "alias", ip)
+		cmd := exec.CommandContext(context.Background(), "sudo", "ifconfig", "lo0", "alias", ip)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		return cmd.Run()
 	case "linux":
-		out, err := exec.Command("ip", "addr", "show", "dev", "lo").Output()
+		out, err := exec.CommandContext(context.Background(), "ip", "addr", "show", "dev", "lo").Output()
 		if err != nil {
 			return fmt.Errorf("failed to check loopback interfaces: %w", err)
 		}
 		if strings.Contains(string(out), " "+ip+"/") {
 			return nil
 		}
-		cmd := exec.Command("sudo", "ip", "addr", "add", ip+"/8", "dev", "lo")
+		cmd := exec.CommandContext(context.Background(), "sudo", "ip", "addr", "add", ip+"/8", "dev", "lo") //nolint:gosec // G204 - ip is internally allocated loopback
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		return cmd.Run()
@@ -115,7 +116,7 @@ func StartSSMPortForward(bastionID, targetIP string, localPort int, profile stri
 		args = append(args, "--profile", profile)
 	}
 
-	cmd := exec.Command("aws", args...)
+	cmd := exec.CommandContext(context.Background(), "aws", args...)
 
 	f, err := os.Create(logFile)
 	if err != nil {
@@ -153,7 +154,7 @@ func StartSocat(loopbackIP string, localPort int) (int, error) {
 	listenAddr := fmt.Sprintf("TCP-LISTEN:443,bind=%s,fork,reuseaddr", loopbackIP)
 	targetAddr := fmt.Sprintf("TCP:127.0.0.1:%d", localPort)
 
-	cmd := exec.Command("sudo", "socat", listenAddr, targetAddr)
+	cmd := exec.CommandContext(context.Background(), "sudo", "socat", listenAddr, targetAddr)
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	// Detach from the controlling terminal so socat survives after dp exits
@@ -183,7 +184,7 @@ func StartSocat(loopbackIP string, localPort int) (int, error) {
 func findSocatPid(loopbackIP string, localPort int) int {
 	// Match socat processes with both our bind address AND our target port
 	pattern := fmt.Sprintf("socat.*bind=%s.*127.0.0.1:%d", loopbackIP, localPort)
-	out, err := exec.Command("pgrep", "-f", pattern).Output()
+	out, err := exec.CommandContext(context.Background(), "pgrep", "-f", pattern).Output()
 	if err != nil {
 		return 0
 	}
@@ -203,7 +204,7 @@ func AddHostsEntry(ip, hostname, clusterName string) error {
 	RemoveHostsEntry(hostname)
 
 	entry := fmt.Sprintf("%s %s %s %s\n", ip, hostname, hostsMarker, clusterName)
-	cmd := exec.Command("sudo", "tee", "-a", "/etc/hosts")
+	cmd := exec.CommandContext(context.Background(), "sudo", "tee", "-a", "/etc/hosts")
 	cmd.Stdin = strings.NewReader(entry)
 	cmd.Stdout = nil // suppress tee output
 	return cmd.Run()
@@ -221,23 +222,23 @@ func RemoveHostsEntry(hostname string) {
 			filtered = append(filtered, line)
 		}
 	}
-	cmd := exec.Command("sudo", "tee", "/etc/hosts")
+	cmd := exec.CommandContext(context.Background(), "sudo", "tee", "/etc/hosts")
 	cmd.Stdin = strings.NewReader(strings.Join(filtered, "\n"))
 	cmd.Stdout = nil
-	cmd.Run()
+	_ = cmd.Run() //nolint:errcheck // best-effort hosts file update
 }
 
 // FlushDNSCache flushes the OS DNS cache. Behaviour is OS-specific and best-effort.
 func FlushDNSCache() {
 	switch runtime.GOOS {
 	case "darwin":
-		exec.Command("sudo", "dscacheutil", "-flushcache").Run()
-		exec.Command("sudo", "killall", "-HUP", "mDNSResponder").Run()
+		_ = exec.CommandContext(context.Background(), "sudo", "dscacheutil", "-flushcache").Run()       //nolint:errcheck // best-effort DNS flush
+		_ = exec.CommandContext(context.Background(), "sudo", "killall", "-HUP", "mDNSResponder").Run() //nolint:errcheck // best-effort DNS flush
 	case "linux":
 		// Try resolvectl (systemd 239+), then systemd-resolve, then nscd — all best-effort
-		if exec.Command("resolvectl", "flush-caches").Run() != nil {
-			if exec.Command("systemd-resolve", "--flush-caches").Run() != nil {
-				exec.Command("sudo", "systemctl", "restart", "nscd").Run()
+		if exec.CommandContext(context.Background(), "resolvectl", "flush-caches").Run() != nil {
+			if exec.CommandContext(context.Background(), "systemd-resolve", "--flush-caches").Run() != nil {
+				_ = exec.CommandContext(context.Background(), "sudo", "systemctl", "restart", "nscd").Run() //nolint:errcheck // best-effort DNS flush
 			}
 		}
 	}
@@ -255,7 +256,7 @@ func SaveTunnelState(state TunnelState) error {
 		prefix + ".port":      strconv.Itoa(state.LocalPort),
 	}
 	for path, content := range writes {
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 			return fmt.Errorf("failed to write %s: %w", path, err)
 		}
 	}
@@ -321,7 +322,7 @@ func IsProcessAlive(pid int) bool {
 		return false
 	}
 	// Get the command name for this PID
-	out, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "command=").Output()
+	out, err := exec.CommandContext(context.Background(), "ps", "-p", strconv.Itoa(pid), "-o", "command=").Output() //nolint:gosec // G204 - pid is internally tracked integer
 	if err != nil {
 		return false
 	}
@@ -338,10 +339,10 @@ func KillProcess(pid int, useSudo bool) {
 		return
 	}
 	if useSudo {
-		exec.Command("sudo", "kill", strconv.Itoa(pid)).Run()
+		_ = exec.CommandContext(context.Background(), "sudo", "kill", strconv.Itoa(pid)).Run() //nolint:errcheck,gosec // best-effort process kill, pid is internally tracked
 	} else {
 		if p, err := os.FindProcess(pid); err == nil {
-			p.Kill()
+			_ = p.Kill() //nolint:errcheck // best-effort process kill
 		}
 	}
 }
@@ -354,7 +355,7 @@ func CleanupTunnelState(clusterName string) {
 	portBytes, _ := os.ReadFile(prefix + ".port")
 	port := strings.TrimSpace(string(portBytes))
 	if port != "" {
-		os.Remove(filepath.Join(tunnelDir, fmt.Sprintf("ssm-%s.log", port)))
+		_ = os.Remove(filepath.Join(tunnelDir, fmt.Sprintf("ssm-%s.log", port))) //nolint:gosec // G703 - path built from internal constants
 	}
 
 	extensions := []string{".ssm.pid", ".socat.pid", ".endpoint", ".loopback", ".ipv4", ".port"}
@@ -405,7 +406,10 @@ func CleanupStaleTunnels() {
 // to the EKS API endpoint on port 443. A successful dial confirms the tunnel is
 // routing traffic without requiring TLS validation or valid auth credentials.
 func CheckAPIConnectivity(endpoint string) bool {
-	conn, err := net.DialTimeout("tcp", endpoint+":443", 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", endpoint+":443")
 	if err != nil {
 		return false
 	}

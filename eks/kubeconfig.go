@@ -1,6 +1,7 @@
 package eks
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 )
@@ -21,7 +22,7 @@ func UpdateKubeconfig(clusterName, profile, roleSuffix string) (string, error) {
 		args = append(args, "--profile", profile)
 	}
 
-	cmd := exec.Command("aws", args...)
+	cmd := exec.CommandContext(context.Background(), "aws", args...)
 	output, err := cmd.CombinedOutput()
 	return strings.TrimSpace(string(output)), err
 }

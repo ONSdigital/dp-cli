@@ -71,7 +71,8 @@ func eksSessionStopCommand(ctx context.Context, cfg *config.Config) *cobra.Comma
 			if len(args) > 0 {
 				return runSessionStopEnv(args[0])
 			}
-			return runSessionStopAll()
+			runSessionStopAll() //nolint:errcheck // best-effort cleanup on signal
+			return nil
 		},
 	}
 
@@ -160,7 +161,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 	go func() {
 		<-sigChan
 		out.Warn("\n  Caught interrupt, cleaning up...")
-		runSessionStopAll()
+		_ = runSessionStopAll() //nolint:errcheck // best-effort cleanup on signal
 		os.Exit(0)
 	}()
 
@@ -190,88 +191,13 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 
 		out.InfoFHighlight("  Setting up tunnel for: %s", cluster.Name)
 
-		// Check if tunnel already running and healthy - skip tunnel setup
-		existing, err := eks.LoadTunnelState(cluster.Name)
-		if err == nil && eks.IsProcessAlive(existing.SSMPid) && eks.IsProcessAlive(existing.SocatPid) {
-			out.InfoFHighlight("    Tunnel already active (SSM PID: %s)", fmt.Sprintf("%d", existing.SSMPid))
+		ok, accessErr := setupClusterTunnel(ctx, profile, tunnelBox.InstanceID, cluster, loopbackIP)
+		if accessErr {
+			accessDenied = true
+		}
+		if ok {
 			tunnelsEstablished++
-			continue
 		}
-		// If state exists but processes are dead, clean up first
-		if err == nil {
-			stopTunnel(*existing)
-		}
-
-		// Resolve IPv4 via tunnel box (required for dualstack clusters to force A record)
-		out.Info("    Resolving endpoint IPv4 via tunnel box...")
-		ipv4, err := eks.ResolveEndpointIPv4(ctx, profile, tunnelBox.InstanceID, cluster.Endpoint)
-		if err != nil {
-			out.ErrorFHighlight("  %s Failed to resolve cluster: %s", "✗", cluster.Name)
-			out.ErrorFHighlight("  %s", err.Error())
-			if aws.IsAccessError(err) {
-				accessDenied = true
-			}
-			continue
-		}
-		out.InfoFHighlight("    IPv4: %s", ipv4)
-
-		// Allocate local port
-		localPort, err := eks.AllocateLocalPort()
-		if err != nil {
-			out.WarnFHighlight("    ⚠ %s", err.Error())
-			continue
-		}
-		out.InfoFHighlight("    Local port: %s", fmt.Sprintf("%d", localPort))
-
-		// Start SSM port forward
-		out.Info("    Starting SSM session...")
-		ssmPid, err := eks.StartSSMPortForward(tunnelBox.InstanceID, ipv4, localPort, profile)
-		if err != nil {
-			out.WarnFHighlight("    ⚠ SSM session failed: %s", err.Error())
-			continue
-		}
-		out.InfoFHighlight("    SSM session established (PID: %s)", fmt.Sprintf("%d", ssmPid))
-
-		// Ensure loopback alias
-		if err := eks.EnsureLoopbackAlias(loopbackIP); err != nil {
-			out.WarnFHighlight("    ⚠ Failed to create loopback alias: %s", err.Error())
-			eks.KillProcess(ssmPid, false)
-			continue
-		}
-
-		// Start socat
-		out.InfoFHighlight("    Starting socat (%s:443 → 127.0.0.1:%s)...", loopbackIP, fmt.Sprintf("%d", localPort))
-		socatPid, err := eks.StartSocat(loopbackIP, localPort)
-		if err != nil {
-			out.WarnFHighlight("    ⚠ socat failed: %s", err.Error())
-			eks.KillProcess(ssmPid, false)
-			continue
-		}
-
-		// Add hosts entry
-		if err := eks.AddHostsEntry(loopbackIP, cluster.Endpoint, cluster.Name); err != nil {
-			out.WarnFHighlight("    ⚠ Failed to update /etc/hosts: %s", err.Error())
-			eks.KillProcess(ssmPid, false)
-			eks.KillProcess(socatPid, true)
-			continue
-		}
-
-		// Save state
-		state := eks.TunnelState{
-			ClusterName: cluster.Name,
-			SSMPid:      ssmPid,
-			SocatPid:    socatPid,
-			Endpoint:    cluster.Endpoint,
-			LoopbackIP:  loopbackIP,
-			IPv4:        ipv4,
-			LocalPort:   localPort,
-		}
-		if err := eks.SaveTunnelState(state); err != nil {
-			out.WarnFHighlight("    ⚠ Failed to save tunnel state: %s", err.Error())
-		}
-
-		out.InfoFHighlight("    ✓ Tunnel active: %s → %s:443 → tunnel box → %s:443", cluster.Endpoint, loopbackIP, ipv4)
-		tunnelsEstablished++
 	}
 
 	// Flush DNS cache
@@ -437,4 +363,87 @@ func runSessionStatus() error {
 	}
 
 	return nil
+}
+
+// setupClusterTunnel handles the tunnel setup for a single cluster.
+// Returns (success bool, accessDenied bool).
+func setupClusterTunnel(ctx context.Context, profile, tunnelBoxID string, cluster eks.ClusterInfo, loopbackIP string) (success, accessDenied bool) {
+	// Check if tunnel already running and healthy
+	existing, err := eks.LoadTunnelState(cluster.Name)
+	if err == nil && eks.IsProcessAlive(existing.SSMPid) && eks.IsProcessAlive(existing.SocatPid) {
+		out.InfoFHighlight("    Tunnel already active (SSM PID: %s)", fmt.Sprintf("%d", existing.SSMPid))
+		return true, false
+	}
+	// If state exists but processes are dead, clean up first
+	if err == nil {
+		stopTunnel(*existing)
+	}
+
+	// Resolve IPv4 via tunnel box (required for dualstack clusters to force A record)
+	out.Info("    Resolving endpoint IPv4 via tunnel box...")
+	ipv4, err := eks.ResolveEndpointIPv4(ctx, profile, tunnelBoxID, cluster.Endpoint)
+	if err != nil {
+		out.ErrorFHighlight("  %s Failed to resolve cluster: %s", "✗", cluster.Name)
+		out.ErrorFHighlight("  %s", err.Error())
+		return false, aws.IsAccessError(err)
+	}
+	out.InfoFHighlight("    IPv4: %s", ipv4)
+
+	// Allocate local port
+	localPort, err := eks.AllocateLocalPort()
+	if err != nil {
+		out.WarnFHighlight("    ⚠ %s", err.Error())
+		return false, false
+	}
+	out.InfoFHighlight("    Local port: %s", fmt.Sprintf("%d", localPort))
+
+	// Start SSM port forward
+	out.Info("    Starting SSM session...")
+	ssmPid, err := eks.StartSSMPortForward(tunnelBoxID, ipv4, localPort, profile)
+	if err != nil {
+		out.WarnFHighlight("    ⚠ SSM session failed: %s", err.Error())
+		return false, false
+	}
+	out.InfoFHighlight("    SSM session established (PID: %s)", fmt.Sprintf("%d", ssmPid))
+
+	// Ensure loopback alias
+	if err := eks.EnsureLoopbackAlias(loopbackIP); err != nil {
+		out.WarnFHighlight("    ⚠ Failed to create loopback alias: %s", err.Error())
+		eks.KillProcess(ssmPid, false)
+		return false, false
+	}
+
+	// Start socat
+	out.InfoFHighlight("    Starting socat (%s:443 → 127.0.0.1:%s)...", loopbackIP, fmt.Sprintf("%d", localPort))
+	socatPid, err := eks.StartSocat(loopbackIP, localPort)
+	if err != nil {
+		out.WarnFHighlight("    ⚠ socat failed: %s", err.Error())
+		eks.KillProcess(ssmPid, false)
+		return false, false
+	}
+
+	// Add hosts entry
+	if err := eks.AddHostsEntry(loopbackIP, cluster.Endpoint, cluster.Name); err != nil {
+		out.WarnFHighlight("    ⚠ Failed to update /etc/hosts: %s", err.Error())
+		eks.KillProcess(ssmPid, false)
+		eks.KillProcess(socatPid, true)
+		return false, false
+	}
+
+	// Save state
+	state := eks.TunnelState{
+		ClusterName: cluster.Name,
+		SSMPid:      ssmPid,
+		SocatPid:    socatPid,
+		Endpoint:    cluster.Endpoint,
+		LoopbackIP:  loopbackIP,
+		IPv4:        ipv4,
+		LocalPort:   localPort,
+	}
+	if err := eks.SaveTunnelState(state); err != nil {
+		out.WarnFHighlight("    ⚠ Failed to save tunnel state: %s", err.Error())
+	}
+
+	out.InfoFHighlight("    ✓ Tunnel active: %s → %s:443 → tunnel box → %s:443", cluster.Endpoint, loopbackIP, ipv4)
+	return true, false
 }

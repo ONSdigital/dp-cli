@@ -1,6 +1,7 @@
 package eks
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,7 +12,7 @@ import (
 // Subsequent sudo calls within the timeout window (typically 5 minutes) won't prompt again.
 func EnsureSudo(reason string) error {
 	// Check if sudo is already cached (no prompt needed)
-	if exec.Command("sudo", "-n", "true").Run() == nil {
+	if exec.CommandContext(context.Background(), "sudo", "-n", "true").Run() == nil {
 		return nil
 	}
 
@@ -22,7 +23,7 @@ func EnsureSudo(reason string) error {
 	fmt.Println()
 
 	// Run sudo -v to cache credentials (this will prompt)
-	cmd := exec.Command("sudo", "-v")
+	cmd := exec.CommandContext(context.Background(), "sudo", "-v")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
