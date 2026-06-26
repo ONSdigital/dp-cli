@@ -52,7 +52,51 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
       - name: Run Go unit tests
-        run: make test
+        run: |
+          set -o pipefail
+          go test -race -coverprofile=coverage.out -covermode=atomic ./... 2>&1 | tee go-test.out
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "## Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f go-test.out ]; then
+            echo "| Package | Coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "|---------|----------|" >> $GITHUB_STEP_SUMMARY
+            awk '
+              /coverage:[[:space:]]+[0-9.]+%[[:space:]]+of[[:space:]]+statements/ {
+                pkg = ""
+                cov = ""
+
+                if ($1 == "ok" || $1 == "FAIL") {
+                  pkg = $2
+                } else {
+                  pkg = $1
+                }
+
+                for (i = 1; i <= NF; i++) {
+                  if ($i == "coverage:") {
+                    cov = $(i + 1)
+                    break
+                  }
+                }
+
+                if (pkg != "" && cov != "") {
+                  printf("| `%s` | %s |\n", pkg, cov)
+                }
+              }
+            ' go-test.out >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No go test output found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f coverage.out ]; then
+            total_cov=$(go tool cover -func=coverage.out | awk '/^total:/{print $3}')
+            if [ -n "$total_cov" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Total coverage: ${total_cov}**" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
 
   build:
     runs-on: ubuntu-latest

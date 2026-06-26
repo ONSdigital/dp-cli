@@ -209,9 +209,10 @@ Available Commands:
   generate-project Generates the boilerplate for a given project type
   help             Help about any command
   import           Import data into your local developer environment
-  override-key     Generates an overrideKey to bypass the Florence dataset version validation step when approving a collection
   remote           Allow or deny remote access to environment
+  scp              Push (or `--pull`) a file to (from) an environment using scp
   spew             Log out some useful debugging info
+  ssh              Access an environment using ssh
   version          Print the app version
 
 Flags:
