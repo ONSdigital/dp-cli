@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -14,6 +15,9 @@ import (
 	"github.com/ONSdigital/dp-cli/out"
 	"github.com/spf13/cobra"
 )
+
+// errSilent is returned to indicate failure without cobra printing the error (SilenceErrors is set).
+var errSilent = errors.New("")
 
 func eksCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,8 +56,10 @@ func eksSessionStartCommand(ctx context.Context, cfg *config.Config) *cobra.Comm
 	for _, e := range cfg.Environments {
 		env := e
 		cmd.AddCommand(&cobra.Command{
-			Use:   env.Name,
-			Short: fmt.Sprintf("Start EKS tunnel sessions for %s", env.Name),
+			Use:           env.Name,
+			Short:         fmt.Sprintf("Start EKS tunnel sessions for %s", env.Name),
+			SilenceUsage:  true,
+			SilenceErrors: true,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return runSessionStart(ctx, cfg, env, *roleFlag)
 			},
@@ -135,7 +141,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		if aws.IsAccessError(err) {
 			out.AccessDeniedGuidance(profile)
 		}
-		return nil
+		return errSilent
 	}
 	out.InfoFHighlight("  ✓ Found tunnel box: %s (%s)", tunnelBox.Name, tunnelBox.InstanceID)
 
@@ -148,7 +154,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		if aws.IsAccessError(err) {
 			out.AccessDeniedGuidance(profile)
 		}
-		return nil
+		return errSilent
 	}
 	out.InfoFHighlight("  ✓ Found %s cluster(s)", fmt.Sprintf("%d", len(clusters)))
 	for _, c := range clusters {
@@ -209,7 +215,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		if accessDenied {
 			out.AccessDeniedGuidance(profile)
 		}
-		return nil
+		return errSilent
 	}
 
 	// Update kubeconfig for each cluster with an active tunnel
