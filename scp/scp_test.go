@@ -10,13 +10,11 @@ import (
 
 func TestWithCWD(t *testing.T) {
 	Convey("Given we want to test withCWD in a given dir", t, func() {
-
 		So(os.Chdir("/var/tmp"), ShouldBeNil)
 		origPath, err := os.Getwd()
 		So(err, ShouldBeNil)
 
 		Convey("When a full path is provided", func() {
-
 			path, err := withCWD("/a/b")
 
 			Convey("Then the original path should be returned", func() {
@@ -26,7 +24,6 @@ func TestWithCWD(t *testing.T) {
 		})
 
 		Convey("When a partial path is provided, below the current dir", func() {
-
 			path, err := withCWD("a/b")
 
 			Convey("Then the path should be returned as within the original dir", func() {
@@ -36,7 +33,6 @@ func TestWithCWD(t *testing.T) {
 		})
 
 		Convey("When a path dot-escaping the current path is provided", func() {
-
 			path, err := withCWD("../a/b")
 
 			Convey("Then the path should be returned outside the original dir", func() {

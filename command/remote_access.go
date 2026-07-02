@@ -2,27 +2,146 @@ package command
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/ONSdigital/dp-cli/aws"
-	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
 	"github.com/spf13/cobra"
 )
 
+// buildRemoteAccessPayload collects user/IPs from cfg and builds the JSON payload.
+// action must be one of: "add", "revoke".
+func buildRemoteAccessPayload(cfg *config.Config, action string) ([]byte, error) {
+	if cfg.UserName == nil || *cfg.UserName == "" {
+		return nil, fmt.Errorf("no user provided (use --user)")
+	}
+
+	// If explicit IPs were provided, use only those (avoid external lookup)
+	ipv4 := ""
+	if cfg.IPv4Address != nil && *cfg.IPv4Address != "" {
+		ipv4 = *cfg.IPv4Address
+	}
+	ipv6 := ""
+	if cfg.IPv6Address != nil && *cfg.IPv6Address != "" {
+		ipv6 = *cfg.IPv6Address
+	}
+	if ipv4 == "" && ipv6 == "" {
+		var err error
+		ipv4, ipv6, err = cfg.GetMyIPs2()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	ips := make([]string, 0)
+	if ipv4 != "" {
+		ips = append(ips, ipv4)
+	}
+	if ipv6 != "" {
+		ips = append(ips, ipv6)
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("no IPv4 or IPv6 address resolved")
+	}
+
+	payload := map[string]interface{}{
+		"action": action,
+		"user":   *cfg.UserName,
+		"ips":    ips,
+	}
+
+	return json.Marshal(payload)
+}
+
+// LambdaResult represents a single item from the Lambda response array
+type LambdaResult struct {
+	Status             string `json:"status"`
+	Message            string `json:"message"`
+	ResourceID         string `json:"resource_id"`
+	ResourceType       string `json:"resource_type"`
+	Action             string `json:"action"`
+	TableUpdated       bool   `json:"table_updated"`
+	SGGroupName        string `json:"sg_group_name,omitempty"`
+	CloudflareListName string `json:"cloudflare_list_name,omitempty"`
+	IPVersion          string `json:"ip_version,omitempty"`
+	ExpiresAt          *int64 `json:"expires_at,omitempty"`
+	RevokedAt          *int64 `json:"revoked_at,omitempty"`
+}
+
+func formatUnix(ts int64) string {
+	// dd/mm/yyyy hh:mm:ss
+	return time.Unix(ts, 0).Local().Format("02/01/2006 15:04:05")
+}
+
+//nolint:gocritic // paramTypeCombine - keeping params explicit for readability
+func renderLambdaResults(lvl out.Level, envName string, user string, results []LambdaResult) {
+	//nolint:gocritic // rangeValCopy acceptable for result iteration
+	for _, r := range results {
+		verb := "allowing"
+		if r.Action == "revoke" {
+			verb = "denying"
+		}
+
+		// Resource label: prefer SG group name for SGs, otherwise type(id)
+		label := r.ResourceType
+		switch r.ResourceType {
+		case "sg":
+			if r.SGGroupName != "" {
+				label = fmt.Sprintf("sg %s (%s)", r.SGGroupName, r.ResourceID)
+			} else {
+				label = fmt.Sprintf("sg (%s)", r.ResourceID)
+			}
+		case "cloudflare":
+			if r.CloudflareListName != "" {
+				label = fmt.Sprintf("cloudflare %s (%s)", r.CloudflareListName, r.ResourceID)
+			} else {
+				label = fmt.Sprintf("cloudflare (%s)", r.ResourceID)
+			}
+		default:
+			if r.ResourceID != "" {
+				label = fmt.Sprintf("%s (%s)", r.ResourceType, r.ResourceID)
+			}
+		}
+
+		// Optional timestamp suffix
+		suffix := ""
+		if r.ExpiresAt != nil {
+			suffix = fmt.Sprintf(" (expires: %s)", formatUnix(*r.ExpiresAt))
+		} else if r.RevokedAt != nil {
+			suffix = fmt.Sprintf(" (revoked: %s)", formatUnix(*r.RevokedAt))
+		}
+
+		// Compose line similar to existing output, using the Lambda message
+		// Example: [dp] allowing bob via sandbox - remote-allow-test-1 (sg-...) <message> (expires: ...)
+		out.Highlight(lvl, "%s %s via %s - %s %s%s", verb, user, envName, label, r.Message, suffix)
+	}
+}
+
+// remoteAccess creates the remote command for the remote allow service.
 func remoteAccess(ctx context.Context, cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remote",
 		Short: "Allow or deny remote access to environment",
 	}
-
-	ipDefault := ""
-	if cfg.IPAddress != nil {
-		ipDefault = *cfg.IPAddress
+	ipv4Default := ""
+	if cfg.IPv4Address != nil {
+		ipv4Default = *cfg.IPv4Address
 	}
-	ipFlag := cmd.PersistentFlags().String("ip", ipDefault, "The IP for ssh,remote sub-commands")
-	if ipFlag != nil {
-		cfg.IPAddress = ipFlag
+	ipv4Flag := cmd.PersistentFlags().String("ipv4", ipv4Default, "The IPv4 address for remote sub-commands")
+	if ipv4Flag != nil {
+		cfg.IPv4Address = ipv4Flag
+	}
+
+	ipv6Default := ""
+	if cfg.IPv6Address != nil {
+		ipv6Default = *cfg.IPv6Address
+	}
+	ipv6Flag := cmd.PersistentFlags().String("ipv6", ipv6Default, "The IPv6 address for remote sub-commands")
+	if ipv6Flag != nil {
+		cfg.IPv6Address = ipv6Flag
 	}
 
 	userDefault := ""
@@ -34,103 +153,126 @@ func remoteAccess(ctx context.Context, cfg *config.Config) *cobra.Command {
 		cfg.UserName = userFlag
 	}
 
-	subCommands := []*cobra.Command{
-		allowCommand(ctx, cfg.UserName, cfg.Environments, cfg),
-		denyCommand(ctx, cfg.UserName, cfg.Environments, cfg),
-		loginCommand(ctx, cfg.Environments, cfg),
-	}
+	cmd.AddCommand(remoteAllowCommand(ctx, cfg))
+	cmd.AddCommand(remoteDenyCommand(ctx, cfg))
 
-	cmd.AddCommand(subCommands...)
 	return cmd
 }
 
-// build the allow sub command - has a sub commands for each environment.
-func allowCommand(ctx context.Context, userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
-	c := &cobra.Command{
+// remoteAllowCommand creates the allow subcommand for remote
+func remoteAllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "allow",
 		Short: "allow access to environment",
 	}
 
-	skipDeny := c.PersistentFlags().BoolP("no-deny", "D", false, "Skip any 'deny' of existing IPs - allows >1 IP for user")
-	cfg.HttpOnly = c.PersistentFlags().BoolP("http-only", "H", false, "Allow only http-related ports (no ssh)")
+	envSubCmds := make([]*cobra.Command, 0, len(cfg.Environments))
 
-	cmds := make([]*cobra.Command, 0)
-
-	for _, e := range envs {
+	// create subcommands for each environment from the config
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
+	for _, e := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for environment config iteration
 		env := e
-		cmds = append(cmds, &cobra.Command{
+		envSubCmds = append(envSubCmds, &cobra.Command{
 			Use:   e.Name,
 			Short: "allow access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				lvl := out.GetLevel(env)
-				if !*skipDeny {
-					out.Highlight(lvl, "removing existing access to %s", env.Name)
-					aws.DenyIPForEnvironment(ctx, userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
+
+				// Build payload
+				payload, err := buildRemoteAccessPayload(cfg, "add")
+				if err != nil {
+					out.Warn(fmt.Sprintf("Warning: %v. Aborting allow.", err))
+					return nil
 				}
-				out.Highlight(lvl, "allowing access to %s", env.Name)
-				return aws.AllowIPForEnvironment(ctx, userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
+
+				// Lambda function name pattern: dis-<env>-remote-allow
+				functionName := fmt.Sprintf("dis-%s-remote-allow", env.Name)
+				// Get the AWS profile for this environment and command
+				profile := cfg.GetProfileForCommand(env.Name, "remote.allow")
+
+				out.Highlight(lvl, "invoking lambda %s for %s (profile: %s)", functionName, env.Name, profile)
+				resp, err := aws.InvokeLambda(ctx, profile, functionName, payload)
+				if err != nil {
+					return fmt.Errorf("lambda invoke failed: %w", err)
+				}
+				// Parse and render response as highlighted lines
+				var results []LambdaResult
+				if err := json.Unmarshal([]byte(resp), &results); err != nil {
+					// Fallback to raw output if not JSON array
+					cmd.Printf("%s\n", resp)
+					return nil
+				}
+				user := ""
+				if cfg.UserName != nil {
+					user = *cfg.UserName
+				}
+				renderLambdaResults(lvl, env.Name, user, results)
+				return nil
 			},
 		})
 	}
 
-	if len(cmds) == 0 {
+	if len(envSubCmds) == 0 {
 		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
 	}
 
-	c.AddCommand(cmds...)
-	return c
+	cmd.AddCommand(envSubCmds...)
+	return cmd
 }
 
-// build the deny sub command - has a sub command for each environment
-func denyCommand(ctx context.Context, userName *string, envs []config.Environment, cfg *config.Config) *cobra.Command {
-	c := &cobra.Command{
+// remoteDenyCommand creates the deny subcommand for remote
+func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "deny",
 		Short: "deny access to environment",
 	}
 
-	cmds := make([]*cobra.Command, 0)
+	envSubCmds := make([]*cobra.Command, 0, len(cfg.Environments))
 
-	for _, e := range envs {
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
+	for _, e := range cfg.Environments {
 		env := e
-		cmds = append(cmds, &cobra.Command{
+		envSubCmds = append(envSubCmds, &cobra.Command{
 			Use:   e.Name,
 			Short: "deny access to " + env.Name,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				lvl := out.GetLevel(env)
-				out.Highlight(lvl, "denying access to %s", env.Name)
-				return aws.DenyIPForEnvironment(ctx, userName, env.Name, cfg.GetProfile(env.Name), env.ExtraPorts, cfg)
+
+				// Build payload with action revoke
+				payload, err := buildRemoteAccessPayload(cfg, "revoke")
+				if err != nil {
+					out.Warn(fmt.Sprintf("Warning: %v. Aborting deny.", err))
+					return nil
+				}
+
+				functionName := fmt.Sprintf("dis-%s-remote-allow", env.Name)
+				// Get the AWS profile for this environment and command
+				profile := cfg.GetProfileForCommand(env.Name, "remote.deny")
+
+				out.Highlight(lvl, "invoking lambda %s for %s (profile: %s)", functionName, env.Name, profile)
+				resp, err := aws.InvokeLambda(ctx, profile, functionName, payload)
+				if err != nil {
+					return fmt.Errorf("lambda invoke failed: %w", err)
+				}
+				var results []LambdaResult
+				if err := json.Unmarshal([]byte(resp), &results); err != nil {
+					cmd.Printf("%s\n", resp)
+					return nil
+				}
+				user := ""
+				if cfg.UserName != nil {
+					user = *cfg.UserName
+				}
+				renderLambdaResults(lvl, env.Name, user, results)
+				return nil
 			},
 		})
 	}
 
-	if len(cmds) == 0 {
+	if len(envSubCmds) == 0 {
 		out.Warn("Warning: No subcommands found for envs - missing envs in config?")
 	}
 
-	c.AddCommand(cmds...)
-	return c
-}
-
-// loginCommand - build the `login` sub-command - has a sub-command for each environment
-func loginCommand(ctx context.Context, envs []config.Environment, cfg *config.Config) *cobra.Command {
-
-	c := &cobra.Command{
-		Use:   "login",
-		Short: "login to AWS environment",
-	}
-
-	if envs != nil {
-		firstEnv := envs[0]
-
-		c.RunE = func(cmd *cobra.Command, args []string) error {
-			lvl := out.GetLevel(firstEnv)
-			loginCmd := "aws sso login --profile " + cfg.GetProfile(firstEnv.Name)
-			out.Highlight(lvl, "logging in to %s using %s", firstEnv.Name, loginCmd)
-			return cli.ExecCommand(ctx, loginCmd, ".")
-		}
-	} else {
-		out.WarnFHighlight("Warning: No environments found in config - `dp remote login` will not work")
-	}
-
-	return c
+	cmd.AddCommand(envSubCmds...)
+	return cmd
 }

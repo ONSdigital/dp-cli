@@ -2,6 +2,7 @@ package scp
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -36,9 +37,19 @@ func withCWD(file string) (string, error) {
 
 // Launch an scp file copy to/from the specified environment
 func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, opts Options, srcFiles []string, target string) (err error) {
-	if cfg.SSHUser == nil || len(*cfg.SSHUser) == 0 {
+	if cfg.SSHUser == nil || *cfg.SSHUser == "" {
 		out.Highlight(out.WARN, "no %s is defined in your configuration file you can view the app configuration values using the %s command", "ssh-user", "spew config")
 		return errors.New("missing `ssh-user` in config file")
+	}
+
+	// Validate credentials before attempting SCP
+	if !env.IsAWSA() {
+		profile := cfg.GetProfileForCommand(env.Name, "scp")
+		if err := aws.ValidateCredentials(context.Background(), profile); err != nil {
+			out.ErrorFHighlight("  %s Access denied for profile: %s", "✗", profile)
+			out.AccessDeniedGuidance(profile)
+			return nil
+		}
 	}
 
 	ansibleDir := cfg.GetAnsibleDirectory(env)
@@ -52,7 +63,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 	}
 	cmdArgs := []string{flags + "F", "ssh.cfg"}
 	sshUser := *cfg.SSHUser
-	if len(env.SSHUser) > 0 {
+	if env.SSHUser != "" {
 		sshUser = env.SSHUser
 	}
 	for _, srcFile := range srcFiles {
@@ -60,7 +71,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 			if env.IsAWSA() {
 				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, srcFile)
 			} else {
-				os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+				os.Setenv("AWS_PROFILE", cfg.GetProfileForCommand(env.Name, "scp"))
 				srcFile = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, srcFile)
 			}
 		} else {
@@ -86,7 +97,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 		if env.IsAWSA() {
 			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.IPAddress, target)
 		} else {
-			os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+			os.Setenv("AWS_PROFILE", cfg.GetProfileForCommand(env.Name, "scp"))
 			target = fmt.Sprintf("%s@%s:%s", sshUser, instance.InstanceId, target)
 		}
 	}
@@ -113,7 +124,7 @@ func Launch(cfg *config.Config, env config.Environment, instance aws.EC2Result, 
 }
 
 func execCommand(wrkDir, command string, arg ...string) error {
-	c := exec.Command(command, arg...)
+	c := exec.CommandContext(context.Background(), command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout

@@ -1,0 +1,106 @@
+---
+version: "2"
+run:
+  concurrency: 4
+linters:
+  default: none
+  enable:
+    - dogsled
+    - errcheck
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gosec
+    - govet
+    - ineffassign
+    - nakedret
+    - noctx
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unused
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 100
+      statements: 100
+    gocognit:
+      # Slightly higher than default to accommodate complex CLI command setup
+      min-complexity: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 5
+    gocritic:
+      disabled-checks:
+        - wrapperFunc
+        - dupImport
+        - ifElseChain
+        - octalLiteral
+        - hugeParam
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 25
+    lll:
+      line-length: 140
+    misspell:
+      locale: UK
+    revive:
+      rules:
+        # Cobra command handlers often have unused cmd/args params
+        - name: unused-parameter
+          severity: warning
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - gocyclo
+          - gosec
+        path: _test\.go
+      - linters:
+          - revive
+        path: _test\.go
+        text: dot-imports
+      - linters:
+          - gocritic
+        path: (project_generation|repository_creation|zebedee)/
+        text: filepathJoin
+      - linters:
+          - gocritic
+        path: project_generation/
+        text: (regexpSimplify|tooManyResultsChecker)
+      - linters:
+          - goconst
+        path: (project_generation|repository_creation)/
+      - linters:
+          - gosec
+          - noctx
+        path: (project_generation|repository_creation)/
+issues:
+  new: false
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: false
+  exclusions:
+    generated: lax

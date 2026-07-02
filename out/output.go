@@ -123,7 +123,7 @@ func highlightDNL(c *color.Color, formattedMsg string, args ...interface{}) {
 }
 
 func highlightTrail(c *color.Color, formattedMsg, endOfLine string, args ...interface{}) {
-	var highlighted []interface{}
+	highlighted := make([]interface{}, 0, len(args))
 
 	for _, val := range args {
 		highlighted = append(highlighted, c.SprintFunc()(val))

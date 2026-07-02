@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -22,7 +23,7 @@ type SSHOpts struct {
 
 // Launch an ssh connection to the specified environment
 func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SSHOpts, extraArgs []string, instances []aws.EC2Result) (err error) {
-	if cfg.SSHUser == nil || len(*cfg.SSHUser) == 0 {
+	if cfg.SSHUser == nil || *cfg.SSHUser == "" {
 		out.Highlight(out.WARN, "no %s is defined in configuration file (or `--user`) you can view the app configuration values using the %s command", "ssh-user", "spew config")
 		return errors.New("missing `ssh-user` in config file (or no `--user`)")
 	}
@@ -50,7 +51,7 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 		var userHost string
 		args := []string{"-F", "ssh.cfg"}
 		sshUser := *cfg.SSHUser
-		if len(env.SSHUser) > 0 {
+		if env.SSHUser != "" {
 			sshUser = env.SSHUser
 		}
 
@@ -66,7 +67,14 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 		if env.IsAWSA() {
 			userHost = fmt.Sprintf("%s@%s", sshUser, instance.IPAddress)
 		} else {
-			os.Setenv("AWS_PROFILE", cfg.GetProfile(env.Name))
+			profile := cfg.GetProfileForCommand(env.Name, "ssh")
+			// Validate credentials before launching SSH
+			if err := aws.ValidateCredentials(context.Background(), profile); err != nil {
+				out.ErrorFHighlight("  %s Access denied for profile: %s", "✗", profile)
+				out.AccessDeniedGuidance(profile)
+				return nil
+			}
+			os.Setenv("AWS_PROFILE", profile)
 			userHost = fmt.Sprintf("%s@%s", sshUser, instance.InstanceId)
 		}
 		for v := 0; v < *opts.VerboseCount; v++ {
@@ -80,15 +88,16 @@ func Launch(cfg *config.Config, env config.Environment, instanceNum int, opts SS
 			fmt.Println(args)
 		}
 
+		//nolint:gocritic // sloppyReassign - err is returned after loop, cannot shadow with :=
 		if err = execCommand(ansibleDir, isQuiet, "ssh", args...); err != nil {
-			return
+			return err
 		}
 	}
-	return
+	return err
 }
 
 func execCommand(wrkDir string, isQuiet bool, command string, arg ...string) error {
-	c := exec.Command(command, arg...)
+	c := exec.CommandContext(context.Background(), command, arg...)
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout

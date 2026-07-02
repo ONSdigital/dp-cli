@@ -25,6 +25,7 @@ func GetGroupsForEnvironment(dpSetUpPath, environment string) ([]string, error) 
 }
 
 func readFile(dpSetUpPath, environment string) ([]byte, error) {
+	//nolint:gocritic // legacy ansible integration, unix-only paths
 	hostsPath := filepath.Join(dpSetUpPath, "ansible/inventories", environment, "hosts")
 	return os.ReadFile(hostsPath)
 }
