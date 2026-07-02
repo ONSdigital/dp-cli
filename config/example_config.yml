@@ -10,8 +10,40 @@ dp-cli-path: "~/src/github.com/ONSdigital/dp-cli"                             # 
 user-name: ChangeMe # change me to YourName (e.g. JaneDoe)
 ssh-user: ubuntu
 
+# Profile suffixes map role names to AWS profile name suffixes.
+# These are appended to the base environment profile to form the full profile name.
+# e.g. base "dp-sandbox" + suffix "-view-only" = "dp-sandbox-view-only"
+#
+# Your ~/.aws/config should have corresponding profiles for each environment + suffix combination.
+# See the README for full AWS config setup instructions.
+profile-suffixes:
+  view: "-view-only"
+  engineer: "-engineer"
+  admin: "-admin"
+
+# Command privileges map dp-cli commands to their minimum required role.
+# The resolved profile will be: <env-profile><suffix-for-role>
+# Commands not listed here will use the base environment profile (backwards compatible).
+command-privileges:
+  remote.allow: view
+  remote.deny: view
+  eks.session.start: view
+  eks.session.stop: view
+  eks.session.status: view
+  ssh.list: view
+  ssh: engineer
+  scp.list: view
+  scp: engineer
+
+# EKS tunnel discovery tags (optional, defaults shown)
+eks:
+  tunnel-box-role-tag: "session-tunnel-box"
+  cluster-access-tag: "ssm-tunnel-access"
+
 # uncomment more environments when you get (AWS) access to them
 environments:
+  - name: bleed
+    profile: dp-bleed-dev
   - name: sandbox
     profile: dp-sandbox
   # - name: staging
@@ -24,8 +56,10 @@ environments:
   #   profile: dp-ci
   #   tags: [ci]
   # - name: nisra-dev
+  #   profile: nisra-dev
   #   tags: [nisra]
   # - name: nisra-prod
+  #   profile: nisra-prod
   #   tags: [nisra,live,secure]
 
 cmd:
