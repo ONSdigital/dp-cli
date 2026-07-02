@@ -9,9 +9,7 @@ import (
 
 func TestGetPortArguments(t *testing.T) {
 	Convey("Given port forwarding arguments need to be translated", t, func() {
-
 		Convey("When a single port is provided", func() {
-
 			sshArgs, err := getSSHPortArguments("11400")
 			Convey("Then there should be no error returned", func() {
 				So(err, ShouldBeNil)
@@ -26,7 +24,6 @@ func TestGetPortArguments(t *testing.T) {
 		})
 
 		Convey("When different local and remote ports are provided", func() {
-
 			sshArgs, err := getSSHPortArguments("11500:11400")
 			Convey("Then there should be no error returned", func() {
 				So(err, ShouldBeNil)
@@ -41,7 +38,6 @@ func TestGetPortArguments(t *testing.T) {
 		})
 
 		Convey("When full local port, remote host and port are provided", func() {
-
 			sshArgs, err := getSSHPortArguments("11500:hosty:11400")
 			Convey("Then there should be no error returned", func() {
 				So(err, ShouldBeNil)

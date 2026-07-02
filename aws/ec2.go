@@ -42,8 +42,11 @@ type EC2Result struct {
 var resultCache = make(map[string][]EC2Result)
 
 func getEC2Service(ctx context.Context, profile string) *ec2.Client {
-	// Create new EC2 client
-	return ec2.NewFromConfig(getAWSConfig(ctx, profile))
+	cfg, err := GetAWSConfig(ctx, profile)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get shared config profile, %s", profile))
+	}
+	return ec2.NewFromConfig(cfg)
 }
 
 func getNamedSG(ctx context.Context, name, environment, profile string, userName *string, ports []int32, cfg *config.Config) (sg secGroup, err error) {
@@ -54,7 +57,7 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 			Values: []string{name},
 		},
 	}
-	if len(environment) > 0 {
+	if environment != "" {
 		expectEnvTag := environment
 		if cfg.IsCI(environment) {
 			expectEnvTag = "ci"
@@ -69,20 +72,20 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 		Filters: filters,
 	})
 	if err != nil {
-		return
+		return sg, err
 	}
 
 	if len(res.SecurityGroups) < 1 {
 		err = fmt.Errorf("no security groups matching environment: %q with name %q and profile %q", environment, name, profile)
-		return
+		return sg, err
 	}
 	if len(res.SecurityGroups) > 1 {
 		err = fmt.Errorf("too many security groups matching environment: %s name: %q", environment, name)
-		return
+		return sg, err
 	}
 	if res.SecurityGroups[0].GroupId == nil {
 		err = fmt.Errorf("no groupId found for security group on environment: %q name: %q", environment, name)
-		return
+		return sg, err
 	}
 
 	sg.id = *res.SecurityGroups[0].GroupId
@@ -91,8 +94,9 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 	sg.portToMyIPs = make(map[int32][]string)
 
 	// we have an SG, so get its list of allowed IPs for userName
-	for _, sg1 := range res.SecurityGroups {
-		for _, ipperm := range sg1.IpPermissions {
+	for i := range res.SecurityGroups {
+		for j := range res.SecurityGroups[i].IpPermissions {
+			ipperm := &res.SecurityGroups[i].IpPermissions[j]
 			if *ipperm.IpProtocol != "tcp" || *ipperm.ToPort != *ipperm.FromPort {
 				continue
 			}
@@ -126,7 +130,7 @@ func getNamedSG(ctx context.Context, name, environment, profile string, userName
 		}
 	}
 
-	return
+	return sg, err
 }
 
 func getBastionSGForEnvironment(ctx context.Context, environment, profile string, userName *string, extraPorts []int32, cfg *config.Config) (secGroup, error) {
@@ -174,7 +178,7 @@ func DenyIPForEnvironment(ctx context.Context, userName *string, environment, pr
 }
 
 func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string, environment, profile string, extraPorts config.ExtraPorts, cfg *config.Config) (err error) {
-	if len(*userName) == 0 {
+	if *userName == "" {
 		return errors.New("require `user-name` in config (or `--user` flag) to change remote access")
 	}
 
@@ -203,14 +207,12 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 			return err
 		}
 		secGroups = append(secGroups, sg)
-
 	} else if cfg.IsNisra(environment) {
 		ec2Svc = getEC2Service(ctx, profile)
 		if sg, err = getELBWebSGForEnvironment(ctx, environment, profile, userName, extraPorts.Web, cfg); err != nil {
 			return err
 		}
 		secGroups = append(secGroups, sg)
-
 	} else {
 		ec2Svc = getEC2Service(ctx, profile)
 		if sg, err = getBastionSGForEnvironment(ctx, environment, profile, userName, extraPorts.Bastion, cfg); err != nil {
@@ -229,7 +231,6 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 			return err
 		}
 		secGroups = append(secGroups, sg)
-
 	}
 
 	// apply `secGroups` changes
@@ -244,6 +245,7 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 
 		// changingIPs is used to show what is being changed (maps IPs to ports)
 		changingIPs := map[string][]int32{}
+		//nolint:gocritic // rangeValCopy acceptable for security group permission iteration
 		for _, perm := range perms {
 			for _, ipr := range perm.IpRanges {
 				changingIPs[*ipr.CidrIp] = append(changingIPs[*ipr.CidrIp], *perm.FromPort)
@@ -282,7 +284,7 @@ func changeIPsForEnvironment(ctx context.Context, isAllow bool, userName *string
 }
 
 // ListEC2ByAnsibleGroup returns EC2 instances matching ansibleGroup for this env/profile
-func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile string, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
+func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile, ansibleGroup string, cfg *config.Config) ([]EC2Result, error) {
 	r, err := ListEC2(ctx, environment, profile, cfg)
 	if err != nil {
 		return r, err
@@ -302,11 +304,18 @@ func ListEC2ByAnsibleGroup(ctx context.Context, environment, profile string, ans
 }
 
 // ListEC2 returns a list of EC2 instances which match the environment name
+//
+//nolint:gocyclo // complex EC2 response parsing - legacy code
 func ListEC2(ctx context.Context, environment, profile string, cfg *config.Config) ([]EC2Result, error) {
 	if r, ok := resultCache[environment]; ok {
 		return r, nil
 	}
 	resultCache[environment] = make([]EC2Result, 0)
+
+	// Validate profile exists before attempting AWS calls
+	if _, err := GetAWSConfig(ctx, profile); err != nil {
+		return nil, fmt.Errorf("profile %s: %w", profile, err)
+	}
 
 	ec2Svc := getEC2Service(ctx, profile)
 
@@ -342,6 +351,7 @@ func ListEC2(ctx context.Context, environment, profile string, cfg *config.Confi
 		}
 
 		for _, r := range result.Reservations {
+			//nolint:gocritic // rangeValCopy acceptable for EC2 instance iteration
 			for _, i := range r.Instances {
 				var name, ansibleGroup string
 				for _, tag := range i.Tags {
@@ -357,7 +367,7 @@ func ListEC2(ctx context.Context, environment, profile string, cfg *config.Confi
 				if cfg.IsCI(environment) && cfg.IsAWSA(environment) {
 					if len(i.NetworkInterfaces) > 0 &&
 						i.NetworkInterfaces[0].Association != nil &&
-						len(*i.NetworkInterfaces[0].Association.PublicIp) > 0 &&
+						*i.NetworkInterfaces[0].Association.PublicIp != "" &&
 						i.NetworkInterfaces[0].Association.PublicIp != nil {
 						ipAddr = *i.NetworkInterfaces[0].Association.PublicIp
 					}

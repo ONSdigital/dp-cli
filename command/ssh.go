@@ -51,7 +51,7 @@ func sshCommand(ctx context.Context, cfg *config.Config) (*cobra.Command, error)
 func createEnvironmentSubCommands(ctx context.Context, cfg *config.Config, opts ssh.SSHOpts) ([]*cobra.Command, error) {
 	commands := make([]*cobra.Command, 0)
 
-	for _, env := range cfg.Environments {
+	for _, env := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for environment config iteration
 		envC := &cobra.Command{
 			Use:   env.Name,
 			Short: "ssh to " + env.Name,
@@ -82,8 +82,13 @@ func createEnvironmentGroupSubCommands(ctx context.Context, env config.Environme
 	seenIP := make(map[string]bool)
 
 	for _, grp := range groups {
-		instances, err := aws.ListEC2ByAnsibleGroup(ctx, env.Name, cfg.GetProfile(env.Name), grp, cfg)
+		instances, err := aws.ListEC2ByAnsibleGroup(ctx, env.Name, cfg.GetProfileForCommand(env.Name, "ssh.list"), grp, cfg)
 		if err != nil {
+			if aws.IsAccessError(err) {
+				out.ErrorFHighlight("  %s Failed to list instances for %s", "✗", env.Name)
+				out.ErrorFHighlight("  %s", err)
+				out.AccessDeniedGuidance(cfg.GetProfileForCommand(env.Name, "ssh.list"))
+			}
 			return nil, errors.WithMessagef(err, "error fetching ec2: %+v", env)
 		}
 
@@ -136,7 +141,7 @@ func createEnvironmentGroupSubCommands(ctx context.Context, env config.Environme
 
 // create a array of instance sub commands available to ssh to.
 func createInstanceSubCommands(grp string, cfg *config.Config, env config.Environment, instances []aws.EC2Result, opts ssh.SSHOpts) ([]*cobra.Command, error) {
-	commands := make([]*cobra.Command, 0)
+	commands := make([]*cobra.Command, 0, len(instances))
 
 	for i, instance := range instances {
 		e := env

@@ -52,7 +52,6 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 
 	// Can't create repo unless project type has been provided in a flag, so prompt user for it
 	if createRepositoryInput == "y" || createRepositoryInput == "yes" {
-
 		listOfArguments := make(project_generation.ListOfArguments)
 
 		listOfArguments["appName"] = &project_generation.Argument{

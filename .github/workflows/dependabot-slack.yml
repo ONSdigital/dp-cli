@@ -1,0 +1,24 @@
+name: Dependabot Slack Notification
+
+permissions:
+  contents: read
+
+on:
+  # This uses pull_request_target which runs in the context
+  # of the base branch and allows access to secrets, but only for the specified events.
+  # This workflow should not be modified to checkout code or run untrusted code from the PR.
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  notify:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to Slack
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_CODE_REVIEW }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "${{ format('<{0}|{0}> - Dependabot opened a PR: {1}', github.event.pull_request.html_url, github.event.pull_request.title) }}"

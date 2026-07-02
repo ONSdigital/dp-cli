@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Go modules
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      go-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      go-version-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      gh-actions-security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      gh-actions-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'

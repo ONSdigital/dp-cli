@@ -37,26 +37,3 @@ func importDataSubCommand(ctx context.Context, cfg *config.Config) *cobra.Comman
 
 	return command
 }
-
-// initCustomiseMyData import the prerequisite CMD data into your Mongo/Neo4j databases
-func initCustomiseMyData(ctx context.Context, cfg *config.Config) *cobra.Command {
-	return &cobra.Command{
-		Use:   "cmd",
-		Short: "Import the prerequisite codelists and generic hierarchy data into your CMD environment",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
-
-			err = customisemydata.ImportGenericHierarchies(ctx, cfg)
-			if err != nil {
-				return err
-			}
-
-			err = customisemydata.ImportCodeLists(ctx, cfg)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
-	}
-}

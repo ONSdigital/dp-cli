@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,18 +29,29 @@ var httpClient = &http.Client{
 }
 
 type Config struct {
-	CMD                    CMD           `yaml:"cmd"`
-	Environments           []Environment `yaml:"environments"`
-	SSHUser                *string       `yaml:"ssh-user"`
-	UserName               *string       `yaml:"user-name"`
-	IPAddress              *string       `yaml:"ip-address"`
-	HttpOnly               *bool         `yaml:"http-only"`
-	DPSetupPath            string        `yaml:"dp-setup-path"`
-	NisraPath              string        `yaml:"dp-nisra-path"`
-	DPCIPath               string        `yaml:"dp-ci-path"`
-	DPHierarchyBuilderPath string        `yaml:"dp-hierarchy-builder-path"`
-	DPCodeListScriptsPath  string        `yaml:"dp-code-list-scripts-path"`
-	DPCLIPath              string        `yaml:"dp-cli-path"`
+	CMD                    CMD               `yaml:"cmd"`
+	EKS                    EKS               `yaml:"eks"`
+	Environments           []Environment     `yaml:"environments"`
+	ProfileSuffixes        map[string]string `yaml:"profile-suffixes"`
+	CommandPrivileges      map[string]string `yaml:"command-privileges"`
+	SSHUser                *string           `yaml:"ssh-user"`
+	UserName               *string           `yaml:"user-name"`
+	IPAddress              *string           `yaml:"ip-address"`
+	IPv4Address            *string           `yaml:"ipv4-address"`
+	IPv6Address            *string           `yaml:"ipv6-address"`
+	HttpOnly               *bool             `yaml:"http-only"`
+	DPSetupPath            string            `yaml:"dp-setup-path"`
+	NisraPath              string            `yaml:"dp-nisra-path"`
+	DPCIPath               string            `yaml:"dp-ci-path"`
+	DPHierarchyBuilderPath string            `yaml:"dp-hierarchy-builder-path"`
+	DPCodeListScriptsPath  string            `yaml:"dp-code-list-scripts-path"`
+	DPCLIPath              string            `yaml:"dp-cli-path"`
+}
+
+// EKS holds optional overrides for EKS tunnel discovery tags
+type EKS struct {
+	TunnelBoxRoleTag string `yaml:"tunnel-box-role-tag"`
+	ClusterAccessTag string `yaml:"cluster-access-tag"`
 }
 
 type CMD struct {
@@ -111,7 +123,7 @@ func expandPath(path string) string {
 
 func getConfigPath() (path string) {
 	path = os.Getenv("DP_CLI_CONFIG")
-	if len(path) == 0 {
+	if path == "" {
 		path = expandPath("~/.dp-cli-config.yml")
 	}
 	return
@@ -138,7 +150,7 @@ func (cfg Config) checkGotIP(ip string) (bool, error) {
 // GetMyIP returns first IP in: `--ip` flag, `MY_IP` env var, config file, external service
 func (cfg Config) GetMyIP() (string, error) {
 	// flag or config-file used?
-	if cfg.IPAddress != nil && len(*cfg.IPAddress) > 0 {
+	if cfg.IPAddress != nil && *cfg.IPAddress != "" {
 		if isValidIP, err := cfg.checkGotIP(*cfg.IPAddress); err != nil || !isValidIP {
 			return "", fmt.Errorf("unexpected format for IP (from --ip flag or config-file): %w", err)
 		}
@@ -146,7 +158,7 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	// env var used?
-	if ip := os.Getenv("MY_IP"); len(ip) > 0 {
+	if ip := os.Getenv("MY_IP"); ip != "" {
 		if isValidIP, err := cfg.checkGotIP(ip); err != nil || !isValidIP {
 			return "", fmt.Errorf("unexpected format for env var MY_IP: %w", err)
 		}
@@ -154,7 +166,11 @@ func (cfg Config) GetMyIP() (string, error) {
 	}
 
 	// use remote service to obtain IP
-	res, err := httpClient.Get("https://api.ipify.org")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.ipify.org", http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("cannot create request for IP service: %w", err)
+	}
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("cannot get IP from service (consider using `--ip` flag instead): %w", err)
 	}
@@ -179,6 +195,61 @@ func (cfg Config) GetMyIP() (string, error) {
 	return string(b), nil
 }
 
+// GetMyIPs2 returns both IPv4 and IPv6 addresses, checking config > cli > env, then external service if needed.
+func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
+	// 1. Check config/env for explicit values
+	if cfg.IPv4Address != nil && *cfg.IPv4Address != "" {
+		ipv4 = *cfg.IPv4Address
+	} else if cfg.IPAddress != nil && *cfg.IPAddress != "" { // legacy fallback
+		ipv4 = *cfg.IPAddress
+	} else if ip := os.Getenv("MY_IPV4"); ip != "" {
+		ipv4 = ip
+	}
+
+	if cfg.IPv6Address != nil && *cfg.IPv6Address != "" {
+		ipv6 = *cfg.IPv6Address
+	} else if ip := os.Getenv("MY_IPV6"); ip != "" {
+		ipv6 = ip
+	}
+
+	// 2. If not set, fetch from external service
+	if ipv4 == "" {
+		req4, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.ipify.org", http.NoBody)
+		res, err4 := httpClient.Do(req4)
+		if err4 == nil && res.StatusCode == 200 {
+			b, errRead := io.ReadAll(res.Body)
+			res.Body.Close()
+			if errRead == nil {
+				s := string(b)
+				if isValidIP, _ := cfg.checkGotIP(s); isValidIP {
+					ipv4 = s
+				}
+			}
+		}
+	}
+	if ipv6 == "" {
+		req6, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api64.ipify.org", http.NoBody)
+		res, err6 := httpClient.Do(req6)
+		if err6 == nil && res.StatusCode == 200 {
+			b, errRead := io.ReadAll(res.Body)
+			res.Body.Close()
+			if errRead == nil {
+				s := string(b)
+				// TODO: improve IPv6 validation
+				if s != "" {
+					ipv6 = s
+				}
+			}
+		}
+	}
+
+	// 3. Validate at least one IP found
+	if ipv4 == "" && ipv6 == "" {
+		err = fmt.Errorf("could not determine IPv4 or IPv6 address from config, env, or external service")
+	}
+	return ipv4, ipv6, err
+}
+
 func (env Environment) hasTag(tag string) bool {
 	for _, eachTag := range env.Tags {
 		if eachTag == tag {
@@ -189,6 +260,7 @@ func (env Environment) hasTag(tag string) bool {
 }
 
 func (cfg Config) hasTag(env, tag string) bool {
+	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
 	for _, e := range cfg.Environments {
 		if e.Name == env {
 			return e.hasTag(tag)
@@ -228,8 +300,9 @@ func (env Environment) IsSecure() bool {
 	return env.hasTag(TAG_SECURE)
 }
 
+//nolint:gocritic // rangeValCopy acceptable for environment config iteration
 func (cfg Config) GetProfile(env string) string {
-	for _, e := range cfg.Environments {
+	for _, e := range cfg.Environments { //nolint:gocritic // rangeValCopy acceptable for config iteration
 		if e.Name == env {
 			if e.Profile != "" {
 				return e.Profile
@@ -240,6 +313,56 @@ func (cfg Config) GetProfile(env string) string {
 	return "noEnv"
 }
 
+// GetProfileForCommand resolves the profile for a given environment and command path.
+// It walks from most specific to least specific command path (e.g. "eks.session.start" → "eks.session" → "eks").
+// If no match is found or profile-suffixes is not configured, returns the base profile (backwards compatible).
+func (cfg Config) GetProfileForCommand(env, commandPath string) string {
+	base := cfg.GetProfile(env)
+
+	if len(cfg.ProfileSuffixes) == 0 || len(cfg.CommandPrivileges) == 0 {
+		return base
+	}
+
+	// Walk from most specific to least specific
+	path := commandPath
+	for path != "" {
+		if priv, ok := cfg.CommandPrivileges[path]; ok {
+			if suffix, ok := cfg.ProfileSuffixes[priv]; ok {
+				return base + suffix
+			}
+			return base
+		}
+		// Remove last segment
+		lastDot := strings.LastIndex(path, ".")
+		if lastDot < 0 {
+			break
+		}
+		path = path[:lastDot]
+	}
+
+	return base
+}
+
+// GetProfileWithRole resolves the profile for a given environment and explicit role override.
+// Used when a user passes -view, -engineer, or -admin flags.
+func (cfg Config) GetProfileWithRole(env, role string) string {
+	base := cfg.GetProfile(env)
+	if role == "" || len(cfg.ProfileSuffixes) == 0 {
+		return base
+	}
+	if suffix, ok := cfg.ProfileSuffixes[role]; ok {
+		return base + suffix
+	}
+	return base
+}
+
+// GetRoleSuffix returns the suffix for a given role name, or empty string if not configured.
+func (cfg Config) GetRoleSuffix(role string) string {
+	if suffix, ok := cfg.ProfileSuffixes[role]; ok {
+		return suffix
+	}
+	return ""
+}
 func (cfg Config) GetPath(env Environment) string {
 	if env.IsCI() {
 		return cfg.DPCIPath
