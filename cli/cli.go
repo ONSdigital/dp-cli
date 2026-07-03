@@ -11,6 +11,7 @@ import (
 
 func ExecCommand(ctx context.Context, command, wrkDir string) error {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
+	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
