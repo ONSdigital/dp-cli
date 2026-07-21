@@ -28,9 +28,18 @@ func buildRemoteAccessPayload(cfg *config.Config, action string) ([]byte, error)
 	if cfg.IPv6Address != nil && *cfg.IPv6Address != "" {
 		ipv6 = *cfg.IPv6Address
 	}
+
+	// Validate any explicitly-provided IPs
+	if ipv4 != "" && !config.IsValidIPv4(ipv4) {
+		return nil, fmt.Errorf("invalid IPv4 address: %q", ipv4)
+	}
+	if ipv6 != "" && !config.IsValidIPv6(ipv6) {
+		return nil, fmt.Errorf("invalid IPv6 address: %q", ipv6)
+	}
+
 	if ipv4 == "" && ipv6 == "" {
 		var err error
-		ipv4, ipv6, err = cfg.GetMyIPs2()
+		ipv4, ipv6, err = cfg.GetMyIPs()
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +190,7 @@ func remoteAllowCommand(ctx context.Context, cfg *config.Config) *cobra.Command 
 				// Build payload
 				payload, err := buildRemoteAccessPayload(cfg, "add")
 				if err != nil {
-					out.Warn(fmt.Sprintf("Warning: %v. Aborting allow.", err))
+					out.ErrorFHighlight("  %s %v", "✗", err)
 					return nil
 				}
 
@@ -241,7 +250,7 @@ func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 				// Build payload with action revoke
 				payload, err := buildRemoteAccessPayload(cfg, "revoke")
 				if err != nil {
-					out.Warn(fmt.Sprintf("Warning: %v. Aborting deny.", err))
+					out.ErrorFHighlight("  %s %v", "✗", err)
 					return nil
 				}
 
