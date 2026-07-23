@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ONSdigital/dp-cli/aws"
+	"github.com/ONSdigital/dp-cli/cli"
 	"github.com/ONSdigital/dp-cli/config"
 	"github.com/ONSdigital/dp-cli/out"
 	"github.com/spf13/cobra"
@@ -155,6 +156,7 @@ func remoteAccess(ctx context.Context, cfg *config.Config) *cobra.Command {
 
 	cmd.AddCommand(remoteAllowCommand(ctx, cfg))
 	cmd.AddCommand(remoteDenyCommand(ctx, cfg))
+	cmd.AddCommand(remoteLoginCommand(ctx, cfg))
 
 	return cmd
 }
@@ -274,5 +276,27 @@ func remoteDenyCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 	}
 
 	cmd.AddCommand(envSubCmds...)
+	return cmd
+}
+
+// remoteLoginCommand creates the login subcommand for remote
+func remoteLoginCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "login",
+		Short: "login to AWS environment",
+	}
+
+	if len(cfg.Environments) > 0 {
+		firstEnv := cfg.Environments[0]
+		cmd.RunE = func(cmd *cobra.Command, args []string) error {
+			lvl := out.GetLevel(firstEnv)
+			loginCmd := "aws sso login --profile " + cfg.GetProfile(firstEnv.Name)
+			out.Highlight(lvl, "logging in to %s using %s", firstEnv.Name, loginCmd)
+			return cli.ExecCommand(ctx, loginCmd, ".")
+		}
+	} else {
+		out.WarnFHighlight("Warning: No environments found in config - `dp remote login` will not work")
+	}
+
 	return cmd
 }
