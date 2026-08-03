@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -143,24 +143,46 @@ func Dump() ([]byte, error) {
 	return data, nil
 }
 
-func (cfg Config) checkGotIP(ip string) (bool, error) {
-	return regexp.MatchString(`^\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?$`, ip)
+// IsValidIPv4 validates an IPv4 address (with optional CIDR suffix) using the standard library.
+func IsValidIPv4(ip string) bool {
+	// Try as a CIDR prefix first (e.g. "1.2.3.4/32")
+	if prefix, err := netip.ParsePrefix(ip); err == nil {
+		return prefix.Addr().Is4()
+	}
+	// Try as a plain address
+	if addr, err := netip.ParseAddr(ip); err == nil {
+		return addr.Is4()
+	}
+	return false
+}
+
+// IsValidIPv6 validates an IPv6 address (with optional CIDR suffix) using the standard library.
+func IsValidIPv6(ip string) bool {
+	// Try as a CIDR prefix first (e.g. "2001:db8::/64")
+	if prefix, err := netip.ParsePrefix(ip); err == nil {
+		return prefix.Addr().Is6()
+	}
+	// Try as a plain address
+	if addr, err := netip.ParseAddr(ip); err == nil {
+		return addr.Is6()
+	}
+	return false
 }
 
 // GetMyIP returns first IP in: `--ip` flag, `MY_IP` env var, config file, external service
 func (cfg Config) GetMyIP() (string, error) {
 	// flag or config-file used?
 	if cfg.IPAddress != nil && *cfg.IPAddress != "" {
-		if isValidIP, err := cfg.checkGotIP(*cfg.IPAddress); err != nil || !isValidIP {
-			return "", fmt.Errorf("unexpected format for IP (from --ip flag or config-file): %w", err)
+		if !IsValidIPv4(*cfg.IPAddress) {
+			return "", fmt.Errorf("unexpected format for IP (from --ip flag or config-file): %q", *cfg.IPAddress)
 		}
 		return *cfg.IPAddress, nil
 	}
 
 	// env var used?
 	if ip := os.Getenv("MY_IP"); ip != "" {
-		if isValidIP, err := cfg.checkGotIP(ip); err != nil || !isValidIP {
-			return "", fmt.Errorf("unexpected format for env var MY_IP: %w", err)
+		if !IsValidIPv4(ip) {
+			return "", fmt.Errorf("unexpected format for env var MY_IP: %q", ip)
 		}
 		return ip, nil
 	}
@@ -188,15 +210,16 @@ func (cfg Config) GetMyIP() (string, error) {
 		return "", err
 	}
 
-	if isValidIP, err := cfg.checkGotIP(string(b)); err != nil || !isValidIP {
-		return "", fmt.Errorf("unexpected format for IP result from IP service: %w", err)
+	ip := string(b)
+	if !IsValidIPv4(ip) {
+		return "", fmt.Errorf("unexpected format for IP result from IP service: %q", ip)
 	}
 
-	return string(b), nil
+	return ip, nil
 }
 
-// GetMyIPs2 returns both IPv4 and IPv6 addresses, checking config > cli > env, then external service if needed.
-func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
+// GetMyIPs returns both IPv4 and IPv6 addresses, checking config > env, then external service if needed.
+func (cfg Config) GetMyIPs() (ipv4, ipv6 string, err error) {
 	// 1. Check config/env for explicit values
 	if cfg.IPv4Address != nil && *cfg.IPv4Address != "" {
 		ipv4 = *cfg.IPv4Address
@@ -212,7 +235,15 @@ func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
 		ipv6 = ip
 	}
 
-	// 2. If not set, fetch from external service
+	// 2. Validate any explicitly-provided values
+	if ipv4 != "" && !IsValidIPv4(ipv4) {
+		return "", "", fmt.Errorf("invalid IPv4 address from config/env: %q", ipv4)
+	}
+	if ipv6 != "" && !IsValidIPv6(ipv6) {
+		return "", "", fmt.Errorf("invalid IPv6 address from config/env: %q", ipv6)
+	}
+
+	// 3. If not set, fetch from external service
 	if ipv4 == "" {
 		req4, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api.ipify.org", http.NoBody)
 		res, err4 := httpClient.Do(req4)
@@ -220,30 +251,33 @@ func (cfg Config) GetMyIPs2() (ipv4, ipv6 string, err error) {
 			b, errRead := io.ReadAll(res.Body)
 			res.Body.Close()
 			if errRead == nil {
-				s := string(b)
-				if isValidIP, _ := cfg.checkGotIP(s); isValidIP {
+				s := strings.TrimSpace(string(b))
+				if IsValidIPv4(s) {
 					ipv4 = s
 				}
 			}
 		}
 	}
 	if ipv6 == "" {
-		req6, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api64.ipify.org", http.NoBody)
+		// api6.ipify.org is an IPv6-only endpoint (AAAA records only).
+		// If the user has no IPv6 connectivity, the request will fail
+		// (DNS resolution or connection error), which cleanly indicates
+		// "no IPv6 available" rather than silently returning an IPv4.
+		req6, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://api6.ipify.org", http.NoBody)
 		res, err6 := httpClient.Do(req6)
 		if err6 == nil && res.StatusCode == 200 {
 			b, errRead := io.ReadAll(res.Body)
 			res.Body.Close()
 			if errRead == nil {
-				s := string(b)
-				// TODO: improve IPv6 validation
-				if s != "" {
+				s := strings.TrimSpace(string(b))
+				if IsValidIPv6(s) {
 					ipv6 = s
 				}
 			}
 		}
 	}
 
-	// 3. Validate at least one IP found
+	// 4. Validate at least one IP found
 	if ipv4 == "" && ipv6 == "" {
 		err = fmt.Errorf("could not determine IPv4 or IPv6 address from config, env, or external service")
 	}
