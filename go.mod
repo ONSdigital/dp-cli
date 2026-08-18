@@ -1,6 +1,6 @@
 module github.com/ONSdigital/dp-cli
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/ONSdigital/log.go/v2 v2.5.2
