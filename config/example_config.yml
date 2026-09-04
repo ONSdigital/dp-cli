@@ -35,10 +35,18 @@ command-privileges:
   scp.list: view
   scp: engineer
 
-# EKS tunnel discovery tags (optional, defaults shown)
+# EKS tunnel settings (all optional, defaults shown)
 eks:
   tunnel-box-role-tag: "session-tunnel-box"
   cluster-access-tag: "ssm-tunnel-access"
+  # Directory for local tunnel state files. Default is under /tmp so it is
+  # ephemeral and cleared on reboot. Set a persistent path if you prefer state
+  # to survive reboots (e.g. "~/.dp-cli/eks-tunnels").
+  state-dir: "/tmp/eks-tunnels-ssm"
+  # Local port range for SSM port-forwards (inclusive). One port is used per
+  # active cluster tunnel.
+  base-port: 9443
+  max-port: 9500
 
 # uncomment more environments when you get (AWS) access to them
 environments:

@@ -23,19 +23,30 @@ var SessionDependencies = []Dependency{
 		Command:     "session-manager-plugin",
 		InstallHint: "Install from https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html",
 	},
-	{
-		Name:        "socat",
-		Command:     "socat",
-		InstallHint: "Install with: brew install socat",
-	},
+}
+
+// SocatDependency is only required for the legacy (sudo) tunnel path. In no-sudo
+// mode the tunnel connects directly to the local SSM port-forward, so socat is
+// not needed.
+var SocatDependency = Dependency{
+	Name:        "socat",
+	Command:     "socat",
+	InstallHint: "Install with: brew install socat",
 }
 
 // TODO: Currently this is for EKS but can be elevated for use across all sub cmds
 // CheckDependencies verifies all required tools are available for the sub cmd.
+// socat is only required when noSudo is false (legacy tunnel path).
 // Returns a list of missing dependencies.
-func CheckDependencies() []Dependency {
+func CheckDependencies(noSudo bool) []Dependency {
+	deps := make([]Dependency, len(SessionDependencies), len(SessionDependencies)+1)
+	copy(deps, SessionDependencies)
+	if !noSudo {
+		deps = append(deps, SocatDependency)
+	}
+
 	var missing []Dependency
-	for _, dep := range SessionDependencies {
+	for _, dep := range deps {
 		if _, err := exec.LookPath(dep.Command); err != nil {
 			missing = append(missing, dep)
 		}

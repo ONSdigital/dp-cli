@@ -31,6 +31,11 @@ func eksCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
 }
 
 func eksSessionCommand(ctx context.Context, cfg *config.Config) *cobra.Command {
+	// Apply optional config overrides for the state dir and local port range so
+	// that start, stop and status all operate on the same configured location.
+	// Empty/zero values fall back to defaults.
+	eks.Configure(cfg.EKS.StateDir, cfg.EKS.BasePort, cfg.EKS.MaxPort)
+
 	cmd := &cobra.Command{
 		Use:   "session",
 		Short: "Manage EKS secure session tunnels",
@@ -50,6 +55,7 @@ func eksSessionStartCommand(ctx context.Context, cfg *config.Config) *cobra.Comm
 	}
 
 	roleFlag := cmd.PersistentFlags().StringP("role", "r", "", "Override role (view, engineer, admin)")
+	legacySudoFlag := cmd.PersistentFlags().Bool("legacy-sudo", false, "Use the legacy socat/hosts/loopback tunnel path (requires sudo and socat). Default is no-sudo mode using kubeconfig tls-server-name.")
 
 	// Create a subcommand for each environment
 	//nolint:gocritic // rangeValCopy acceptable for environment config iteration
@@ -61,7 +67,7 @@ func eksSessionStartCommand(ctx context.Context, cfg *config.Config) *cobra.Comm
 			SilenceUsage:  true,
 			SilenceErrors: true,
 			RunE: func(cmd *cobra.Command, args []string) error {
-				return runSessionStart(ctx, cfg, env, *roleFlag)
+				return runSessionStart(ctx, cfg, env, *roleFlag, *legacySudoFlag)
 			},
 		})
 	}
@@ -95,15 +101,21 @@ func eksSessionStatusCommand() *cobra.Command {
 	}
 }
 
-func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environment, roleOverride string) error {
-	// Check dependencies
-	missing := eks.CheckDependencies()
+func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environment, roleOverride string, legacySudoFlag bool) error {
+	// No-sudo mode is the default. Opt in to the legacy socat/hosts/loopback path
+	// with --legacy-sudo. No sudo probe is performed here (it added latency and
+	// was unstable), so the common path never touches sudo at all.
+	noSudo := eks.ResolveNoSudoMode(legacySudoFlag)
+
+	// Check dependencies (socat only required for the legacy sudo path)
+	missing := eks.CheckDependencies(noSudo)
 	if len(missing) > 0 {
 		out.ErrorFHighlight("Missing required dependencies:")
 		for _, dep := range missing {
 			out.ErrorFHighlight("  ✗ %s (%s) - %s", dep.Name, dep.Command, dep.InstallHint)
 		}
-		return fmt.Errorf("install missing dependencies before continuing")
+		out.ErrorFHighlight("Install missing dependencies before continuing")
+		return errSilent
 	}
 
 	// Resolve profile based on role override or command default
@@ -176,28 +188,40 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		return fmt.Errorf("failed to create tunnel directory: %w", err)
 	}
 
-	// Ensure sudo credentials are cached before any privileged operations
-	if err := eks.EnsureSudo("binding port 443 (socat), updating /etc/hosts, and creating loopback aliases"); err != nil {
-		return err
+	// Hygiene: remove anything in the tunnel dir that isn't part of the current
+	// state format (legacy fragment files from older versions, stray temp files,
+	// orphaned logs). Keeps the dir owned solely by this app.
+	eks.PruneTunnelDir()
+
+	if !noSudo {
+		out.WarnFHighlight("  Using legacy sudo tunnel mode (socat, /etc/hosts, and loopback alias). You may be prompted for your password.")
+		// Ensure sudo credentials are cached before any privileged operations
+		if err := eks.EnsureSudo("binding port 443 (socat), updating /etc/hosts, and creating loopback aliases"); err != nil {
+			return err
+		}
 	}
 
 	// Clean up any stale tunnels before starting
-	eks.CleanupStaleTunnels()
+	eks.CleanupStaleTunnels(!noSudo)
 
 	// Start tunnels for each cluster
 	tunnelsEstablished := 0
 	var accessDenied bool
 	for _, cluster := range clusters {
-		// Allocate an available loopback IP
-		loopbackIP, err := eks.AllocateLoopbackIP()
-		if err != nil {
-			out.WarnFHighlight("    ⚠ %s", err.Error())
-			continue
+		var loopbackIP string
+		if !noSudo {
+			// Allocate an available loopback IP (legacy socat path only)
+			ip, err := eks.AllocateLoopbackIP()
+			if err != nil {
+				out.WarnFHighlight("    ⚠ %s", err.Error())
+				continue
+			}
+			loopbackIP = ip
 		}
 
 		out.InfoFHighlight("  Setting up tunnel for: %s", cluster.Name)
 
-		ok, accessErr := setupClusterTunnel(ctx, profile, tunnelBox.InstanceID, cluster, loopbackIP)
+		ok, accessErr := setupClusterTunnel(ctx, profile, tunnelBox.InstanceID, cluster, loopbackIP, noSudo)
 		if accessErr {
 			accessDenied = true
 		}
@@ -206,8 +230,10 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 		}
 	}
 
-	// Flush DNS cache
-	eks.FlushDNSCache()
+	// Flush DNS cache (only relevant for the legacy /etc/hosts path)
+	if !noSudo {
+		eks.FlushDNSCache()
+	}
 
 	// Only update kubeconfig and show success if tunnels were established in this run
 	if tunnelsEstablished == 0 {
@@ -220,14 +246,7 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 
 	// Update kubeconfig for each cluster with an active tunnel
 	out.InfoFHighlight("  Updating kubeconfig (profile: %s, user-alias: *%s)...", profile, roleSuffix)
-	for _, cluster := range clusters {
-		msg, err := eks.UpdateKubeconfig(cluster.Name, profile, roleSuffix)
-		if err != nil {
-			out.WarnFHighlight("    ⚠ Failed to configure %s: %s", cluster.Name, err.Error())
-			continue
-		}
-		out.InfoFHighlight("    ✓ %s", msg)
-	}
+	updateKubeconfigs(clusters, profile, roleSuffix, noSudo)
 
 	out.Info("  ✓ All tunnels active. kubectl, Terraform, and k9s can route through the tunnel box.")
 	out.Info("  All access is auditable via CloudTrail SSM session logs.")
@@ -238,6 +257,37 @@ func runSessionStart(ctx context.Context, cfg *config.Config, env config.Environ
 	return nil
 }
 
+// updateKubeconfigs runs aws eks update-kubeconfig for each cluster and, in
+// no-sudo mode, patches each cluster block to point at the local SSM
+// port-forward with tls-server-name set to the real endpoint.
+func updateKubeconfigs(clusters []eks.ClusterInfo, profile, roleSuffix string, noSudo bool) {
+	for _, cluster := range clusters {
+		msg, err := eks.UpdateKubeconfig(cluster.Name, profile, roleSuffix)
+		if err != nil {
+			out.WarnFHighlight("    ⚠ Failed to configure %s: %s", cluster.Name, err.Error())
+			continue
+		}
+		out.InfoFHighlight("    ✓ %s", msg)
+
+		if !noSudo {
+			continue
+		}
+		// Repoint the cluster at the local SSM port-forward and set the real
+		// endpoint as the TLS SNI so kubectl connects to 127.0.0.1:<port>
+		// while still fully validating the server certificate.
+		state, loadErr := eks.LoadTunnelState(cluster.Name)
+		if loadErr != nil {
+			out.WarnFHighlight("    ⚠ Could not load tunnel state to patch kubeconfig for %s: %s", cluster.Name, loadErr.Error())
+			continue
+		}
+		if err := eks.PatchKubeconfigForNoSudo(cluster.Name, cluster.Endpoint, state.LocalPort); err != nil {
+			out.WarnFHighlight("    ⚠ Failed to patch kubeconfig for %s: %s", cluster.Name, err.Error())
+			continue
+		}
+		out.InfoFHighlight("    ✓ Pointed %s at 127.0.0.1:%s (tls-server-name: %s)", cluster.Name, fmt.Sprintf("%d", state.LocalPort), cluster.Endpoint)
+	}
+}
+
 func runSessionStopEnv(environment string) error {
 	tunnels, err := eks.ListActiveTunnels()
 	if err != nil {
@@ -245,14 +295,16 @@ func runSessionStopEnv(environment string) error {
 	}
 
 	found := false
+	sudoEnsured := false
 	for _, t := range tunnels {
 		if strings.Contains(t.ClusterName, environment) {
-			if !found {
+			if !t.NoSudo && !sudoEnsured {
 				if err := eks.EnsureSudo("killing socat processes and cleaning /etc/hosts"); err != nil {
 					return err
 				}
+				sudoEnsured = true
 			}
-			stopTunnel(t)
+			stopTunnel(t, true)
 			found = true
 		}
 	}
@@ -261,7 +313,11 @@ func runSessionStopEnv(environment string) error {
 		out.WarnFHighlight("  No active tunnels found for environment: %s", environment)
 	}
 
-	eks.FlushDNSCache()
+	// DNS flush is only relevant to the legacy /etc/hosts path and itself needs
+	// sudo on macOS; only flush if we actually stopped a legacy tunnel.
+	if sudoEnsured {
+		eks.FlushDNSCache()
+	}
 	return nil
 }
 
@@ -276,24 +332,44 @@ func runSessionStopAll() error {
 		return nil
 	}
 
-	if err := eks.EnsureSudo("killing socat processes and cleaning /etc/hosts"); err != nil {
-		return err
+	// Only need sudo if any tunnel used the legacy socat/hosts path.
+	needsSudo := false
+	for _, t := range tunnels {
+		if !t.NoSudo {
+			needsSudo = true
+			break
+		}
+	}
+	if needsSudo {
+		if err := eks.EnsureSudo("killing socat processes and cleaning /etc/hosts"); err != nil {
+			return err
+		}
 	}
 
 	out.Info("Stopping all EKS tunnels...")
 	for _, t := range tunnels {
-		stopTunnel(t)
+		stopTunnel(t, true)
 	}
 
-	eks.FlushDNSCache()
+	// DNS cache only needs flushing for the legacy /etc/hosts path; flushing on
+	// macOS itself requires sudo, so skip it when only no-sudo tunnels were
+	// stopped (avoids an otherwise-pointless password prompt).
+	if needsSudo {
+		eks.FlushDNSCache()
+	}
 	out.Info("  ✓ All tunnels stopped")
 	return nil
 }
 
-func stopTunnel(t eks.TunnelState) {
+// stopTunnel tears down a tunnel. allowSudo must be true to perform privileged
+// cleanup of a legacy tunnel (killing root-owned socat, editing /etc/hosts).
+// When allowSudo is false (a no-sudo start cleaning up leftover legacy state), we
+// skip the privileged steps and just remove our own SSM process and state files,
+// so the user is never prompted for a password.
+func stopTunnel(t eks.TunnelState, allowSudo bool) {
 	out.InfoFHighlight("  Stopping tunnel: %s", t.ClusterName)
 
-	if eks.IsProcessAlive(t.SocatPid) {
+	if !t.NoSudo && allowSudo && eks.IsProcessAlive(t.SocatPid) {
 		eks.KillProcess(t.SocatPid, true)
 		out.InfoFHighlight("    Killed socat (PID: %s)", fmt.Sprintf("%d", t.SocatPid))
 	}
@@ -301,9 +377,12 @@ func stopTunnel(t eks.TunnelState) {
 		eks.KillProcess(t.SSMPid, false)
 		out.InfoFHighlight("    Killed SSM session (PID: %s)", fmt.Sprintf("%d", t.SSMPid))
 	}
-	if t.Endpoint != "" {
+	if !t.NoSudo && allowSudo && t.Endpoint != "" {
 		eks.RemoveHostsEntry(t.Endpoint)
 		out.Info("    Removed /etc/hosts entry")
+	}
+	if !t.NoSudo && !allowSudo {
+		out.WarnFHighlight("    ⚠ Leftover tunnel for %s needs elevated cleanup. Run 'dp eks session stop' to fully clean up.", t.ClusterName)
 	}
 	eks.CleanupTunnelState(t.ClusterName)
 }
@@ -323,15 +402,10 @@ func runSessionStatus() error {
 
 	for _, t := range tunnels {
 		ssmAlive := eks.IsProcessAlive(t.SSMPid)
-		socatAlive := eks.IsProcessAlive(t.SocatPid)
 
 		ssmStatus := "RUNNING"
-		socatStatus := "RUNNING"
 		if !ssmAlive {
 			ssmStatus = "DEAD"
-		}
-		if !socatAlive {
-			socatStatus = "DEAD"
 		}
 
 		out.InfoFHighlight("  Cluster:  %s", t.ClusterName)
@@ -340,15 +414,38 @@ func runSessionStatus() error {
 		} else {
 			out.ErrorFHighlight("    SSM:      %s (PID: %s, port: %s)", ssmStatus, fmt.Sprintf("%d", t.SSMPid), fmt.Sprintf("%d", t.LocalPort))
 		}
-		if socatAlive {
-			out.InfoFHighlight("    socat:    %s (PID: %s, %s:443)", socatStatus, fmt.Sprintf("%d", t.SocatPid), t.LoopbackIP)
-		} else {
-			out.ErrorFHighlight("    socat:    %s (PID: %s, %s:443)", socatStatus, fmt.Sprintf("%d", t.SocatPid), t.LoopbackIP)
+
+		if !t.NoSudo {
+			socatAlive := eks.IsProcessAlive(t.SocatPid)
+			socatStatus := "RUNNING"
+			if !socatAlive {
+				socatStatus = "DEAD"
+			}
+			if socatAlive {
+				out.InfoFHighlight("    socat:    %s (PID: %s, %s:443)", socatStatus, fmt.Sprintf("%d", t.SocatPid), t.LoopbackIP)
+			} else {
+				out.ErrorFHighlight("    socat:    %s (PID: %s, %s:443)", socatStatus, fmt.Sprintf("%d", t.SocatPid), t.LoopbackIP)
+			}
 		}
 		out.InfoFHighlight("    Endpoint: %s", t.Endpoint)
 
 		// End-to-end connectivity check
 		apiStatus := "SKIPPED"
+		if t.NoSudo {
+			if ssmAlive {
+				if eks.CheckLocalConnectivity(t.LocalPort) {
+					out.InfoFHighlight("    API:      %s", "REACHABLE")
+				} else {
+					out.ErrorFHighlight("    API:      %s (tunnel may be stale)", "UNREACHABLE")
+				}
+			} else {
+				out.WarnFHighlight("    API:      %s (SSM session not healthy)", apiStatus)
+			}
+			out.InfoFHighlight("    Route:    kubectl → 127.0.0.1:%s → tunnel box → EKS", fmt.Sprintf("%d", t.LocalPort))
+			continue
+		}
+
+		socatAlive := eks.IsProcessAlive(t.SocatPid)
 		if ssmAlive && socatAlive && t.Endpoint != "" {
 			apiReachable := eks.CheckAPIConnectivity(t.Endpoint)
 			if apiReachable {
@@ -373,16 +470,25 @@ func runSessionStatus() error {
 
 // setupClusterTunnel handles the tunnel setup for a single cluster.
 // Returns (success bool, accessDenied bool).
-func setupClusterTunnel(ctx context.Context, profile, tunnelBoxID string, cluster eks.ClusterInfo, loopbackIP string) (success, accessDenied bool) {
-	// Check if tunnel already running and healthy
+func setupClusterTunnel(ctx context.Context, profile, tunnelBoxID string, cluster eks.ClusterInfo, loopbackIP string, noSudo bool) (success, accessDenied bool) {
+	// Check if tunnel already running and healthy. In no-sudo mode there is no
+	// socat process, so health depends solely on the SSM port-forward.
 	existing, err := eks.LoadTunnelState(cluster.Name)
-	if err == nil && eks.IsProcessAlive(existing.SSMPid) && eks.IsProcessAlive(existing.SocatPid) {
-		out.InfoFHighlight("    Tunnel already active (SSM PID: %s)", fmt.Sprintf("%d", existing.SSMPid))
-		return true, false
-	}
-	// If state exists but processes are dead, clean up first
 	if err == nil {
-		stopTunnel(*existing)
+		healthy := eks.IsProcessAlive(existing.SSMPid)
+		if !existing.NoSudo {
+			healthy = healthy && eks.IsProcessAlive(existing.SocatPid)
+		}
+		if healthy {
+			out.InfoFHighlight("    Tunnel already active (SSM PID: %s)", fmt.Sprintf("%d", existing.SSMPid))
+			return true, false
+		}
+	}
+	// If state exists but processes are dead, clean up first. In no-sudo mode we
+	// must not perform privileged cleanup of a leftover legacy tunnel (that would
+	// prompt for a password), so pass allowSudo=!noSudo.
+	if err == nil {
+		stopTunnel(*existing, !noSudo)
 	}
 
 	// Resolve IPv4 via tunnel box (required for dualstack clusters to force A record)
@@ -411,6 +517,24 @@ func setupClusterTunnel(ctx context.Context, profile, tunnelBoxID string, cluste
 		return false, false
 	}
 	out.InfoFHighlight("    SSM session established (PID: %s)", fmt.Sprintf("%d", ssmPid))
+
+	if noSudo {
+		// No-sudo path: no loopback alias, no socat, no /etc/hosts. kubectl will
+		// be pointed at 127.0.0.1:localPort via a patched kubeconfig after this.
+		state := eks.TunnelState{
+			ClusterName: cluster.Name,
+			SSMPid:      ssmPid,
+			Endpoint:    cluster.Endpoint,
+			IPv4:        ipv4,
+			LocalPort:   localPort,
+			NoSudo:      true,
+		}
+		if err := eks.SaveTunnelState(state); err != nil {
+			out.WarnFHighlight("    ⚠ Failed to save tunnel state: %s", err.Error())
+		}
+		out.InfoFHighlight("    ✓ Tunnel active: 127.0.0.1:%s → tunnel box → %s:443", fmt.Sprintf("%d", localPort), ipv4)
+		return true, false
+	}
 
 	// Ensure loopback alias
 	if err := eks.EnsureLoopbackAlias(loopbackIP); err != nil {
