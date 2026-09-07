@@ -78,16 +78,42 @@ func EnsureTunnelDir() error {
 	return os.MkdirAll(tunnelDir, 0755)
 }
 
-// AllocateLocalPort finds an available port in the range basePort-maxPort (inclusive)
+// AllocateLocalPort finds an available port in the range basePort-maxPort (inclusive).
+//
+// It probes with net.Listen (no external tools, portable) and closes the
+// listener before returning, so callers that then hand the port to a child
+// process (the SSM session) can bind it. This leaves a small TOCTOU window
+// between allocation and the child binding; for concurrent multi-cluster starts
+// use AllocateAndHoldLocalPort instead, which keeps the port reserved until the
+// caller is ready to hand off.
 func AllocateLocalPort() (int, error) {
-	for port := basePort; port <= maxPort; port++ {
-		cmd := exec.CommandContext(context.Background(), "lsof", "-i", fmt.Sprintf(":%d", port)) //nolint:gosec // G204 - port is internally generated integer
-		if err := cmd.Run(); err != nil {
-			// lsof returns non-zero if port is not in use
-			return port, nil
-		}
+	port, ln, err := AllocateAndHoldLocalPort()
+	if err != nil {
+		return 0, err
 	}
-	return 0, fmt.Errorf("no available ports in range %d-%d", basePort, maxPort)
+	_ = ln.Close() //nolint:errcheck // releasing our probe listener
+	return port, nil
+}
+
+// AllocateAndHoldLocalPort finds an available port and returns it together with
+// an open listener holding that port. The caller MUST close the returned
+// listener immediately before starting the process that will bind the port.
+//
+// Holding the listener keeps the port reserved against other allocations in the
+// same run (the OS will not hand the same port to another net.Listen while it is
+// open), which prevents two clusters being handed the same port during a
+// concurrent/sequential multi-cluster start.
+func AllocateAndHoldLocalPort() (int, net.Listener, error) {
+	var lc net.ListenConfig
+	for port := basePort; port <= maxPort; port++ {
+		ln, err := lc.Listen(context.Background(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err != nil {
+			// Port is in use (or otherwise unbindable) — try the next one.
+			continue
+		}
+		return port, ln, nil
+	}
+	return 0, nil, fmt.Errorf("no available ports in range %d-%d", basePort, maxPort)
 }
 
 // AllocateLoopbackIP finds the next available loopback IP where port 443 is not in use.

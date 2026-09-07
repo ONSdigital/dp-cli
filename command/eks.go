@@ -501,13 +501,18 @@ func setupClusterTunnel(ctx context.Context, profile, tunnelBoxID string, cluste
 	}
 	out.InfoFHighlight("    IPv4: %s", ipv4)
 
-	// Allocate local port
-	localPort, err := eks.AllocateLocalPort()
+	// Allocate a local port and hold it reserved until just before the SSM child
+	// binds, so a concurrent/sequential multi-cluster start can't hand the same
+	// port to two clusters.
+	localPort, portHold, err := eks.AllocateAndHoldLocalPort()
 	if err != nil {
 		out.WarnFHighlight("    ⚠ %s", err.Error())
 		return false, false
 	}
 	out.InfoFHighlight("    Local port: %s", fmt.Sprintf("%d", localPort))
+
+	// Release the reservation immediately before the SSM session binds the port.
+	_ = portHold.Close() //nolint:errcheck // releasing our port reservation before handoff
 
 	// Start SSM port forward
 	out.Info("    Starting SSM session...")
