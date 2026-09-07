@@ -48,10 +48,17 @@ type Config struct {
 	DPCLIPath              string            `yaml:"dp-cli-path"`
 }
 
-// EKS holds optional overrides for EKS tunnel discovery tags
+// EKS holds optional overrides for EKS tunnel discovery and local tunnel state.
 type EKS struct {
 	TunnelBoxRoleTag string `yaml:"tunnel-box-role-tag"`
 	ClusterAccessTag string `yaml:"cluster-access-tag"`
+	// StateDir is where per-cluster tunnel state files are stored. Defaults to
+	// /tmp/eks-tunnels-ssm when empty (ephemeral, cleared on reboot).
+	StateDir string `yaml:"state-dir"`
+	// BasePort and MaxPort bound the local port range used for SSM
+	// port-forwards. Defaults to 9443 and 9500 (inclusive) when unset.
+	BasePort int `yaml:"base-port"`
+	MaxPort  int `yaml:"max-port"`
 }
 
 type CMD struct {
@@ -111,6 +118,7 @@ func (cfg *Config) expandPaths() {
 	cfg.NisraPath = expandPath(cfg.NisraPath)
 	cfg.DPCodeListScriptsPath = expandPath(cfg.DPCodeListScriptsPath)
 	cfg.DPCLIPath = expandPath(cfg.DPCLIPath)
+	cfg.EKS.StateDir = expandPath(cfg.EKS.StateDir)
 }
 
 func expandPath(path string) string {

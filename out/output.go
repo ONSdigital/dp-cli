@@ -122,6 +122,12 @@ func highlightDNL(c *color.Color, formattedMsg string, args ...interface{}) {
 	highlightTrail(c, formattedMsg, "", args...)
 }
 
+// highlightTrail formats and prints a highlighted message.
+//
+// NOTE: every arg is run through the colour SprintFunc first, so all args reach
+// fmt.Sprintf as strings. Format verbs in the message must therefore be %s, even
+// for integers — pre-format numbers with fmt.Sprintf("%d", n). Using %d directly
+// would render "%!d(string=…)".
 func highlightTrail(c *color.Color, formattedMsg, endOfLine string, args ...interface{}) {
 	highlighted := make([]interface{}, 0, len(args))
 
