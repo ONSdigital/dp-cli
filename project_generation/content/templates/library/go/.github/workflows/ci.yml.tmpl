@@ -27,12 +27,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Generate Go Module List
-        run: go list -json -m all > go.list
-      - name: Run audit check with Nancy
-        uses: sonatype-nexus-community/nancy-github-action@main
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          nancyVersion: latest
+          go-version: 'stable'
+          cache: true
+      - name: Install dis-vulncheck
+        run: go install github.com/ONSdigital/dis-vulncheck@latest
+      - name: Run audit
+        run: make audit
 
   {{.Name}}-build:
     needs: {{.Name}}-setup
