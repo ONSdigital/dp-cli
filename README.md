@@ -29,7 +29,7 @@ The cli tool will do its best to check you have the required supporting tools in
 
 - **aws cli** - Either `brew install awscli` or follow the [AWS docs](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html)
 - **aws session manager plugin** - Either `brew install --cask session-manager-plugin` or follow the [AWS docs](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html#install-plugin-macos)
-- **socat** - Either `brew install socat`
+- **socat** - Either `brew install socat`. Only required for `dp eks session --legacy-sudo` (the legacy sudo tunnel path). It is **not** required in the default no-sudo mode (see [EKS session tunnels](#eks-session-tunnels)).
 
 #### Optional but common requirements
 
@@ -222,6 +222,90 @@ Use "dp [command] --help" for more information about a command.
 ```
 
 Use the available commands for more info on the functionality available.
+
+## EKS session tunnels
+
+`dp eks session start <ENV>` opens secure, auditable tunnels to the EKS API
+servers via the SSM tunnel box, so `kubectl`, `k9s` and Terraform can reach the
+clusters. The tunnel traffic is carried over an SSM port-forward to a local high
+port (9443-9500).
+
+There are two tunnel modes.
+
+### No-sudo mode (default)
+
+No-sudo mode is the **default** and requires **no `sudo` and no `socat`**. Instead
+of re-presenting the tunnel on port 443 with the real hostname, dp-cli points the
+kubeconfig `cluster` block directly at the local port and uses the
+`tls-server-name` field to keep TLS validation working:
+
+```yaml
+cluster:
+  server: https://127.0.0.1:<localPort>
+  certificate-authority-data: <cluster CA>   # unchanged
+  tls-server-name: <real EKS endpoint hostname>
+```
+
+`tls-server-name` tells `kubectl` to send the real EKS hostname as the TLS SNI and
+validate the server certificate against it, while actually connecting to
+`127.0.0.1:<localPort>`. TLS is still **fully validated** — there is no
+`insecure-skip-tls-verify`. Because there is no `socat`, no `/etc/hosts` edit and
+no loopback alias, no elevated privileges are needed.
+
+This is what you get by default:
+
+```shell
+dp eks session start sandbox
+```
+
+Notes (especially useful on managed devices without permanent admin rights):
+
+- You do **not** need `sudo` — you are never prompted for a password.
+- You do **not** need to install `socat` (this was the last remaining tool that
+  could not be cleanly installed without conda).
+- You do **not** need a JIT admin request to open a tunnel.
+
+### Legacy (sudo) mode
+
+The previous behaviour is still available behind the `--legacy-sudo` flag. It uses
+`socat` to bind the loopback address on port 443, adds an `/etc/hosts` entry
+mapping the EKS endpoint to that loopback address, and creates a loopback alias.
+These operations require `sudo`, and `socat` must be installed.
+
+```shell
+dp eks session start sandbox --legacy-sudo
+```
+
+Both modes are interoperable — `dp eks session status` and `dp eks session stop`
+detect the mode each active tunnel was created in and handle it accordingly. When
+you start a no-sudo tunnel, dp-cli will not touch `sudo`, `socat`, or your
+`/etc/hosts` at all; if it finds a leftover *legacy* tunnel from a previous run it
+will leave the privileged parts in place (warning you to run
+`dp eks session stop`) rather than prompting for a password.
+
+### Configuration
+
+The `eks:` section of `~/.dp-cli-config.yml` accepts optional overrides (defaults shown):
+
+```yaml
+eks:
+  tunnel-box-role-tag: "session-tunnel-box"  # tag used to discover the SSM tunnel box
+  cluster-access-tag: "ssm-tunnel-access"    # cluster tag opting a cluster into tunnel access
+  state-dir: "/tmp/eks-tunnels-ssm"          # where local tunnel state is stored
+  base-port: 9443                            # local SSM port-forward range (inclusive)
+  max-port: 9500
+```
+
+- **state-dir**: local tunnel state is stored here as one `<cluster>.json` file per
+  active tunnel. The default is under `/tmp`, so it is ephemeral and cleared on
+  reboot (which suits transient tunnel state). Set a persistent path (e.g.
+  `~/.dp-cli/eks-tunnels`) if you want state to survive reboots. `~` is expanded.
+- **base-port / max-port**: one port from this inclusive range is used per active
+  cluster tunnel. If a port is already in use it is skipped automatically. If the
+  whole range is exhausted, that cluster's tunnel is skipped with a warning (other
+  clusters still proceed). Widen the range if you routinely open many tunnels, or
+  move it if `9443` clashes with another local service.
+
 
 ## Common issues
 
