@@ -38,6 +38,7 @@ Although these flags are optional, for most, if they are not provided then the u
 - --go-version :        (Deprecated) Use --rt-version instead. The version of Go the application should use (Not used on generic-projects)
 - --project-location :  Location to generate project in
 - --create-repository : Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO
+- --visibility : Repository visibility when creating a repository: `internal`, `private`, or `public`. Public always displays a warning and requires confirmation.
 - --port :              Port number for the application
 - --type :              Type of application to generate, values can be: `generic-project`, `base-application`, `api`, `controller`, `event-driven`, `library`
 - --team-slugs :        Comma separated list of team slugs for ownership

@@ -27,5 +27,6 @@ func createGithubRepo() *cobra.Command {
 	command.Flags().String("token", "", "The users personal access token")
 	command.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
 	command.Flags().String("team-slugs", "", "Comma separated list of team slugs for setting permissions.")
+	command.Flags().String("visibility", "", "Repository visibility: internal, private or public (requires confirmation).")
 	return command
 }

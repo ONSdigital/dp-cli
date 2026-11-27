@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/ONSdigital/dp-cli/project_generation"
@@ -24,6 +25,7 @@ func generateProjectSubCommand() *cobra.Command {
 	command.Flags().String("project-language", "", "The language the project should be generated in, values can be: 'go', 'javascript'")
 	command.Flags().String("project-location", "", "Location to generate project in")
 	command.Flags().String("create-repository", "n", "Should a repository be created for the project, default no. Value can be y/Y/yes/YES/ or n/N/no/NO")
+	command.Flags().String("visibility", "", "Repository visibility: internal, private or public (requires confirmation).")
 	command.Flags().String("type", "", "Type of application to generate, values can be: 'generic-project', 'base-application', 'api', 'controller', 'event-driven', 'library'")
 	command.Flags().String("port", "", "The port this application will run on")
 	command.Flags().String("strategy", "git", "which branching-strategy this is depended on; will configure branches. Currently supported 'git' and 'github'")
@@ -49,6 +51,7 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 	strategy, _ := cmd.Flags().GetString("strategy")
 	teamSlugs, _ := cmd.Flags().GetString("team-slugs")
 	ciTestType, _ := cmd.Flags().GetString("ci-test")
+	visibility, _ := cmd.Flags().GetString("visibility")
 
 	// Can't create repo unless project type has been provided in a flag, so prompt user for it
 	if createRepositoryInput == "y" || createRepositoryInput == "yes" {
@@ -105,7 +108,11 @@ func RunGenerateApplication(cmd *cobra.Command, args []string) (err error) {
 			log.Error(ctx, "error confirming project directory is valid", err)
 			return err
 		}
-		cloneURL, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal, listOfArguments["teamSlugs"].OutputVal)
+		cloneURL, err = repository_creation.GenerateGithub(listOfArguments["appName"].OutputVal, listOfArguments["description"].OutputVal, project_generation.ProjectType(listOfArguments["projectType"].OutputVal), "", listOfArguments["strategy"].OutputVal, listOfArguments["teamSlugs"].OutputVal, visibility)
+		if errors.Is(err, repository_creation.ErrCreationCancelled) {
+			cmd.Println(repository_creation.CreationCancelledMessage)
+			return nil
+		}
 		if err != nil {
 			log.Error(ctx, "failed to generate project on github", err)
 			return err
