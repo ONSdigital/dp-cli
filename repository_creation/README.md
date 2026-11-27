@@ -33,3 +33,10 @@ ___
 4. Enter your GitHub handle when prompted
 5. Enter your repository name, note that if the repository is specific to the Dissemination Platform then prefix it with `dis-`
 6. Enter a description for the repository when prompted
+7. Select repository visibility: `internal` (the default when pressing Enter), `private`, or `public`. Public repositories display a warning and require confirmation.
+
+Use `--visibility internal` or `--visibility private` to skip the visibility prompt:
+
+```shell
+dp create-repo github --visibility internal
+```

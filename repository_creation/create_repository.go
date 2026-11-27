@@ -3,6 +3,7 @@ package repository_creation
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -43,7 +44,12 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 	branchStrategyInput, _ := cmd.Flags().GetString("strategy")
 	branchStrategy := strings.ToLower(strings.TrimSpace(branchStrategyInput))
 	teamSlugsInput, _ := cmd.Flags().GetString("team-slugs")
-	_, err = GenerateGithub(nameOfApp, "", "", token, branchStrategy, teamSlugsInput)
+	visibility, _ := cmd.Flags().GetString("visibility")
+	_, err = GenerateGithub(nameOfApp, "", "", token, branchStrategy, teamSlugsInput, visibility)
+	if errors.Is(err, ErrCreationCancelled) {
+		cmd.Println(CreationCancelledMessage)
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -54,8 +60,12 @@ func RunGenerateRepo(cmd *cobra.Command, args []string) error {
 // GenerateGithub is the entry point to generating the repository
 //
 //nolint:gocritic // legacy code - will be replaced with templates
-func GenerateGithub(name, description string, projectType project_generation.ProjectType, personalAccessToken, branchStrategy string, teamSlugsInput string) (cloneUrl string, err error) {
+func GenerateGithub(name, description string, projectType project_generation.ProjectType, personalAccessToken, branchStrategy string, teamSlugsInput, visibility string) (cloneUrl string, err error) {
 	accessToken, repoName, repoDescription, defaultBranch, repoTeamSlugsInput := getConfigurationsForNewRepo(name, description, projectType, personalAccessToken, branchStrategy, teamSlugsInput)
+	visibility, err = selectVisibility(visibility, os.Stdin, os.Stdout)
+	if err != nil {
+		return "", err
+	}
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: accessToken},
@@ -81,9 +91,9 @@ func GenerateGithub(name, description string, projectType project_generation.Pro
 		Description:   github.String(repoDescription),
 		DefaultBranch: github.String(defaultBranch),
 		MasterBranch:  github.String(mainBranch),
-		Private:       github.Bool(false),
 		HasWiki:       github.Bool(false),
 		HasProjects:   github.Bool(false),
+		Visibility:    github.String(visibility),
 		AutoInit:      github.Bool(true),
 	}
 	log.Info(ctx, "repo", log.Data{
